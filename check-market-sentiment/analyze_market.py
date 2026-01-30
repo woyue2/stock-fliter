@@ -18,6 +18,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
+import webbrowser
 
 # 设置UTF-8输出
 if hasattr(sys.stdout, 'reconfigure'):
@@ -325,6 +326,15 @@ def main():
         print("=" * 70)
         print(f"\n请用浏览器打开HTML报告查看完整分析结果：")
         print(f"{html_file}")
+        
+        # 自动打开HTML报告
+        print(f"\n正在打开浏览器...")
+        try:
+            webbrowser.open(html_file.as_uri())
+            print(f"✓ 已在浏览器中打开报告")
+        except Exception as e:
+            print(f"⚠ 无法自动打开浏览器: {e}")
+            print(f"请手动打开: {html_file}")
         
         return 0
         

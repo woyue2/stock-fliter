@@ -9,6 +9,7 @@
 
 import re
 from pathlib import Path
+import webbrowser
 
 
 # 模块显示名 -> output 相对路径（相对项目根）
@@ -681,6 +682,15 @@ def main() -> None:
     
     print(f"共 {len(dates)} 个日期, {sum(len(d) for d in per_module.values())} 条报告链接。")
     print(f"注意: reports_index.html 包含搜索功能，reports_list.html 是简单列表")
+    
+    # 自动打开 HTML 文件
+    print(f"\n正在打开浏览器...")
+    try:
+        webbrowser.open(index_path.as_uri())
+        print(f"✓ 已在浏览器中打开: {index_path}")
+    except Exception as e:
+        print(f"⚠ 无法自动打开浏览器: {e}")
+        print(f"请手动打开: {index_path}")
 
 
 if __name__ == "__main__":
