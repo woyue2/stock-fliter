@@ -15,7 +15,7 @@ from pathlib import Path
 CONFIG = [
     ("稳步上升", "check-steady-uptrend/output"),
     ("TD九底", "check-trend-bottom/output"),
-    # ("新指标", "check-new-indicators/output"),  # 新增
+    ("新指标", "check-new-indicators/output"),  # 新增
 ]
 
 # 日期目录 YYYY-MM-DD
@@ -94,7 +94,7 @@ def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], date
             if path:
                 # 相对路径，用正斜杠便于在浏览器中打开
                 href = path.as_posix()
-                cells.append(f'<td><a href="{href}">查看</a></td>')
+                cells.append(f'<td><a href="{href}" target="_blank">查看</a></td>')
             else:
                 cells.append("<td>-</td>")
         rows.append("<tr>" + "".join(cells) + "</tr>")

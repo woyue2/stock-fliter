@@ -74,3 +74,26 @@ Thumbs.db
 *.swp
 nul
 
+# Git 历史备份（合并子仓库时的备份）
+git-history-backup/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# CSV 输出文件（除了特定保留的）
+*.csv
+!get-data/data/selected_stocks_all.csv
+
+# 大型数据文件
+*.parquet
+*.feather
+*.h5
+*.hdf5
+
+# 子目录的 .git（防止子模块问题）
+check-steady-uptrend/.git/
+check-trend-bottom/.git/
+check-new-indicators/.git/
+

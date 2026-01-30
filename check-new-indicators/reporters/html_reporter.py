@@ -35,8 +35,29 @@ class HTMLReporter:
         """生成 HTML 报告"""
         now = datetime.now()
         ts = now.strftime("%H%M%S")
-        date_str = self.end_date if self.end_date else now.strftime("%Y%m%d")
-        date_str = date_str.replace("-", "")
+        
+        # 如果没有 end_date，从数据中读取日期
+        if not self.end_date and not df.empty:
+            # 尝试从多个可能的日期列中读取
+            date_columns = ["最新日期", "日期", "交易日期", "date"]
+            data_date = None
+            for col in date_columns:
+                if col in df.columns:
+                    first_date = df[col].iloc[0]
+                    if pd.notna(first_date):
+                        data_date = str(first_date)
+                        print(f"  [INFO] 从数据中读取到日期: {data_date}")
+                        break
+            
+            if data_date:
+                # 提取日期部分（可能是 "2024-01-30" 或 "2024-01-30 00:00:00" 格式）
+                date_str = data_date.split()[0].replace("-", "")
+            else:
+                date_str = now.strftime("%Y%m%d")
+                print(f"  [WARN] 数据中未找到日期信息，使用当前日期: {date_str}")
+        else:
+            date_str = self.end_date if self.end_date else now.strftime("%Y%m%d")
+            date_str = date_str.replace("-", "")
         
         # 创建策略类别数据
         strategy_data = {}
@@ -83,11 +104,11 @@ class HTMLReporter:
         
         # 生成主页（带 iframe）
         summary_filename = f"summary_{date_str}_{ts}.html"
-        summary_path = self._generate_summary(strategy_data, self.output_dir, title, summary_filename)
+        summary_path = self._generate_summary(strategy_data, self.output_dir, title, summary_filename, date_str)
         
         return summary_path
     
-    def _generate_summary(self, strategy_data: dict, report_dir: Path, title: str, filename: str = "summary.html") -> Path:
+    def _generate_summary(self, strategy_data: dict, report_dir: Path, title: str, filename: str = "summary.html", date_str: str = None) -> Path:
         """生成主页"""
         
         # 收集所有策略（包括空策略）和统计信息
@@ -208,7 +229,12 @@ class HTMLReporter:
         
         available_strategies_js = str(available_strategies).replace("'", '"')
         
-        display_title = f"{title} - {self.end_date}" if self.end_date else title
+        # 使用 date_str 来显示标题日期（已经从数据中读取或使用 end_date）
+        if date_str and len(date_str) == 8:
+            display_date = date_str[:4] + "-" + date_str[4:6] + "-" + date_str[6:8]
+            display_title = f"{title} - {display_date}"
+        else:
+            display_title = title
         
         html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
