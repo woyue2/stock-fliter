@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Logs
+*.log
+logs/
+debug.log
+
+# Data files - 忽略 get-data/data 目录下的所有文件
+# 先排除整个目录
+get-data/data/*
+
+# 但是保留 selected_stocks_all.csv（必须在排除规则之后）
+!get-data/data/selected_stocks_all.csv
+!get-data/data/.gitkeep
+
+# raw 目录下的所有文件都忽略
+get-data/data/raw/**
+
+# Output directories
+check-steady-uptrend/output/*
+check-new-indicators/output/*
+check-trend-bottom/output/*
+get-data/output/*
+
+# 保留 output 目录结构
+!check-steady-uptrend/output/.gitkeep
+!check-new-indicators/output/.gitkeep
+!check-trend-bottom/output/.gitkeep
+!get-data/output/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+nul
+
