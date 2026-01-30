@@ -29,6 +29,18 @@ def project_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def extract_data_date_from_filename(filename: str) -> str | None:
+    """
+    从 summary_YYYYMMDD_HHMMSS.html 中提取数据日期 YYYYMMDD，
+    转换为 YYYY-MM-DD 格式。
+    """
+    match = re.match(r"summary_(\d{8})_\d{6}\.html", filename)
+    if match:
+        date_str = match.group(1)  # YYYYMMDD
+        return f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+    return None
+
+
 def find_latest_summary_for_date(output_root: Path, date_str: str) -> Path | None:
     """
     在 output_root/date_str 下找最新的 HH-MM-SS 目录，返回其内 summary_*.html 路径。
@@ -53,24 +65,50 @@ def find_latest_summary_for_date(output_root: Path, date_str: str) -> Path | Non
 def scan_module(project: Path, module_name: str, output_rel: str) -> dict[str, Path]:
     """
     扫描一个模块的 output 目录。
-    返回: 日期字符串 -> 该日期下最新 summary 的路径（相对 project）。
+    返回: 数据日期字符串 -> 该日期下最新 summary 的路径（相对 project）。
+    注意：这里的日期是从文件名中提取的数据日期，而不是目录名（生成日期）。
     """
     result = {}
     output_root = project / output_rel
     if not output_root.is_dir():
         return result
-    for candidate in output_root.iterdir():
-        if not candidate.is_dir() or not DATE_PATTERN.match(candidate.name):
+    
+    # 收集所有 summary 文件及其数据日期
+    summaries_by_data_date = {}  # data_date -> [(gen_date, gen_time, path)]
+    
+    for gen_date_dir in output_root.iterdir():
+        if not gen_date_dir.is_dir() or not DATE_PATTERN.match(gen_date_dir.name):
             continue
-        date_str = candidate.name
-        summary_path = find_latest_summary_for_date(output_root, date_str)
-        if summary_path is None:
-            continue
+        
+        for gen_time_dir in gen_date_dir.iterdir():
+            if not gen_time_dir.is_dir() or not TIME_PATTERN.match(gen_time_dir.name):
+                continue
+            
+            for summary_file in gen_time_dir.glob("summary_*.html"):
+                # 从文件名提取数据日期
+                data_date = extract_data_date_from_filename(summary_file.name)
+                if data_date is None:
+                    continue
+                
+                if data_date not in summaries_by_data_date:
+                    summaries_by_data_date[data_date] = []
+                
+                summaries_by_data_date[data_date].append(
+                    (gen_date_dir.name, gen_time_dir.name, summary_file)
+                )
+    
+    # 对每个数据日期，选择最新生成的报告
+    for data_date, summaries in summaries_by_data_date.items():
+        # 按生成日期和时间排序，取最新的
+        summaries.sort(key=lambda x: (x[0], x[1]), reverse=True)
+        latest_summary = summaries[0][2]
+        
         try:
-            rel = summary_path.relative_to(project)
-            result[date_str] = rel
+            rel = latest_summary.relative_to(project)
+            result[data_date] = rel
         except ValueError:
             continue
+    
     return result
 
 
@@ -141,10 +179,11 @@ def main() -> None:
         per_module[module_name] = scan_module(project, module_name, output_rel)
     dates = collect_all_dates(per_module)
     html = build_index_html(project, per_module, dates)
-    out_path = project / "reports_index.html"
+    out_path = project / "reports_list.html"
     out_path.write_text(html, encoding="utf-8")
     print(f"已生成: {out_path}")
     print(f"共 {len(dates)} 个日期, {sum(len(d) for d in per_module.values())} 条报告链接。")
+    print(f"注意: reports_index.html 包含搜索功能，reports_list.html 是简单列表")
 
 
 if __name__ == "__main__":

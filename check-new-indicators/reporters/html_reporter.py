@@ -106,6 +106,9 @@ class HTMLReporter:
         summary_filename = f"summary_{date_str}_{ts}.html"
         summary_path = self._generate_summary(strategy_data, self.output_dir, title, summary_filename, date_str)
         
+        # 导出到索引CSV
+        self._export_to_index_csv(df, "新指标", date_str, summary_path)
+        
         return summary_path
     
     def _generate_summary(self, strategy_data: dict, report_dir: Path, title: str, filename: str = "summary.html", date_str: str = None) -> Path:
@@ -998,3 +1001,53 @@ class HTMLReporter:
         elif value >= 7:
             return "mid"
         return "low"
+    
+    def _export_to_index_csv(self, df: pd.DataFrame, module_name: str, 
+                             report_date: str, report_path: Path):
+        """将股票数据追加到索引CSV"""
+        index_file = Path(__file__).parent.parent.parent / "get-data" / "data" / "stocks_index.csv"
+        
+        # 准备索引数据
+        index_data = []
+        for _, row in df.iterrows():
+            # 获取该股票所属的策略
+            strategies = []
+            for col in df.columns:
+                if col in ["代码", "名称", "板块", "行业", "最新收盘", "最新日期", 
+                          "稳步上升", "放量突破", "MACD金叉(零下)", "MACD值", "TD计数", "所属策略"]:
+                    continue
+                if row.get(col, False) == True:
+                    strategies.append(col)
+            
+            strategy_str = ", ".join(strategies) if strategies else row.get("所属策略", "")
+            
+            # 计算相对于项目根目录的路径
+            project_root = Path(__file__).parent.parent.parent
+            relative_path = report_path.relative_to(project_root)
+            # 转换为正斜杠格式（适用于Web）
+            web_path = str(relative_path).replace("\\", "/")
+            
+            index_data.append({
+                "代码": str(row.get("代码", "")).strip(),
+                "名称": str(row.get("名称", "")).strip(),
+                "日期": report_date[:4] + "-" + report_date[4:6] + "-" + report_date[6:8] if len(report_date) == 8 else report_date,
+                "模块": module_name,
+                "策略级别": strategy_str,
+                "报告路径": web_path,
+                "板块": str(row.get("板块", "")).strip(),
+                "行业": str(row.get("行业", "")).strip(),
+                "生成时间": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        
+        if not index_data:
+            return
+        
+        # 追加到CSV
+        index_df = pd.DataFrame(index_data)
+        if index_file.exists():
+            index_df.to_csv(index_file, mode='a', header=False, 
+                           index=False, encoding='utf-8-sig')
+        else:
+            index_df.to_csv(index_file, index=False, encoding='utf-8-sig')
+        
+        print(f"  [OK] 已导出 {len(index_data)} 条记录到索引文件")

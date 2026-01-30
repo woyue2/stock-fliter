@@ -179,6 +179,68 @@ git merge feature/check-new-indicators
 
 ---
 
+**四例子**
+
+非常好的问题！你说得完全正确！👍
+
+## ✅ 是的，应该使用 Git 分支管理
+
+在公司开发中，添加新特性应该：
+
+### 🌿 标准流程
+
+*#* *1. 确保在主分支且是最新的*
+
+git checkout main *#* *或 master*
+
+git pull origin main
+
+*#* *2. 创建新特性分支*
+
+git checkout -b feature/market-sentiment
+
+*#* *3. 开发新特性（你已经完成了）*
+
+*#* *... 编写代码 ...*
+
+*#* *4. 提交代码*
+
+git add check-market-sentiment/
+
+git commit -m "feat: 添加市场情绪分析模块（高开低走统计）
+
+\- 新增分时特征分析（早盘vs午盘）
+
+\- 支持强度分级（轻度/中度/重度）
+
+\- 生成HTML可视化报告
+
+\- 计算市场情绪指数"
+
+*#* *5. 推送到远程*
+
+git push origin feature/market-sentiment
+
+*#* *6. 创建 Pull Request (PR) / Merge Request (MR)*
+
+*#* *在 GitHub/GitLab 上创建 PR，等待代码审查*
+
+*#* *7. 审查通过后合并到主分支*
+
+*#* *通过 PR 界面合并，或：*
+
+git checkout main
+
+git merge feature/market-sentiment
+
+git push origin main
+
+*#* *8. 删除特性分支（可选）*
+
+git branch -d feature/market-sentiment
+
+git push origin --delete feature/market-sentiment
+
 ## 小结
 
 1. **data/**：在根 `.gitignore` 写这一行，Git 会忽略全仓库所有 `data/` 目录，不需要写 `./get-data/data`。

@@ -87,6 +87,11 @@ class HtmlReporter:
         self._generate_summary_html(summary_path, summary_filename)
         print(f"  [OK] HTML总览: {summary_path.name}")
         
+        # 导出到索引CSV
+        for name, df in self.result.combined.items():
+            if not df.empty:
+                self._export_to_index_csv(df, "稳步上升", name, date_str, summary_path)
+        
         # 自动打开总览页面
         try:
             print(f"  [START] 正在打开浏览器...")
@@ -1020,3 +1025,64 @@ class HtmlReporter:
   </script>
 </body>
 </html>"""
+        
+        path = report_dir / filename
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html)
+        return path
+    
+    def _export_to_index_csv(self, df: pd.DataFrame, module_name: str, 
+                             combo_name: str, report_date: str, report_path: Path):
+        """将股票数据追加到索引CSV"""
+        index_file = Path(__file__).parent.parent.parent / "get-data" / "data" / "stocks_index.csv"
+        
+        # 准备索引数据
+        index_data = []
+        for _, row in df.iterrows():
+            code_raw = str(row.get("代码", ""))
+            code_match = re.search(r"\d{6}", code_raw)
+            if not code_match:
+                continue
+            
+            code = code_match.group(0)
+            name = str(row.get("名称", "")).strip()
+            board = str(row.get("板块", "")).strip()
+            industry = str(row.get("行业", "")).strip()
+            
+            # 获取优先级
+            priority = ""
+            if row.get("回调买点", False) in [True, "True", "true", 1, "1"]:
+                priority = "[STAR]买入"
+            elif row.get("等待买点", False) in [True, "True", "true", 1, "1"]:
+                priority = "[STAR]等待"
+            
+            # 计算相对于项目根目录的路径
+            project_root = Path(__file__).parent.parent.parent
+            relative_path = report_path.relative_to(project_root)
+            # 转换为正斜杠格式（适用于Web）
+            web_path = str(relative_path).replace("\\", "/")
+            
+            index_data.append({
+                "代码": code,
+                "名称": name,
+                "日期": report_date[:4] + "-" + report_date[4:6] + "-" + report_date[6:8] if len(report_date) == 8 else report_date,
+                "模块": module_name,
+                "策略级别": combo_name + (f" {priority}" if priority else ""),
+                "报告路径": web_path,
+                "板块": board,
+                "行业": industry,
+                "生成时间": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        
+        if not index_data:
+            return
+        
+        # 追加到CSV
+        index_df = pd.DataFrame(index_data)
+        if index_file.exists():
+            index_df.to_csv(index_file, mode='a', header=False, 
+                           index=False, encoding='utf-8-sig')
+        else:
+            index_df.to_csv(index_file, index=False, encoding='utf-8-sig')
+        
+        print(f"  [OK] 已导出 {len(index_data)} 条记录到索引文件 ({combo_name})")
