@@ -1,0 +1,6 @@
+python run_scan.py --mode test --n 100
+  Excel 文件中会包含所有100只股票的数据，你可以自行筛选查看哪些是0信号的股票。
+
+
+
+python run_index_td_scan.py --index all
