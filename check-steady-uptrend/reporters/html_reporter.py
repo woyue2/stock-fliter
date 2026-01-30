@@ -1034,7 +1034,15 @@ class HtmlReporter:
     def _export_to_index_csv(self, df: pd.DataFrame, module_name: str, 
                              combo_name: str, report_date: str, report_path: Path):
         """将股票数据追加到索引CSV"""
-        index_file = Path(__file__).parent.parent.parent / "get-data" / "data" / "stocks_index.csv"
+        # 使用带日期的 stocks_index.csv 路径
+        if len(report_date) == 8:
+            date_folder = f"{report_date[:4]}-{report_date[4:6]}-{report_date[6:8]}"
+        else:
+            date_folder = report_date
+        
+        index_dir = Path(__file__).parent.parent.parent / "get-data" / "data" / "stocks_index" / date_folder
+        index_dir.mkdir(parents=True, exist_ok=True)
+        index_file = index_dir / "stocks_index.csv"
         
         # 准备索引数据
         index_data = []

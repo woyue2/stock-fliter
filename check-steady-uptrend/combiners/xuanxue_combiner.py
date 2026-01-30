@@ -126,14 +126,34 @@ class XuanxueCombiner:
                 include_grid=use_grid,
             )
             
+            # 如果是容忍版（带t后缀），则排除原版中已有的股票
+            original_count = len(candidates)
+            if strategy_name.endswith('t'):
+                # 找到对应的原版策略名（去掉t后缀）
+                original_strategy_name = strategy_name[:-1]
+                if original_strategy_name in results:
+                    original_candidates = results[original_strategy_name]
+                    # 获取代码列
+                    code_series, _ = self._get_code_series(candidates)
+                    original_code_series, _ = self._get_code_series(original_candidates)
+                    
+                    if code_series is not None and original_code_series is not None:
+                        # 排除原版中已有的股票
+                        original_codes = set(original_code_series.astype(str))
+                        mask = ~code_series.astype(str).isin(original_codes)
+                        candidates = candidates[mask].copy()
+            
             count_label = f"{len(candidates)}只"
+            extra_label = ""
+            if strategy_name.endswith('t') and original_count > len(candidates):
+                extra_label = f"_新增{len(candidates)}只_总{original_count}只"
             
             # 保存CSV
-            csv_path = self.output_dir / f"{strategy_name}_{count_label}_{base_label}_{ts}.csv"
+            csv_path = self.output_dir / f"{strategy_name}_{count_label}{extra_label}_{base_label}_{ts}.csv"
             self._save_csv(candidates, csv_path)
             
             # 保存MD报告
-            md_path = self.output_dir / f"{strategy_name}_{count_label}_{base_label}_{ts}.md"
+            md_path = self.output_dir / f"{strategy_name}_{count_label}{extra_label}_{base_label}_{ts}.md"
             self._save_report(
                 candidates=candidates,
                 report_path=md_path,
@@ -141,10 +161,15 @@ class XuanxueCombiner:
                 mode_label=mode_label,
                 combo_label=combo_label,
                 best_combo=combo,
+                original_count=original_count if strategy_name.endswith('t') else None,
             )
             
             results[strategy_name] = candidates
-            print(f"  [OK] {strategy_name}: {len(candidates)} 只")
+            
+            if strategy_name.endswith('t') and original_count > len(candidates):
+                print(f"  [OK] {strategy_name}: {len(candidates)} 只 (容忍版新增，原版已有 {original_count - len(candidates)} 只)")
+            else:
+                print(f"  [OK] {strategy_name}: {len(candidates)} 只")
         
         return results
     
@@ -399,6 +424,7 @@ class XuanxueCombiner:
         mode_label: str,
         combo_label: str,
         best_combo: Optional[GridCombo],
+        original_count: Optional[int] = None,
     ):
         """保存MD报告"""
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -409,8 +435,21 @@ class XuanxueCombiner:
             f"- 策略: {strategy_name}",
             f"- 玄学条件: {mode_label}",
             f"- 组合条件: {combo_label}",
-            f"- 候选数量: {len(candidates)}",
         ]
+        
+        # 如果是容忍版且有原始数量，显示对比信息
+        if strategy_name.endswith('t') and original_count is not None:
+            lines += [
+                f"- **容忍版新增数量**: {len(candidates)} 只",
+                f"- **原版已有数量**: {original_count - len(candidates)} 只",
+                f"- **容忍版总数量**: {original_count} 只",
+                "",
+                "> 💡 **说明**: 本报告仅显示容忍版相比原版**额外捕捉到的股票**（原版中没有的）",
+            ]
+        else:
+            lines.append(f"- 候选数量: {len(candidates)}")
+        
+        lines.append("")
         
         if best_combo:
             lines += [

@@ -634,6 +634,21 @@ def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], date
     return html
 
 
+def get_latest_stocks_index_date(project: Path) -> str | None:
+    """获取最新的 stocks_index.csv 日期"""
+    stocks_index_dir = project / "get-data" / "data" / "stocks_index"
+    if not stocks_index_dir.exists():
+        return None
+    
+    date_dirs = [d for d in stocks_index_dir.iterdir() if d.is_dir() and DATE_PATTERN.match(d.name)]
+    if not date_dirs:
+        return None
+    
+    # 返回最新日期
+    latest_date = sorted(date_dirs, key=lambda d: d.name, reverse=True)[0].name
+    return latest_date
+
+
 def main() -> None:
     project = project_root()
     per_module = {}
@@ -641,15 +656,26 @@ def main() -> None:
         per_module[module_name] = scan_module(project, module_name, output_rel)
     dates = collect_all_dates(per_module)
     
+    # 获取最新的 stocks_index.csv 日期
+    latest_date = get_latest_stocks_index_date(project)
+    if latest_date:
+        print(f"使用最新日期的 stocks_index.csv: {latest_date}")
+        # 创建带日期的输出目录
+        output_dir = project / "report_index" / f"reports_index_{latest_date}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        print("未找到 stocks_index 日期目录，使用项目根目录")
+        output_dir = project
+    
     # 生成 reports_list.html（简单列表）
     list_html = build_list_html(project, per_module, dates)
-    list_path = project / "reports_list.html"
+    list_path = output_dir / "reports_list.html"
     list_path.write_text(list_html, encoding="utf-8")
     print(f"已生成: {list_path}")
     
     # 生成 reports_index.html（带搜索功能）
     index_html = build_index_html(project, per_module, dates)
-    index_path = project / "reports_index.html"
+    index_path = output_dir / "reports_index.html"
     index_path.write_text(index_html, encoding="utf-8")
     print(f"已生成: {index_path}")
     

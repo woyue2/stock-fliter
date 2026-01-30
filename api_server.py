@@ -12,13 +12,32 @@ from pathlib import Path
 app = Flask(__name__)
 CORS(app)  # 允许跨域
 
-INDEX_FILE = Path(__file__).parent / "get-data" / "data" / "stocks_index.csv"
+def get_latest_index_file():
+    """获取最新日期的 stocks_index.csv"""
+    stocks_index_dir = Path(__file__).parent / "get-data" / "data" / "stocks_index"
+    
+    if not stocks_index_dir.exists():
+        # 如果没有日期目录，尝试使用旧的路径
+        old_path = Path(__file__).parent / "get-data" / "data" / "stocks_index.csv"
+        return old_path if old_path.exists() else None
+    
+    # 查找最新日期的目录
+    date_dirs = [d for d in stocks_index_dir.iterdir() if d.is_dir()]
+    if not date_dirs:
+        return None
+    
+    latest_date_dir = sorted(date_dirs, key=lambda d: d.name, reverse=True)[0]
+    index_file = latest_date_dir / "stocks_index.csv"
+    
+    return index_file if index_file.exists() else None
 
 def load_index():
     """加载索引CSV"""
-    if not INDEX_FILE.exists():
+    index_file = get_latest_index_file()
+    if not index_file or not index_file.exists():
         return pd.DataFrame()
-    return pd.read_csv(INDEX_FILE, encoding='utf-8-sig')
+    print(f"[INFO] 使用索引文件: {index_file}")
+    return pd.read_csv(index_file, encoding='utf-8-sig')
 
 @app.route('/api/search', methods=['GET'])
 def search_stock():
@@ -101,7 +120,11 @@ def index():
     """
 
 if __name__ == '__main__':
-    print(f"索引文件: {INDEX_FILE}")
+    index_file = get_latest_index_file()
+    if index_file:
+        print(f"索引文件: {index_file}")
+    else:
+        print("警告: 未找到索引文件")
     print(f"API服务启动: http://localhost:5000")
     app.run(debug=True, port=5000)
 
