@@ -120,8 +120,8 @@ def collect_all_dates(per_module: dict[str, dict[str, Path]]) -> list[str]:
     return sorted(dates, reverse=True)
 
 
-def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], dates: list[str]) -> str:
-    """生成索引页 HTML 内容。"""
+def build_list_html(project: Path, per_module: dict[str, dict[str, Path]], dates: list[str]) -> str:
+    """生成简单列表页 HTML 内容（reports_list.html）。"""
     module_names = [name for name, _ in CONFIG]
     rows = []
     for date_str in dates:
@@ -172,16 +172,487 @@ def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], date
     return html
 
 
+def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], dates: list[str]) -> str:
+    """生成带搜索功能的索引页 HTML 内容（reports_index.html）。"""
+    module_names = [name for name, _ in CONFIG]
+    
+    # 构建报告列表的表格行
+    table_rows = []
+    for date_str in dates:
+        cells = [f"<td>{date_str}</td>"]
+        for name in module_names:
+            data = per_module.get(name, {})
+            path = data.get(date_str)
+            if path:
+                href = path.as_posix()
+                cells.append(f'<td><a href="{href}" target="_blank" class="link">查看</a></td>')
+            else:
+                cells.append("<td>-</td>")
+        table_rows.append("<tr>" + "".join(cells) + "</tr>")
+    
+    table_body = "\n                        ".join(table_rows)
+    
+    html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票报告索引 - 搜索</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 2rem;
+        }}
+        h1 {{
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }}
+        .subtitle {{
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }}
+        .search-box {{
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }}
+        .search-box input {{
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }}
+        .search-box input:focus {{
+            outline: none;
+            border-color: #667eea;
+        }}
+        .btn {{
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }}
+        .btn-primary {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }}
+        .btn-primary:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }}
+        .btn-secondary {{
+            background: #f5f5f5;
+            color: #333;
+        }}
+        .btn-secondary:hover {{
+            background: #e0e0e0;
+        }}
+        .actions {{
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }}
+        .results {{
+            margin-top: 2rem;
+        }}
+        .result-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e0e0e0;
+        }}
+        .result-count {{
+            font-size: 1.1rem;
+            color: #667eea;
+            font-weight: 600;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }}
+        th, td {{
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }}
+        th {{
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }}
+        tr:hover {{
+            background: #f8f9fa;
+        }}
+        .link {{
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }}
+        .link:hover {{
+            text-decoration: underline;
+        }}
+        .empty {{
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }}
+        .loading {{
+            text-align: center;
+            padding: 2rem;
+            color: #667eea;
+        }}
+        .error {{
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }}
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }}
+        .stat-card {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }}
+        .stat-value {{
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }}
+        .stat-label {{
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 股票报告搜索</h1>
+        <p class="subtitle">搜索股票在不同日期、不同分析模块中的出现情况</p>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="输入股票代码或名称（如：600519 或 茅台）" />
+            <button class="btn btn-primary" onclick="searchStock()">🔍 搜索</button>
+        </div>
+        
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="showHotStocks()">🔥 热门股票</button>
+            <button class="btn btn-secondary" onclick="showStats()">📈 统计信息</button>
+            <button class="btn btn-secondary" onclick="showReportIndex()">📋 报告列表</button>
+        </div>
+        
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        
+        // 回车搜索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {{
+            if (e.key === 'Enter') {{
+                searchStock();
+            }}
+        }});
+        
+        // 搜索股票
+        async function searchStock() {{
+            const keyword = document.getElementById('searchInput').value.trim();
+            if (!keyword) {{
+                alert('请输入股票代码或名称');
+                return;
+            }}
+            
+            showLoading();
+            
+            try {{
+                // 判断是代码还是名称
+                const isCode = /^\\d+$/.test(keyword);
+                const param = isCode ? `code=${{keyword}}` : `name=${{keyword}}`;
+                
+                const response = await fetch(`${{API_BASE}}/api/search?${{param}}`);
+                const data = await response.json();
+                
+                if (data.error) {{
+                    showError(data.error);
+                    return;
+                }}
+                
+                displayResults(data.results, `搜索结果：${{keyword}}`);
+            }} catch (error) {{
+                showError('搜索失败，请确保API服务已启动');
+                console.error(error);
+            }}
+        }}
+        
+        // 显示热门股票
+        async function showHotStocks() {{
+            showLoading();
+            
+            try {{
+                const response = await fetch(`${{API_BASE}}/api/hot-stocks?limit=20`);
+                const data = await response.json();
+                
+                displayHotStocks(data);
+            }} catch (error) {{
+                showError('获取热门股票失败，请确保API服务已启动');
+                console.error(error);
+            }}
+        }}
+        
+        // 显示统计信息
+        async function showStats() {{
+            showLoading();
+            
+            try {{
+                const response = await fetch(`${{API_BASE}}/api/stats`);
+                const data = await response.json();
+                
+                if (data.error) {{
+                    showError(data.error);
+                    return;
+                }}
+                
+                displayStats(data);
+            }} catch (error) {{
+                showError('获取统计信息失败，请确保API服务已启动');
+                console.error(error);
+            }}
+        }}
+        
+        // 显示报告列表（使用数据日期）
+        function showReportIndex() {{
+            const html = `
+                <div class="result-header">
+                    <h2>📋 报告列表</h2>
+                    <span class="result-count">按数据日期排序</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>数据日期</th>
+                            {"".join(f"<th>{name}</th>" for name in module_names)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {table_body}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('results').innerHTML = html;
+        }}
+        
+        // 显示搜索结果
+        function displayResults(results, title) {{
+            if (results.length === 0) {{
+                document.getElementById('results').innerHTML = `
+                    <div class="empty">
+                        <h3>😔 未找到结果</h3>
+                        <p>请尝试其他关键词</p>
+                    </div>
+                `;
+                return;
+            }}
+            
+            let html = `
+                <div class="result-header">
+                    <h2>${{title}}</h2>
+                    <span class="result-count">共 ${{results.length}} 条记录</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>代码</th>
+                            <th>名称</th>
+                            <th>日期</th>
+                            <th>模块</th>
+                            <th>策略级别</th>
+                            <th>板块</th>
+                            <th>行业</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            results.forEach(item => {{
+                html += `
+                    <tr>
+                        <td>${{item.代码}}</td>
+                        <td>${{item.名称}}</td>
+                        <td>${{item.日期}}</td>
+                        <td>${{item.模块}}</td>
+                        <td>${{item.策略级别}}</td>
+                        <td>${{item.板块}}</td>
+                        <td>${{item.行业}}</td>
+                        <td><a href="${{item.报告路径}}" target="_blank" class="link">查看报告</a></td>
+                    </tr>
+                `;
+            }});
+            
+            html += '</tbody></table>';
+            document.getElementById('results').innerHTML = html;
+        }}
+        
+        // 显示热门股票
+        function displayHotStocks(data) {{
+            if (data.length === 0) {{
+                document.getElementById('results').innerHTML = '<div class="empty">暂无数据</div>';
+                return;
+            }}
+            
+            let html = `
+                <div class="result-header">
+                    <h2>🔥 热门股票 Top 20</h2>
+                    <span class="result-count">按出现次数排序</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>代码</th>
+                            <th>名称</th>
+                            <th>出现次数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.forEach((item, index) => {{
+                html += `
+                    <tr>
+                        <td>${{index + 1}}</td>
+                        <td>${{item.代码}}</td>
+                        <td>${{item.名称}}</td>
+                        <td><strong>${{item.出现次数}}</strong></td>
+                        <td><a href="javascript:void(0)" onclick="searchByCode('${{item.代码}}')" class="link">查看详情</a></td>
+                    </tr>
+                `;
+            }});
+            
+            html += '</tbody></table>';
+            document.getElementById('results').innerHTML = html;
+        }}
+        
+        // 显示统计信息
+        function displayStats(data) {{
+            let modulesHtml = '';
+            for (const [module, count] of Object.entries(data.modules)) {{
+                modulesHtml += `
+                    <div class="stat-card">
+                        <div class="stat-value">${{count}}</div>
+                        <div class="stat-label">${{module}}</div>
+                    </div>
+                `;
+            }}
+            
+            const html = `
+                <div class="result-header">
+                    <h2>📈 统计信息</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${{data.total_records}}</div>
+                        <div class="stat-label">总记录数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${{data.unique_stocks}}</div>
+                        <div class="stat-label">独立股票数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${{data.date_range.start}}</div>
+                        <div class="stat-label">开始日期</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${{data.date_range.end}}</div>
+                        <div class="stat-label">结束日期</div>
+                    </div>
+                </div>
+                <div class="result-header" style="margin-top: 2rem;">
+                    <h3>各模块统计</h3>
+                </div>
+                <div class="stats-grid">
+                    ${{modulesHtml}}
+                </div>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+        }}
+        
+        // 按代码搜索
+        function searchByCode(code) {{
+            document.getElementById('searchInput').value = code;
+            searchStock();
+        }}
+        
+        // 显示加载中
+        function showLoading() {{
+            document.getElementById('results').innerHTML = '<div class="loading">⏳ 加载中...</div>';
+        }}
+        
+        // 显示错误
+        function showError(message) {{
+            document.getElementById('results').innerHTML = `<div class="error">❌ ${{message}}</div>`;
+        }}
+        
+        // 页面加载时显示报告列表
+        window.onload = function() {{
+            showReportIndex();
+        }};
+    </script>
+</body>
+</html>
+"""
+    return html
+
+
 def main() -> None:
     project = project_root()
     per_module = {}
     for module_name, output_rel in CONFIG:
         per_module[module_name] = scan_module(project, module_name, output_rel)
     dates = collect_all_dates(per_module)
-    html = build_index_html(project, per_module, dates)
-    out_path = project / "reports_list.html"
-    out_path.write_text(html, encoding="utf-8")
-    print(f"已生成: {out_path}")
+    
+    # 生成 reports_list.html（简单列表）
+    list_html = build_list_html(project, per_module, dates)
+    list_path = project / "reports_list.html"
+    list_path.write_text(list_html, encoding="utf-8")
+    print(f"已生成: {list_path}")
+    
+    # 生成 reports_index.html（带搜索功能）
+    index_html = build_index_html(project, per_module, dates)
+    index_path = project / "reports_index.html"
+    index_path.write_text(index_html, encoding="utf-8")
+    print(f"已生成: {index_path}")
+    
     print(f"共 {len(dates)} 个日期, {sum(len(d) for d in per_module.values())} 条报告链接。")
     print(f"注意: reports_index.html 包含搜索功能，reports_list.html 是简单列表")
 

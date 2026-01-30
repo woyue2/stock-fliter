@@ -44,6 +44,7 @@ class XuanxueCombiner:
     
     # 组合配置：(mode, strategy_name, mode_label, use_steady, use_trend, use_grid, combo_label)
     COMBINATIONS = [
+        # ========== 原版玄学指标（严格6连阳）==========
         # 完整组合 134
         ("6up", "xuanxue_134_6", "玄学条件2（连续6天阳线）", True, True, True, "1(稳步上升) + 3(趋势分析) + 4(网格测试)"),
         ("6up1down", "xuanxue_134_61", "玄学条件1（近10天6涨1跌）", True, True, True, "1(稳步上升) + 3(趋势分析) + 4(网格测试)"),
@@ -65,6 +66,29 @@ class XuanxueCombiner:
         # 仅组合 4
         ("6up", "xuanxue_4_6", "玄学条件2（连续6天阳线）", False, False, True, "4(网格测试)"),
         ("6up1down", "xuanxue_4_61", "玄学条件1（近10天6涨1跌）", False, False, True, "4(网格测试)"),
+        
+        # ========== 容忍版玄学指标（允许小跌<1.64%）==========
+        # 完整组合 134 - 容忍版
+        ("6up_tolerant", "xuanxue_134_6t", "玄学条件2T（连续6天有效涨-容忍小跌）", True, True, True, "1(稳步上升) + 3(趋势分析) + 4(网格测试)"),
+        ("6up1down_tolerant", "xuanxue_134_61t", "玄学条件1T（近10天6有效涨1真跌-容忍小跌）", True, True, True, "1(稳步上升) + 3(趋势分析) + 4(网格测试)"),
+        # 组合 13 - 容忍版
+        ("6up_tolerant", "xuanxue_13_6t", "玄学条件2T（连续6天有效涨-容忍小跌）", True, True, False, "1(稳步上升) + 3(趋势分析)"),
+        ("6up1down_tolerant", "xuanxue_13_61t", "玄学条件1T（近10天6有效涨1真跌-容忍小跌）", True, True, False, "1(稳步上升) + 3(趋势分析)"),
+        # 组合 3 - 容忍版
+        ("6up_tolerant", "xuanxue_3_6t", "玄学条件2T（连续6天有效涨-容忍小跌）", False, True, False, "3(趋势分析)"),
+        ("6up1down_tolerant", "xuanxue_3_61t", "玄学条件1T（近10天6有效涨1真跌-容忍小跌）", False, True, False, "3(趋势分析)"),
+        # 组合 34 - 容忍版
+        ("6up_tolerant", "xuanxue_34_6t", "玄学条件2T（连续6天有效涨-容忍小跌）", False, True, True, "3(趋势分析) + 4(网格测试)"),
+        ("6up1down_tolerant", "xuanxue_34_61t", "玄学条件1T（近10天6有效涨1真跌-容忍小跌）", False, True, True, "3(趋势分析) + 4(网格测试)"),
+        # 组合 14 - 容忍版
+        ("6up_tolerant", "xuanxue_14_6t", "玄学条件2T（连续6天有效涨-容忍小跌）", True, False, True, "1(稳步上升) + 4(网格测试)"),
+        ("6up1down_tolerant", "xuanxue_14_61t", "玄学条件1T（近10天6有效涨1真跌-容忍小跌）", True, False, True, "1(稳步上升) + 4(网格测试)"),
+        # 仅组合 1 - 容忍版
+        ("6up_tolerant", "xuanxue_1_6t", "玄学条件2T（连续6天有效涨-容忍小跌）", True, False, False, "1(稳步上升)"),
+        ("6up1down_tolerant", "xuanxue_1_61t", "玄学条件1T（近10天6有效涨1真跌-容忍小跌）", True, False, False, "1(稳步上升)"),
+        # 仅组合 4 - 容忍版
+        ("6up_tolerant", "xuanxue_4_6t", "玄学条件2T（连续6天有效涨-容忍小跌）", False, False, True, "4(网格测试)"),
+        ("6up1down_tolerant", "xuanxue_4_61t", "玄学条件1T（近10天6有效涨1真跌-容忍小跌）", False, False, True, "4(网格测试)"),
     ]
     
     def __init__(
@@ -224,9 +248,19 @@ class XuanxueCombiner:
         
         # 玄学条件筛选
         if mode == "6up1down":
+            # 原版：严格6连阳后1阴
             col_name = "玄学_10天内有6连阳后1阴" if "玄学_10天内有6连阳后1阴" in trend_df.columns else "玄学_近10天6涨1跌"
             mystic_mask = trend_df.get(col_name, pd.Series([False] * len(trend_df)))
-        else:
+        elif mode == "6up1down_tolerant":
+            # 容忍版：6有效涨后1真跌
+            col_name = "玄学_10天内有6连涨后1跌(容忍小跌)"
+            mystic_mask = trend_df.get(col_name, pd.Series([False] * len(trend_df)))
+        elif mode == "6up_tolerant":
+            # 容忍版：连续6天有效涨
+            col_name = "玄学_最近6天连续涨(容忍小跌)"
+            mystic_mask = trend_df.get(col_name, pd.Series([False] * len(trend_df)))
+        else:  # mode == "6up"
+            # 原版：严格连续6天阳线
             col_name = "玄学_最近6天连续阳线" if "玄学_最近6天连续阳线" in trend_df.columns else "玄学_连续6天阳线"
             mystic_mask = trend_df.get(col_name, pd.Series([False] * len(trend_df)))
         
@@ -241,14 +275,21 @@ class XuanxueCombiner:
         else:
             candidates = trend_df[mystic_mask].copy()
         
-        # 添加优先级列
-        callback_col = "玄学_今天阴线且前6天连阳(回调)" if "玄学_今天阴线且前6天连阳(回调)" in trend_df.columns else "玄学_今天为跌且7天刚好6涨1跌"
+        # 添加优先级列（根据mode选择对应的列）
+        if mode in ["6up1down_tolerant", "6up_tolerant"]:
+            # 容忍版的优先级列
+            callback_col = "玄学_今天小跌且前6天连涨(买入机会)"
+            wait_col = "玄学_今天是第6天涨(等待)"
+        else:
+            # 原版的优先级列
+            callback_col = "玄学_今天阴线且前6天连阳(回调)" if "玄学_今天阴线且前6天连阳(回调)" in trend_df.columns else "玄学_今天为跌且7天刚好6涨1跌"
+            wait_col = "玄学_今天是第6天阳线(等待)" if "玄学_今天是第6天阳线(等待)" in trend_df.columns else ("玄学_今天是第6天阳线(追涨)" if "玄学_今天是第6天阳线(追涨)" in trend_df.columns else "玄学_今天为涨且7天刚好6涨1跌")
+        
         if callback_col in trend_df.columns:
             candidates["回调买点"] = trend_df.loc[candidates.index, callback_col].map(to_bool)
         else:
             candidates["回调买点"] = False
         
-        wait_col = "玄学_今天是第6天阳线(等待)" if "玄学_今天是第6天阳线(等待)" in trend_df.columns else ("玄学_今天是第6天阳线(追涨)" if "玄学_今天是第6天阳线(追涨)" in trend_df.columns else "玄学_今天为涨且7天刚好6涨1跌")
         if wait_col in trend_df.columns:
             candidates["等待买点"] = trend_df.loc[candidates.index, wait_col].map(to_bool)
         else:
@@ -336,7 +377,13 @@ class XuanxueCombiner:
         """保存CSV"""
         out_cols = [
             "代码", "名称", "板块", "行业", "最新日期", "最新价",
+            # 原版玄学指标
             "玄学_近10天6涨1跌", "玄学_连续6天阳线",
+            "玄学_10天内有6连阳后1阴", "玄学_最近6天连续阳线",
+            # 容忍版玄学指标
+            "玄学_10天内有6连涨后1跌(容忍小跌)", "玄学_最近6天连续涨(容忍小跌)",
+            "玄学_今天小跌且前6天连涨(买入机会)", "玄学_今天是第6天涨(等待)",
+            # 优先级和信号
             "回调买点", "等待买点",
             "趋势跟随_是否信号", "上升回撤_是否信号", "波动收缩突破_是否信号",
             "稳步上升_是否信号", "网格突破_是否信号",

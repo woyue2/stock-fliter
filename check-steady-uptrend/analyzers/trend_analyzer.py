@@ -20,6 +20,11 @@ import pandas as pd
 
 from data_loader import iter_stock_items, load_daily_data
 from mystic_indicators import compute_all_mystic_indicators, MYSTIC_COLUMN_MAP
+from mystic_indicators_tolerant import (
+    compute_all_mystic_indicators_tolerant,
+    MYSTIC_COLUMN_MAP_TOLERANT,
+    DEFAULT_SMALL_DROP_THRESHOLD
+)
 
 try:
     from tqdm import tqdm
@@ -225,10 +230,16 @@ class TrendAnalyzer:
             "最新价": float(close_series.iloc[-1]),
         }
         
-        # 玄学指标
+        # 玄学指标（原版：严格6连阳）
         if self.include_mystic and open_series is not None:
             mystic_results = compute_all_mystic_indicators(open_series, close_series, lookback_days=10)
             result.update(mystic_results)
+            
+            # 玄学指标（容忍版：允许小跌）
+            mystic_tolerant_results = compute_all_mystic_indicators_tolerant(
+                open_series, close_series, lookback_days=10, small_drop_threshold=DEFAULT_SMALL_DROP_THRESHOLD
+            )
+            result.update(mystic_tolerant_results)
         
         # 趋势规则信号
         for rule, cn_name in [
@@ -250,7 +261,12 @@ class TrendAnalyzer:
     def _rename_mystic_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """将玄学列重命名为中文"""
         rename_map = {}
+        # 原版玄学指标
         for eng_name, cn_name in MYSTIC_COLUMN_MAP.items():
+            if eng_name in df.columns:
+                rename_map[eng_name] = cn_name
+        # 容忍版玄学指标
+        for eng_name, cn_name in MYSTIC_COLUMN_MAP_TOLERANT.items():
             if eng_name in df.columns:
                 rename_map[eng_name] = cn_name
         return df.rename(columns=rename_map)
