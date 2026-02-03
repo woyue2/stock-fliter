@@ -1,0 +1,11 @@
+# Core runtime dependencies (PlanToDeploy 专用)
+flask
+flask-cors
+pandas
+numpy
+requests
+tqdm
+baostock
+akshare
+gunicorn
+

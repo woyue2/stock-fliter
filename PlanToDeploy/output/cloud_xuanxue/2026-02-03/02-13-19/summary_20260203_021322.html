@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>股票筛选总览 - 2026-02-03</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+    }
+    .sidebar {
+      width: 450px;
+      min-width: 400px;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 16px;
+      box-sizing: border-box;
+      border-right: 1px solid #e0e0e0;
+      background: #fafafa;
+      flex-shrink: 0;
+    }
+    .main {
+      flex: 1;
+      height: 100vh;
+      min-width: 0;
+    }
+    .main iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    h1 { margin-bottom: 8px; color: #1a1a1a; font-size: 1.4em; }
+    h2 { color: #333; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; font-size: 1.1em; margin-top: 20px; }
+    .timestamp { color: #666; font-size: 0.85em; }
+    ul { padding-left: 20px; margin: 8px 0; }
+    li { margin: 5px 0; }
+    li.empty-combo { color: #999; }
+    a { color: #1a73e8; text-decoration: none; cursor: pointer; }
+    a:hover { text-decoration: underline; }
+    .combo-link { font-weight: bold; }
+    .priority { margin-top: 16px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 0.85em; }
+    .priority h3 { margin: 0 0 6px 0; font-size: 0.95em; }
+    .priority ul { padding-left: 16px; margin: 0; }
+    .priority li { margin: 3px 0; }
+    
+    /* 已勾选股票区域 */
+    .checked-section {
+      margin-top: 16px;
+      padding: 12px;
+      background: #e8f5e9;
+      border-radius: 8px;
+      border: 1px solid #c8e6c9;
+    }
+    .checked-section h3 {
+      margin: 0 0 10px 0;
+      font-size: 1em;
+      color: #2e7d32;
+    }
+    .checked-section .empty {
+      color: #666;
+      font-style: italic;
+      padding: 8px 0;
+    }
+    .checked-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .checked-list li {
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      margin: 6px 0;
+      background: #fff;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    .checked-list li.highlighted {
+      background: #fff9c4;
+      border-color: #fbc02d;
+    }
+    .checked-list .stock-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .checked-list .stock-info {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .checked-list .stock-info a {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .checked-list .code {
+      font-family: monospace;
+      background: #e8f0fe;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .checked-list .source {
+      font-size: 0.7em;
+      color: #666;
+      background: #f5f5f5;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .checked-list .industry {
+      font-size: 0.7em;
+      color: #1565c0;
+      background: #e3f2fd;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .checked-list .badge {
+      font-size: 0.7em;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .checked-list .badge.buy {
+      background: #fce4ec;
+      color: #c62828;
+    }
+    .checked-list .badge.wait {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    .checked-list .remove-btn {
+      background: #ffebee;
+      border: none;
+      color: #c62828;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      flex-shrink: 0;
+    }
+    .checked-list .remove-btn:hover {
+      background: #ffcdd2;
+    }
+    /* 备注区域 */
+    .checked-list .note-row {
+      margin-top: 6px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .checked-list .note-input {
+      flex: 1;
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.85em;
+      background: #fafafa;
+    }
+    .checked-list .note-input:focus {
+      outline: none;
+      border-color: #1a73e8;
+      background: #fff;
+    }
+    .checked-list .note-display {
+      font-size: 0.85em;
+      color: #555;
+      background: #f5f5f5;
+      padding: 4px 8px;
+      border-radius: 4px;
+      flex: 1;
+      cursor: pointer;
+    }
+    .checked-list .note-display:hover {
+      background: #e8e8e8;
+    }
+    .clear-all-btn {
+      margin-top: 10px;
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      color: #c62828;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85em;
+    }
+    .clear-all-btn:hover {
+      background: #ffcdd2;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .sidebar { background: #1a1a1a; border-color: #333; }
+      h1 { color: #fff; }
+      h2 { color: #ccc; border-color: #444; }
+      .timestamp { color: #999; }
+      a { color: #8ab4f8; }
+      .priority { background: #2a2a2a; }
+      .checked-section { background: #1b3320; border-color: #2e7d32; }
+      .checked-section h3 { color: #81c784; }
+      .checked-list li { background: #2a2a2a; border-color: #444; }
+      .checked-list li.highlighted { background: #3e3a1a; border-color: #f9a825; }
+      .checked-list .code { background: #303030; color: #8ab4f8; }
+      .checked-list .source { background: #333; color: #999; }
+      .checked-list .industry { background: #1e3a5f; color: #90caf9; }
+      .checked-list .note-input { background: #333; border-color: #555; color: #eee; }
+      .checked-list .note-display { background: #333; color: #ccc; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h1>[CHART] 股票筛选总览</h1>
+    <p class="timestamp">生成时间: 2026-02-04 02:13:22</p>
+    
+    <h2>📋 组合筛选结果</h2>
+    <ul>
+      <li class="empty-combo"><strong>xuanxue_134_6</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_134_61</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_13_6</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_13_61</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_3_6</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_3_61</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_34_6</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_34_61</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_14_6</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_14_61</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_1_6</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_1_61</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_4_6</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_4_61</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_134_6t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_134_61t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_13_6t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_13_61t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_3_6t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_3_61t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_34_6t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_34_61t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_14_6t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_14_61t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_1_6t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_1_61t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_4_6t</strong>: 0 只</li><li class="empty-combo"><strong>xuanxue_4_61t</strong>: 0 只</li>
+    </ul>
+    
+    <div class="checked-section">
+      <h3>[OK] 已勾选股票 (<span id="checkedCount">0</span>)</h3>
+      <ul id="checkedList" class="checked-list">
+        <li class="empty">暂无勾选股票</li>
+      </ul>
+      <button id="clearAllBtn" class="clear-all-btn" style="display:none;">清空所有勾选</button>
+    </div>
+    
+    <div class="priority">
+      <h3>📌 优先级说明</h3>
+      <ul>
+        <li><strong>[STAR]买入</strong>: 6连阳后阴线，立即买入</li>
+        <li><strong>[STAR]等待</strong>: 第6天阳线，等回调</li>
+      </ul>
+    </div>
+  </div>
+  <div class="main">
+    <iframe id="mainFrame" name="mainFrame" src="about:blank"></iframe>
+  </div>
+  
+  <script>
+    const STORAGE_KEY = 'stock_checked_list';
+    const STORAGE_EXPIRY_KEY = 'stock_checked_expiry';
+    const EXPIRY_HOURS = 24;
+    const COMBO_FILES = {};
+    
+    // 加载组合HTML到iframe
+    function loadCombo(filename) {
+      document.getElementById('mainFrame').src = filename;
+    }
+    
+    function checkExpiry() {
+      const expiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+      if (expiry && Date.now() > parseInt(expiry)) {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_EXPIRY_KEY);
+      }
+    }
+    
+    function getCheckedStocks() {
+      checkExpiry();
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : {};
+    }
+    
+    function saveCheckedStocks(stocks) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stocks));
+      const expiry = Date.now() + EXPIRY_HOURS * 60 * 60 * 1000;
+      localStorage.setItem(STORAGE_EXPIRY_KEY, expiry.toString());
+    }
+    
+    function getEastMoneyUrl(code) {
+      const prefix = code.startsWith('6') ? '1.' : '0.';
+      return `https://quote.eastmoney.com/concept/${prefix}${code}.html`;
+    }
+    
+    // 保存备注
+    function saveNote(code, note) {
+      const stocks = getCheckedStocks();
+      if (stocks[code]) {
+        stocks[code].note = note;
+        saveCheckedStocks(stocks);
+      }
+    }
+    
+    // 查看股票详情
+    function viewStock(code) {
+      const url = getEastMoneyUrl(code);
+      document.getElementById('mainFrame').src = url;
+    }
+    
+    function renderCheckedList() {
+      const stocks = getCheckedStocks();
+      const list = document.getElementById('checkedList');
+      const countEl = document.getElementById('checkedCount');
+      const clearBtn = document.getElementById('clearAllBtn');
+      
+      const entries = Object.entries(stocks);
+      countEl.textContent = entries.length;
+      
+      if (entries.length === 0) {
+        list.innerHTML = '<li class="empty">暂无勾选股票</li>';
+        clearBtn.style.display = 'none';
+        return;
+      }
+      
+      clearBtn.style.display = 'block';
+      entries.sort((a, b) => (b[1].time || 0) - (a[1].time || 0));
+      
+      list.innerHTML = entries.map(([code, info]) => {
+        let badge = '';
+        if (info.priority === '[STAR]买入') {
+          badge = '<span class="badge buy">[STAR]买入</span>';
+        } else if (info.priority === '[STAR]等待') {
+          badge = '<span class="badge wait">[STAR]等待</span>';
+        }
+        const industryDisplay = info.industry ? `<span class="industry">${info.industry}</span>` : '';
+        const noteVal = (info.note || '').replace(/"/g, '&quot;');
+        const noteDisplay = info.note ? `<div class="note-display" onclick="editNote('${code}')">${info.note}</div>` : '';
+        
+        return `
+          <li data-code="${code}" class="highlighted">
+            <div class="stock-row">
+              <div class="stock-info">
+                <a onclick="viewStock('${code}')">
+                  <span class="code">${code}</span> ${info.name || ''}
+                </a>
+                ${badge}
+                ${industryDisplay}
+                <span class="source">${info.source || ''}</span>
+              </div>
+              <button class="remove-btn" onclick="removeStock('${code}')">移除</button>
+            </div>
+            <div class="note-row" id="note-row-${code}">
+              ${noteDisplay || `<input type="text" class="note-input" placeholder="添加备注..." value="${noteVal}" onblur="saveNoteFromInput('${code}', this)" onkeydown="if(event.key==='Enter')this.blur()">`}
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+    
+    function editNote(code) {
+      const stocks = getCheckedStocks();
+      const info = stocks[code];
+      if (!info) return;
+      const noteRow = document.getElementById('note-row-' + code);
+      const noteVal = (info.note || '').replace(/"/g, '&quot;');
+      noteRow.innerHTML = `<input type="text" class="note-input" value="${noteVal}" onblur="saveNoteFromInput('${code}', this)" onkeydown="if(event.key==='Enter')this.blur()" autofocus>`;
+      noteRow.querySelector('input').focus();
+    }
+    
+    function saveNoteFromInput(code, input) {
+      saveNote(code, input.value.trim());
+      renderCheckedList();
+    }
+    
+    function removeStock(code) {
+      const stocks = getCheckedStocks();
+      delete stocks[code];
+      saveCheckedStocks(stocks);
+      renderCheckedList();
+    }
+    
+    document.getElementById('clearAllBtn').addEventListener('click', () => {
+      if (confirm('确定清空所有勾选股票？')) {
+        saveCheckedStocks({});
+        renderCheckedList();
+      }
+    });
+    
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY) {
+        renderCheckedList();
+      }
+    });
+    
+    renderCheckedList();
+  </script>
+</body>
+</html>

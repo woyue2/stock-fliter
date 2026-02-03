@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>xuanxue_3_61t</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+    }
+    .sidebar {
+      width: 380px;
+      min-width: 340px;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 14px;
+      box-sizing: border-box;
+      border-right: 1px solid #e0e0e0;
+      background: #fafafa;
+      flex-shrink: 0;
+    }
+    .sidebar h1 {
+      font-size: 1.1em;
+      margin: 0 0 6px 0;
+    }
+    .sidebar .nav-links {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      gap: 8px;
+    }
+    .sidebar .nav-links a {
+      display: inline-block;
+      padding: 5px 10px;
+      background: #e3f2fd;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #1565c0;
+      font-size: 0.85em;
+    }
+    .sidebar .nav-links a:hover {
+      background: #bbdefb;
+    }
+    .sidebar .count {
+      color: #666;
+      font-size: 0.85em;
+      margin-bottom: 6px;
+    }
+    .sidebar .checked-info {
+      font-size: 0.8em;
+      color: #2e7d32;
+      background: #e8f5e9;
+      padding: 5px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .sidebar .stats-section {
+      margin: 10px 0;
+      padding: 10px;
+      background: #e3f2fd;
+      border-radius: 6px;
+      border: 1px solid #bbdefb;
+      font-size: 0.85em;
+    }
+    .sidebar .stats-section h3 {
+      margin: 0 0 8px 0;
+      font-size: 0.95em;
+      color: #1565c0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9em;
+      margin-top: 6px;
+    }
+    .sidebar .stats-table th,
+    .sidebar .stats-table td {
+      padding: 4px 6px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .sidebar .stats-table th {
+      background: #bbdefb;
+      font-weight: 600;
+      font-size: 0.85em;
+    }
+    .sidebar .stats-table tr:hover {
+      background: #e1f5fe;
+    }
+    .sidebar .stats-table .pct {
+      color: #1565c0;
+      font-weight: 500;
+    }
+    .sidebar .collapse-btn {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.75em;
+    }
+    .sidebar .collapse-btn:hover {
+      background: #1557b0;
+    }
+    .sidebar .stats-content {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .sidebar .stats-content.collapsed {
+      display: none;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .sidebar > ul > li {
+      margin: 3px 0;
+      padding: 3px 0;
+      font-size: 0.9em;
+    }
+    .sidebar li.checked {
+      background: #fff9c4;
+      border-radius: 4px;
+      padding: 3px 6px;
+      margin: 3px -6px;
+    }
+    .sidebar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .sidebar a {
+      text-decoration: none;
+      color: #1a73e8;
+    }
+    .sidebar a:hover {
+      text-decoration: underline;
+    }
+    .sidebar .code {
+      font-family: monospace;
+      background: #e8f0fe;
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .sidebar .board {
+      color: #666;
+      font-size: 0.8em;
+    }
+    .sidebar .industry {
+      color: #1565c0;
+      font-size: 0.75em;
+      font-style: italic;
+    }
+    .sidebar .badge {
+      font-size: 0.7em;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 3px;
+    }
+    .sidebar .badge.buy {
+      background: #fce4ec;
+      color: #c62828;
+    }
+    .sidebar .badge.wait {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    .main {
+      flex: 1;
+      height: 100vh;
+      min-width: 0;
+    }
+    .main iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      .sidebar {
+        background: #1a1a1a;
+        border-color: #333;
+      }
+      .sidebar h1 {
+        color: #fff;
+      }
+      .sidebar .nav-links {
+        border-color: #444;
+      }
+      .sidebar .nav-links a {
+        background: #1e3a5f;
+        color: #90caf9;
+      }
+      .sidebar .nav-links a:hover {
+        background: #2a4a6f;
+      }
+      .sidebar .count {
+        color: #999;
+      }
+      .sidebar .checked-info {
+        background: #1b3320;
+        color: #81c784;
+      }
+      .sidebar li.checked {
+        background: #3e3a1a;
+      }
+      .sidebar a {
+        color: #8ab4f8;
+      }
+      .sidebar .code {
+        background: #303030;
+        color: #8ab4f8;
+      }
+      .sidebar .board {
+        color: #999;
+      }
+      .sidebar .industry {
+        color: #90caf9;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="nav-links">
+      <a href="summary_20260203_021806.html">[CHART] 总览</a>
+    </div>
+    <h1>xuanxue_3_61t</h1>
+    <div class="count">25 只股票</div>
+    <div class="checked-info">已勾选: <span id="checkedCount">0</span> 只</div>
+    
+    <div class="stats-section">
+      <h3>[CHART] 板块分布 <button class="collapse-btn" onclick="toggleStats('boardStats')">收起</button></h3>
+      <div class="stats-content" id="boardStats">
+        <table class="stats-table">
+          <thead><tr><th>板块</th><th>数量</th><th>占比</th></tr></thead>
+          <tbody><tr><td>上海主板</td><td>25</td><td class="pct">100.0%</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <h3>🏭 行业分布 <button class="collapse-btn" onclick="toggleStats('industryStats')">收起</button></h3>
+      <div class="stats-content" id="industryStats">
+        <table class="stats-table">
+          <thead><tr><th>行业</th><th>数量</th><th>占比</th></tr></thead>
+          <tbody><tr><td>C31黑色金属冶炼和压延加工业</td><td>3</td><td class="pct">12.0%</td></tr><tr><td>C26化学原料和化学制品制造业</td><td>3</td><td class="pct">12.0%</td></tr><tr><td>G55水上运输业</td><td>2</td><td class="pct">8.0%</td></tr><tr><td>G54道路运输业</td><td>2</td><td class="pct">8.0%</td></tr><tr><td>I63电信、广播电视和卫星传输服务</td><td>2</td><td class="pct">8.0%</td></tr><tr><td>C15酒、饮料和精制茶制造业</td><td>2</td><td class="pct">8.0%</td></tr><tr><td>J67资本市场服务</td><td>2</td><td class="pct">8.0%</td></tr><tr><td>D44电力、热力生产和供应业</td><td>2</td><td class="pct">8.0%</td></tr><tr><td>C37铁路、船舶、航空航天和其他运输设备制造业</td><td>1</td><td class="pct">4.0%</td></tr><tr><td>K70房地产业</td><td>1</td><td class="pct">4.0%</td></tr></tbody>
+        </table>
+        <p style='font-size:0.85em;color:#666;margin:6px 0 0 0;'>*其他 5 个行业共 5 只，占比 20.0%*</p>
+      </div>
+    </div>
+    <ul id="stockList">
+        <li data-code="600010" data-name="包钢股份" data-board="上海主板" data-industry="C31黑色金属冶炼和压延加工业" data-priority=""><label><input type="checkbox" data-stock="600010" /> <a href="https://quote.eastmoney.com/sh600010.html" target="quoteFrame"><span class="code">600010</span> - 包钢股份 <span class="industry">(C31黑色金属冶炼和压延加工业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600017" data-name="日照港" data-board="上海主板" data-industry="G55水上运输业" data-priority=""><label><input type="checkbox" data-stock="600017" /> <a href="https://quote.eastmoney.com/sh600017.html" target="quoteFrame"><span class="code">600017</span> - 日照港 <span class="industry">(G55水上运输业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600020" data-name="中原高速" data-board="上海主板" data-industry="G54道路运输业" data-priority=""><label><input type="checkbox" data-stock="600020" /> <a href="https://quote.eastmoney.com/sh600020.html" target="quoteFrame"><span class="code">600020</span> - 中原高速 <span class="industry">(G54道路运输业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600022" data-name="山东钢铁" data-board="上海主板" data-industry="C31黑色金属冶炼和压延加工业" data-priority=""><label><input type="checkbox" data-stock="600022" /> <a href="https://quote.eastmoney.com/sh600022.html" target="quoteFrame"><span class="code">600022</span> - 山东钢铁 <span class="industry">(C31黑色金属冶炼和压延加工业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600026" data-name="中远海能" data-board="上海主板" data-industry="G55水上运输业" data-priority=""><label><input type="checkbox" data-stock="600026" /> <a href="https://quote.eastmoney.com/sh600026.html" target="quoteFrame"><span class="code">600026</span> - 中远海能 <span class="industry">(G55水上运输业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600033" data-name="福建高速" data-board="上海主板" data-industry="G54道路运输业" data-priority=""><label><input type="checkbox" data-stock="600033" /> <a href="https://quote.eastmoney.com/sh600033.html" target="quoteFrame"><span class="code">600033</span> - 福建高速 <span class="industry">(G54道路运输业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600037" data-name="歌华有线" data-board="上海主板" data-industry="I63电信、广播电视和卫星传输服务" data-priority=""><label><input type="checkbox" data-stock="600037" /> <a href="https://quote.eastmoney.com/sh600037.html" target="quoteFrame"><span class="code">600037</span> - 歌华有线 <span class="industry">(I63电信、广播电视和卫星传输服务)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600038" data-name="中直股份" data-board="上海主板" data-industry="C37铁路、船舶、航空航天和其他运输设备制造业" data-priority=""><label><input type="checkbox" data-stock="600038" /> <a href="https://quote.eastmoney.com/sh600038.html" target="quoteFrame"><span class="code">600038</span> - 中直股份 <span class="industry">(C37铁路、船舶、航空航天和其他运输设备制造业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600050" data-name="中国联通" data-board="上海主板" data-industry="I63电信、广播电视和卫星传输服务" data-priority=""><label><input type="checkbox" data-stock="600050" /> <a href="https://quote.eastmoney.com/sh600050.html" target="quoteFrame"><span class="code">600050</span> - 中国联通 <span class="industry">(I63电信、广播电视和卫星传输服务)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600059" data-name="古越龙山" data-board="上海主板" data-industry="C15酒、饮料和精制茶制造业" data-priority=""><label><input type="checkbox" data-stock="600059" /> <a href="https://quote.eastmoney.com/sh600059.html" target="quoteFrame"><span class="code">600059</span> - 古越龙山 <span class="industry">(C15酒、饮料和精制茶制造业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600063" data-name="皖维高新" data-board="上海主板" data-industry="C26化学原料和化学制品制造业" data-priority=""><label><input type="checkbox" data-stock="600063" /> <a href="https://quote.eastmoney.com/sh600063.html" target="quoteFrame"><span class="code">600063</span> - 皖维高新 <span class="industry">(C26化学原料和化学制品制造业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600064" data-name="南京高科" data-board="上海主板" data-industry="K70房地产业" data-priority=""><label><input type="checkbox" data-stock="600064" /> <a href="https://quote.eastmoney.com/sh600064.html" target="quoteFrame"><span class="code">600064</span> - 南京高科 <span class="industry">(K70房地产业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600075" data-name="新疆天业" data-board="上海主板" data-industry="C26化学原料和化学制品制造业" data-priority=""><label><input type="checkbox" data-stock="600075" /> <a href="https://quote.eastmoney.com/sh600075.html" target="quoteFrame"><span class="code">600075</span> - 新疆天业 <span class="industry">(C26化学原料和化学制品制造业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600095" data-name="湘财股份" data-board="上海主板" data-industry="J67资本市场服务" data-priority=""><label><input type="checkbox" data-stock="600095" /> <a href="https://quote.eastmoney.com/sh600095.html" target="quoteFrame"><span class="code">600095</span> - 湘财股份 <span class="industry">(J67资本市场服务)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600096" data-name="云天化" data-board="上海主板" data-industry="C26化学原料和化学制品制造业" data-priority=""><label><input type="checkbox" data-stock="600096" /> <a href="https://quote.eastmoney.com/sh600096.html" target="quoteFrame"><span class="code">600096</span> - 云天化 <span class="industry">(C26化学原料和化学制品制造业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600097" data-name="开创国际" data-board="上海主板" data-industry="A04渔业" data-priority=""><label><input type="checkbox" data-stock="600097" /> <a href="https://quote.eastmoney.com/sh600097.html" target="quoteFrame"><span class="code">600097</span> - 开创国际 <span class="industry">(A04渔业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600098" data-name="广州发展" data-board="上海主板" data-industry="D44电力、热力生产和供应业" data-priority=""><label><input type="checkbox" data-stock="600098" /> <a href="https://quote.eastmoney.com/sh600098.html" target="quoteFrame"><span class="code">600098</span> - 广州发展 <span class="industry">(D44电力、热力生产和供应业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600109" data-name="国金证券" data-board="上海主板" data-industry="J67资本市场服务" data-priority=""><label><input type="checkbox" data-stock="600109" /> <a href="https://quote.eastmoney.com/sh600109.html" target="quoteFrame"><span class="code">600109</span> - 国金证券 <span class="industry">(J67资本市场服务)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600116" data-name="三峡水利" data-board="上海主板" data-industry="D44电力、热力生产和供应业" data-priority=""><label><input type="checkbox" data-stock="600116" /> <a href="https://quote.eastmoney.com/sh600116.html" target="quoteFrame"><span class="code">600116</span> - 三峡水利 <span class="industry">(D44电力、热力生产和供应业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600125" data-name="铁龙物流" data-board="上海主板" data-industry="G53铁路运输业" data-priority=""><label><input type="checkbox" data-stock="600125" /> <a href="https://quote.eastmoney.com/sh600125.html" target="quoteFrame"><span class="code">600125</span> - 铁龙物流 <span class="industry">(G53铁路运输业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600126" data-name="杭钢股份" data-board="上海主板" data-industry="C31黑色金属冶炼和压延加工业" data-priority=""><label><input type="checkbox" data-stock="600126" /> <a href="https://quote.eastmoney.com/sh600126.html" target="quoteFrame"><span class="code">600126</span> - 杭钢股份 <span class="industry">(C31黑色金属冶炼和压延加工业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600127" data-name="金健米业" data-board="上海主板" data-industry="C13农副食品加工业" data-priority=""><label><input type="checkbox" data-stock="600127" /> <a href="https://quote.eastmoney.com/sh600127.html" target="quoteFrame"><span class="code">600127</span> - 金健米业 <span class="industry">(C13农副食品加工业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600128" data-name="苏豪弘业" data-board="上海主板" data-industry="F51批发业" data-priority=""><label><input type="checkbox" data-stock="600128" /> <a href="https://quote.eastmoney.com/sh600128.html" target="quoteFrame"><span class="code">600128</span> - 苏豪弘业 <span class="industry">(F51批发业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600132" data-name="重庆啤酒" data-board="上海主板" data-industry="C15酒、饮料和精制茶制造业" data-priority=""><label><input type="checkbox" data-stock="600132" /> <a href="https://quote.eastmoney.com/sh600132.html" target="quoteFrame"><span class="code">600132</span> - 重庆啤酒 <span class="industry">(C15酒、饮料和精制茶制造业)</span> <span class="board">上海主板</span></a></label></li>
+        <li data-code="600137" data-name="浪莎股份" data-board="上海主板" data-industry="C18纺织服装、服饰业" data-priority=""><label><input type="checkbox" data-stock="600137" /> <a href="https://quote.eastmoney.com/sh600137.html" target="quoteFrame"><span class="code">600137</span> - 浪莎股份 <span class="industry">(C18纺织服装、服饰业)</span> <span class="board">上海主板</span></a></label></li>
+    </ul>
+  </div>
+  <div class="main">
+    <iframe name="quoteFrame" src="https://quote.eastmoney.com/sh600010.html"></iframe>
+  </div>
+  
+  <script>
+    const STORAGE_KEY = 'stock_checked_list';
+    const STORAGE_EXPIRY_KEY = 'stock_checked_expiry';
+    const EXPIRY_HOURS = 24;
+    const COMBO_NAME = 'xuanxue_3_61t';
+    
+    // 折叠/展开统计区域
+    function toggleStats(sectionId) {
+      const content = document.getElementById(sectionId);
+      const btn = content.previousElementSibling.querySelector('.collapse-btn');
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        btn.textContent = '收起';
+      } else {
+        content.classList.add('collapsed');
+        btn.textContent = '展开';
+      }
+    }
+    
+    function checkExpiry() {
+      const expiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+      if (expiry && Date.now() > parseInt(expiry)) {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_EXPIRY_KEY);
+      }
+    }
+    
+    function getCheckedStocks() {
+      checkExpiry();
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : {};
+    }
+    
+    function saveCheckedStocks(stocks) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stocks));
+      const expiry = Date.now() + EXPIRY_HOURS * 60 * 60 * 1000;
+      localStorage.setItem(STORAGE_EXPIRY_KEY, expiry.toString());
+    }
+    
+    function updateCheckedCount() {
+      const stocks = getCheckedStocks();
+      document.getElementById('checkedCount').textContent = Object.keys(stocks).length;
+    }
+    
+    function initCheckboxes() {
+      const stocks = getCheckedStocks();
+      const items = document.querySelectorAll('#stockList li');
+      
+      items.forEach(li => {
+        const code = li.dataset.code;
+        const checkbox = li.querySelector('input[type="checkbox"]');
+        
+        if (stocks[code]) {
+          checkbox.checked = true;
+          li.classList.add('checked');
+        }
+        
+        checkbox.addEventListener('change', (e) => {
+          const checked = e.target.checked;
+          const currentStocks = getCheckedStocks();
+          
+          if (checked) {
+            currentStocks[code] = {
+              name: li.dataset.name || '',
+              board: li.dataset.board || '',
+              industry: li.dataset.industry || '',
+              priority: li.dataset.priority || '',
+              source: COMBO_NAME,
+              time: Date.now(),
+              note: ''
+            };
+            li.classList.add('checked');
+          } else {
+            delete currentStocks[code];
+            li.classList.remove('checked');
+          }
+          
+          saveCheckedStocks(currentStocks);
+          updateCheckedCount();
+        });
+      });
+      
+      updateCheckedCount();
+    }
+    
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY) {
+        initCheckboxes();
+      }
+    });
+    
+    initCheckboxes();
+  </script>
+</body>
+</html>

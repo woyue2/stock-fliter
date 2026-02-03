@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  stock-cloud:
+    build: .
+    container_name: stock-cloud
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+    environment:
+      # 使用 PlanToDeploy 内部的 api_server 作为入口
+      API_APP_MODULE: "api_server:app"
+      # 如需在容器内启用每日自动运行 Runner, 可取消下方注释并按需调整时间:
+      # AUTO_RUN_ENABLED: "1"
+      # AUTO_RUN_HOUR: "3"
+      # AUTO_RUN_MINUTE: "0"
+

@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>TD9或MACD金叉</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            font-size: 13px;
+            color: #333;
+            background: #fff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .left-panel {
+            width: 35%;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+        }
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fafafa;
+        }
+        .right-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stock-frame {
+            flex: 1;
+            border: none;
+            width: 100%;
+        }
+        .placeholder {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+        .header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .count {
+            color: #666;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn:hover {
+            background: #f5f5f5;
+        }
+        .search {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 150px;
+        }
+        .stats {
+            padding: 12px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .stats-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .stats-label {
+            font-size: 12px;
+            color: #999;
+            margin-right: 4px;
+        }
+        .tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #fafafa;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        tr.checked {
+            background: #e8f5e9;
+        }
+        .code {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        .code:hover {
+            text-decoration: underline;
+        }
+        .td {
+            font-weight: 600;
+            text-align: center;
+        }
+        .td-high { color: #d32f2f; }
+        .td-mid { color: #f57c00; }
+        .td-low { color: #999; }
+        .macd-strength {
+            text-align: center;
+            font-weight: 600;
+        }
+        .detail {
+            font-size: 11px;
+            color: #1976d2;
+        }
+        .table-wrap {
+            overflow: auto;
+            flex: 1;
+        }
+        .checked-info {
+            font-size: 12px;
+            color: #4caf50;
+        }
+        .open-new {
+            font-size: 11px;
+            color: #1976d2;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .open-new:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <div class="header">
+        <div>
+            <span class="title">TD9或MACD金叉</span>
+            <span class="count">共 79 只</span>
+        </div>
+        <div class="toolbar">
+            <span class="checked-info" id="checkedInfo">已选 0</span>
+            <button class="btn" onclick="selectAll()">全选</button>
+            <button class="btn" onclick="clearAll()">清除</button>
+            <button class="btn" onclick="exportCSV()">导出</button>
+            <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stats-group">
+            <span class="stats-label">板块:</span>
+            <span class="tag">创业板 33</span><span class="tag">上海主板 31</span><span class="tag">科创板 15</span>
+        </div>
+        <div class="stats-group">
+            <span class="stats-label">行业:</span>
+            <span class="tag">C39计算机、通信和其他电子设备制造业 15</span><span class="tag">C34通用设备制造业 9</span><span class="tag">C35专用设备制造业 7</span><span class="tag">C26化学原料和化学制品制造业 6</span><span class="tag">C36汽车制造业 6</span><span class="tag">C38电气机械和器材制造业 5</span><span class="tag">C27医药制造业 5</span><span class="tag">E48土木工程建筑业 3</span><span class="tag">C15酒、饮料和精制茶制造业 3</span><span class="tag">I65软件和信息技术服务业 3</span>
+        </div>
+    </div>
+    
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th width="30"></th>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>板块</th>
+                    <th>行业</th>
+                    <th>最新收盘</th>
+                    <th>最新日期</th>
+                    <th>稳步上升</th>
+                    <th>放量突破</th>
+                    <th>MACD金叉</th>
+                    <th>MACD强度</th>
+                    <th>TD计数</th>
+                    <th>所属策略</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                
+            <tr data-code="600011">
+                <td><input type="checkbox" class="check" data-code="600011" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600011.html')" class="code">600011</a></td>
+                <td>华能国际</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>6.85</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.1848</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600072">
+                <td><input type="checkbox" class="check" data-code="600072" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600072.html')" class="code">600072</a></td>
+                <td>中船科技</td>
+                <td>上海主板</td>
+                <td>E48土木工程建筑业</td>
+                <td>12.12</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0318</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600106">
+                <td><input type="checkbox" class="check" data-code="600106" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600106.html')" class="code">600106</a></td>
+                <td>重庆路桥</td>
+                <td>上海主板</td>
+                <td>G54道路运输业</td>
+                <td>6.37</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0096</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600241">
+                <td><input type="checkbox" class="check" data-code="600241" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600241.html')" class="code">600241</a></td>
+                <td>时代万恒</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>8.49</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0435</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600319">
+                <td><input type="checkbox" class="check" data-code="600319" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600319.html')" class="code">600319</a></td>
+                <td>亚星化学</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>7.95</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.2673</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600340">
+                <td><input type="checkbox" class="check" data-code="600340" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600340.html')" class="code">600340</a></td>
+                <td>华夏幸福</td>
+                <td>上海主板</td>
+                <td>K70房地产业</td>
+                <td>1.63</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.1721</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600592">
+                <td><input type="checkbox" class="check" data-code="600592" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600592.html')" class="code">600592</a></td>
+                <td>龙溪股份</td>
+                <td>上海主板</td>
+                <td>C34通用设备制造业</td>
+                <td>23.99</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.6177</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600600">
+                <td><input type="checkbox" class="check" data-code="600600" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600600.html')" class="code">600600</a></td>
+                <td>青岛啤酒</td>
+                <td>上海主板</td>
+                <td>C15酒、饮料和精制茶制造业</td>
+                <td>61.86</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.2706</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600815">
+                <td><input type="checkbox" class="check" data-code="600815" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600815.html')" class="code">600815</a></td>
+                <td>厦工股份</td>
+                <td>上海主板</td>
+                <td>C35专用设备制造业</td>
+                <td>3.15</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.1239</span></td>
+                <td class="td td-low">5</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600846">
+                <td><input type="checkbox" class="check" data-code="600846" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600846.html')" class="code">600846</a></td>
+                <td>同济科技</td>
+                <td>上海主板</td>
+                <td>E48土木工程建筑业</td>
+                <td>12.7</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.4372</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600853">
+                <td><input type="checkbox" class="check" data-code="600853" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600853.html')" class="code">600853</a></td>
+                <td>龙建股份</td>
+                <td>上海主板</td>
+                <td>E48土木工程建筑业</td>
+                <td>4.34</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.014</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="601138">
+                <td><input type="checkbox" class="check" data-code="601138" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601138.html')" class="code">601138</a></td>
+                <td>工业富联</td>
+                <td>上海主板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>55.75</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.341</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603042">
+                <td><input type="checkbox" class="check" data-code="603042" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603042.html')" class="code">603042</a></td>
+                <td>华脉科技</td>
+                <td>上海主板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>18.05</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0564</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603063">
+                <td><input type="checkbox" class="check" data-code="603063" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603063.html')" class="code">603063</a></td>
+                <td>禾望电气</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>29.64</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.7361</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603122">
+                <td><input type="checkbox" class="check" data-code="603122" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603122.html')" class="code">603122</a></td>
+                <td>合富中国</td>
+                <td>上海主板</td>
+                <td>F51批发业</td>
+                <td>18.36</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.3824</span></td>
+                <td class="td td-low">4</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603129">
+                <td><input type="checkbox" class="check" data-code="603129" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603129.html')" class="code">603129</a></td>
+                <td>春风动力</td>
+                <td>上海主板</td>
+                <td>C37铁路、船舶、航空航天和其他运输设备制造业</td>
+                <td>252.38</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-5.4476</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603156">
+                <td><input type="checkbox" class="check" data-code="603156" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603156.html')" class="code">603156</a></td>
+                <td>养元饮品</td>
+                <td>上海主板</td>
+                <td>C15酒、饮料和精制茶制造业</td>
+                <td>30.36</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.503</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603179">
+                <td><input type="checkbox" class="check" data-code="603179" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603179.html')" class="code">603179</a></td>
+                <td>新泉股份</td>
+                <td>上海主板</td>
+                <td>C36汽车制造业</td>
+                <td>87.1</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">3.2812</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603185">
+                <td><input type="checkbox" class="check" data-code="603185" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603185.html')" class="code">603185</a></td>
+                <td>弘元绿能</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>28.06</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.5073</span></td>
+                <td class="td td-low">4</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603277">
+                <td><input type="checkbox" class="check" data-code="603277" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603277.html')" class="code">603277</a></td>
+                <td>银都股份</td>
+                <td>上海主板</td>
+                <td>C34通用设备制造业</td>
+                <td>16.11</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.2477</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603373">
+                <td><input type="checkbox" class="check" data-code="603373" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603373.html')" class="code">603373</a></td>
+                <td>安邦护卫</td>
+                <td>上海主板</td>
+                <td>L72商务服务业</td>
+                <td>41.05</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td>✅</td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0372</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MACD金叉+放量突破,非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603416">
+                <td><input type="checkbox" class="check" data-code="603416" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603416.html')" class="code">603416</a></td>
+                <td>信捷电气</td>
+                <td>上海主板</td>
+                <td>C40仪器仪表制造业</td>
+                <td>55.55</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.5244</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603486">
+                <td><input type="checkbox" class="check" data-code="603486" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603486.html')" class="code">603486</a></td>
+                <td>科沃斯</td>
+                <td>上海主板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>71.87</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-2.4265</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603567">
+                <td><input type="checkbox" class="check" data-code="603567" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603567.html')" class="code">603567</a></td>
+                <td>珍宝岛</td>
+                <td>上海主板</td>
+                <td>C27医药制造业</td>
+                <td>8.5</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.3205</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603590">
+                <td><input type="checkbox" class="check" data-code="603590" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603590.html')" class="code">603590</a></td>
+                <td>康辰药业</td>
+                <td>上海主板</td>
+                <td>C27医药制造业</td>
+                <td>39.4</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.7059</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603711">
+                <td><input type="checkbox" class="check" data-code="603711" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603711.html')" class="code">603711</a></td>
+                <td>香飘飘</td>
+                <td>上海主板</td>
+                <td>C15酒、饮料和精制茶制造业</td>
+                <td>13.41</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.1805</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603800">
+                <td><input type="checkbox" class="check" data-code="603800" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603800.html')" class="code">603800</a></td>
+                <td>洪田股份</td>
+                <td>上海主板</td>
+                <td>C35专用设备制造业</td>
+                <td>39.8</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-2.3054</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603897">
+                <td><input type="checkbox" class="check" data-code="603897" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603897.html')" class="code">603897</a></td>
+                <td>长城科技</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>26.31</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.099</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="603903">
+                <td><input type="checkbox" class="check" data-code="603903" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603903.html')" class="code">603903</a></td>
+                <td>中持股份</td>
+                <td>上海主板</td>
+                <td>N77生态保护和环境治理业</td>
+                <td>12.21</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.5224</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="605188">
+                <td><input type="checkbox" class="check" data-code="605188" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh605188.html')" class="code">605188</a></td>
+                <td>国光连锁</td>
+                <td>上海主板</td>
+                <td>F52零售业</td>
+                <td>20.16</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.4007</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="605365">
+                <td><input type="checkbox" class="check" data-code="605365" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh605365.html')" class="code">605365</a></td>
+                <td>立达信</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>20.48</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.0965</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688029">
+                <td><input type="checkbox" class="check" data-code="688029" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688029.html')" class="code">688029</a></td>
+                <td>南微医学</td>
+                <td>科创板</td>
+                <td>C35专用设备制造业</td>
+                <td>79.86</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.1229</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688082">
+                <td><input type="checkbox" class="check" data-code="688082" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688082.html')" class="code">688082</a></td>
+                <td>盛美上海</td>
+                <td>科创板</td>
+                <td>C35专用设备制造业</td>
+                <td>181.98</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.8723</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688181">
+                <td><input type="checkbox" class="check" data-code="688181" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688181.html')" class="code">688181</a></td>
+                <td>八亿时空</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>33.8</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.1867</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688208">
+                <td><input type="checkbox" class="check" data-code="688208" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688208.html')" class="code">688208</a></td>
+                <td>道通科技</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>35.11</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.4003</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688266">
+                <td><input type="checkbox" class="check" data-code="688266" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688266.html')" class="code">688266</a></td>
+                <td>泽璟制药</td>
+                <td>科创板</td>
+                <td>C27医药制造业</td>
+                <td>86.67</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-3.2501</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688360">
+                <td><input type="checkbox" class="check" data-code="688360" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688360.html')" class="code">688360</a></td>
+                <td>德马科技</td>
+                <td>科创板</td>
+                <td>C34通用设备制造业</td>
+                <td>19.4</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.5143</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688383">
+                <td><input type="checkbox" class="check" data-code="688383" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688383.html')" class="code">688383</a></td>
+                <td>新益昌</td>
+                <td>科创板</td>
+                <td>C35专用设备制造业</td>
+                <td>74.21</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.2474</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688401">
+                <td><input type="checkbox" class="check" data-code="688401" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688401.html')" class="code">688401</a></td>
+                <td>路维光电</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>52.55</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0409</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688478">
+                <td><input type="checkbox" class="check" data-code="688478" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688478.html')" class="code">688478</a></td>
+                <td>晶升股份</td>
+                <td>科创板</td>
+                <td>C35专用设备制造业</td>
+                <td>36.27</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.3035</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688488">
+                <td><input type="checkbox" class="check" data-code="688488" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688488.html')" class="code">688488</a></td>
+                <td>艾迪药业</td>
+                <td>科创板</td>
+                <td>C27医药制造业</td>
+                <td>16.51</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1357</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688612">
+                <td><input type="checkbox" class="check" data-code="688612" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688612.html')" class="code">688612</a></td>
+                <td>威迈斯</td>
+                <td>科创板</td>
+                <td>C36汽车制造业</td>
+                <td>29.9</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.6723</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688697">
+                <td><input type="checkbox" class="check" data-code="688697" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688697.html')" class="code">688697</a></td>
+                <td>纽威数控</td>
+                <td>科创板</td>
+                <td>C34通用设备制造业</td>
+                <td>15.51</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0438</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688720">
+                <td><input type="checkbox" class="check" data-code="688720" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688720.html')" class="code">688720</a></td>
+                <td>艾森股份</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>73.03</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.6111</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688733">
+                <td><input type="checkbox" class="check" data-code="688733" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688733.html')" class="code">688733</a></td>
+                <td>壹石通</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>29.95</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.2825</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="688767">
+                <td><input type="checkbox" class="check" data-code="688767" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688767.html')" class="code">688767</a></td>
+                <td>博拓生物</td>
+                <td>科创板</td>
+                <td>C27医药制造业</td>
+                <td>34.98</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.5754</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300007">
+                <td><input type="checkbox" class="check" data-code="300007" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300007.html')" class="code">300007</a></td>
+                <td>汉威科技</td>
+                <td>创业板</td>
+                <td>I65软件和信息技术服务业</td>
+                <td>55.74</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3924</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300100">
+                <td><input type="checkbox" class="check" data-code="300100" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300100.html')" class="code">300100</a></td>
+                <td>双林股份</td>
+                <td>创业板</td>
+                <td>C36汽车制造业</td>
+                <td>35.49</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.7803</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300487">
+                <td><input type="checkbox" class="check" data-code="300487" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300487.html')" class="code">300487</a></td>
+                <td>蓝晓科技</td>
+                <td>创业板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>69.1</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.4373</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300607">
+                <td><input type="checkbox" class="check" data-code="300607" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300607.html')" class="code">300607</a></td>
+                <td>拓斯达</td>
+                <td>创业板</td>
+                <td>C34通用设备制造业</td>
+                <td>30.62</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.174</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300652">
+                <td><input type="checkbox" class="check" data-code="300652" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300652.html')" class="code">300652</a></td>
+                <td>雷迪克</td>
+                <td>创业板</td>
+                <td>C36汽车制造业</td>
+                <td>51.1</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.1937</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300655">
+                <td><input type="checkbox" class="check" data-code="300655" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300655.html')" class="code">300655</a></td>
+                <td>晶瑞电材</td>
+                <td>创业板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>17.48</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0006</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300709">
+                <td><input type="checkbox" class="check" data-code="300709" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300709.html')" class="code">300709</a></td>
+                <td>精研科技</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>40.12</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.035</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300791">
+                <td><input type="checkbox" class="check" data-code="300791" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300791.html')" class="code">300791</a></td>
+                <td>仙乐健康</td>
+                <td>创业板</td>
+                <td>C14食品制造业</td>
+                <td>22.14</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.4427</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300807">
+                <td><input type="checkbox" class="check" data-code="300807" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300807.html')" class="code">300807</a></td>
+                <td>天迈科技</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>54.6</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0934</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300866">
+                <td><input type="checkbox" class="check" data-code="300866" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300866.html')" class="code">300866</a></td>
+                <td>安克创新</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>99.48</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-2.8507</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300882">
+                <td><input type="checkbox" class="check" data-code="300882" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300882.html')" class="code">300882</a></td>
+                <td>万胜智能</td>
+                <td>创业板</td>
+                <td>C40仪器仪表制造业</td>
+                <td>22.65</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.6652</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300916">
+                <td><input type="checkbox" class="check" data-code="300916" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300916.html')" class="code">300916</a></td>
+                <td>朗特智能</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>31.44</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.7025</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300941">
+                <td><input type="checkbox" class="check" data-code="300941" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300941.html')" class="code">300941</a></td>
+                <td>创识科技</td>
+                <td>创业板</td>
+                <td>I65软件和信息技术服务业</td>
+                <td>23.04</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.6114</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300946">
+                <td><input type="checkbox" class="check" data-code="300946" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300946.html')" class="code">300946</a></td>
+                <td>恒而达</td>
+                <td>创业板</td>
+                <td>C33金属制品业</td>
+                <td>48.5</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.4503</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300984">
+                <td><input type="checkbox" class="check" data-code="300984" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300984.html')" class="code">300984</a></td>
+                <td>金沃股份</td>
+                <td>创业板</td>
+                <td>C34通用设备制造业</td>
+                <td>74.2</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3206</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300989">
+                <td><input type="checkbox" class="check" data-code="300989" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300989.html')" class="code">300989</a></td>
+                <td>蕾奥规划</td>
+                <td>创业板</td>
+                <td>M74专业技术服务业</td>
+                <td>16.47</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.3491</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="300990">
+                <td><input type="checkbox" class="check" data-code="300990" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300990.html')" class="code">300990</a></td>
+                <td>同飞股份</td>
+                <td>创业板</td>
+                <td>C34通用设备制造业</td>
+                <td>87.45</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3087</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301069">
+                <td><input type="checkbox" class="check" data-code="301069" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301069.html')" class="code">301069</a></td>
+                <td>凯盛新材</td>
+                <td>创业板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>24.52</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.7649</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301076">
+                <td><input type="checkbox" class="check" data-code="301076" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301076.html')" class="code">301076</a></td>
+                <td>新瀚新材</td>
+                <td>创业板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>44.01</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.5055</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301161">
+                <td><input type="checkbox" class="check" data-code="301161" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301161.html')" class="code">301161</a></td>
+                <td>唯万密封</td>
+                <td>创业板</td>
+                <td>C29橡胶和塑料制品业</td>
+                <td>36.53</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.4031</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301179">
+                <td><input type="checkbox" class="check" data-code="301179" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301179.html')" class="code">301179</a></td>
+                <td>泽宇智能</td>
+                <td>创业板</td>
+                <td>I65软件和信息技术服务业</td>
+                <td>17.22</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1972</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301227">
+                <td><input type="checkbox" class="check" data-code="301227" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301227.html')" class="code">301227</a></td>
+                <td>森鹰窗业</td>
+                <td>创业板</td>
+                <td>C20木材加工和木、竹、藤、棕、草制品业</td>
+                <td>34.19</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-2.9207</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301261">
+                <td><input type="checkbox" class="check" data-code="301261" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301261.html')" class="code">301261</a></td>
+                <td>恒工精密</td>
+                <td>创业板</td>
+                <td>C34通用设备制造业</td>
+                <td>89.54</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.4852</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301289">
+                <td><input type="checkbox" class="check" data-code="301289" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301289.html')" class="code">301289</a></td>
+                <td>国缆检测</td>
+                <td>创业板</td>
+                <td>M74专业技术服务业</td>
+                <td>59.75</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0351</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301369">
+                <td><input type="checkbox" class="check" data-code="301369" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301369.html')" class="code">301369</a></td>
+                <td>联动科技</td>
+                <td>创业板</td>
+                <td>C35专用设备制造业</td>
+                <td>120.49</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #d32f2f; font-weight: bold;">-1.4836</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301371">
+                <td><input type="checkbox" class="check" data-code="301371" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301371.html')" class="code">301371</a></td>
+                <td>敷尔佳</td>
+                <td>创业板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>24.8</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0377</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">非稳步上升+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301491">
+                <td><input type="checkbox" class="check" data-code="301491" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301491.html')" class="code">301491</a></td>
+                <td>汉桑科技</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>56.56</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.1837</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301539">
+                <td><input type="checkbox" class="check" data-code="301539" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301539.html')" class="code">301539</a></td>
+                <td>宏鑫科技</td>
+                <td>创业板</td>
+                <td>C36汽车制造业</td>
+                <td>21.25</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0833</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301550">
+                <td><input type="checkbox" class="check" data-code="301550" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301550.html')" class="code">301550</a></td>
+                <td>斯菱智驱</td>
+                <td>创业板</td>
+                <td>C36汽车制造业</td>
+                <td>164.5</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">8.2037</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301566">
+                <td><input type="checkbox" class="check" data-code="301566" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301566.html')" class="code">301566</a></td>
+                <td>达利凯普</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>21.32</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2636</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301575">
+                <td><input type="checkbox" class="check" data-code="301575" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301575.html')" class="code">301575</a></td>
+                <td>艾芬达</td>
+                <td>创业板</td>
+                <td>C33金属制品业</td>
+                <td>51.08</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0206</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301596">
+                <td><input type="checkbox" class="check" data-code="301596" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301596.html')" class="code">301596</a></td>
+                <td>瑞迪智驱</td>
+                <td>创业板</td>
+                <td>C34通用设备制造业</td>
+                <td>73.3</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #f57c00;">-0.7242</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="301630">
+                <td><input type="checkbox" class="check" data-code="301630" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301630.html')" class="code">301630</a></td>
+                <td>同宇新材</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>179.11</td>
+                <td>2026-02-03</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.8213</span></td>
+                <td class="td td-high">9</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            </tbody>
+        </table>
+    </div>
+    </div>
+    
+    <div class="right-panel">
+        <div class="right-header">
+            <span id="stockTitle">点击左侧股票代码查看详情</span>
+            <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+        </div>
+        <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+        <iframe id="stockFrame" class="stock-frame" style="display:none"></iframe>
+    </div>
+    
+    <script>
+        const STORAGE_KEY = 'new_strategy_TD9或MACD金叉';
+        let currentUrl = '';
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', loadChecked);
+        
+        function loadChecked() {
+            const checked = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            checked.forEach(code => {
+                const cb = document.querySelector(`input[data-code="${code}"]`);
+                if (cb) {
+                    cb.checked = true;
+                    cb.closest('tr').classList.add('checked');
+                }
+            });
+            updateInfo();
+        }
+        
+        function saveChecked() {
+            const checked = [];
+            document.querySelectorAll('.check:checked').forEach(cb => {
+                checked.push(cb.dataset.code);
+                cb.closest('tr').classList.add('checked');
+            });
+            document.querySelectorAll('.check:not(:checked)').forEach(cb => {
+                cb.closest('tr').classList.remove('checked');
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+            updateInfo();
+            
+            // 通知父窗口更新已选股票列表
+            try {
+                window.parent.addSelectedStockFromChild(checked);
+            } catch (e) {}
+        }
+        
+        // 供父窗口调用：更新当前页面的勾选状态
+        function updateSelectionFromParent(selectedCodes) {
+            document.querySelectorAll('.check').forEach(cb => {
+                const isChecked = selectedCodes.includes(cb.dataset.code);
+                cb.checked = isChecked;
+                if (isChecked) {
+                    cb.closest('tr').classList.add('checked');
+                } else {
+                    cb.closest('tr').classList.remove('checked');
+                }
+            });
+            updateInfo();
+        }
+        
+        // 供父窗口调用：移除勾选
+        function removeStockSelection(code) {
+            const cb = document.querySelector(`input[data-code="${code}"]`);
+            if (cb) {
+                cb.checked = false;
+                cb.closest('tr').classList.remove('checked');
+            }
+            saveChecked();
+        }
+        
+        function updateInfo() {
+            const count = document.querySelectorAll('.check:checked').length;
+            document.getElementById('checkedInfo').textContent = '已选 ' + count;
+        }
+        
+        function selectAll() {
+            document.querySelectorAll('.check').forEach(cb => cb.checked = true);
+            saveChecked();
+        }
+        
+        function clearAll() {
+            document.querySelectorAll('.check').forEach(cb => cb.checked = false);
+            saveChecked();
+        }
+        
+        function exportCSV() {
+            const rows = [['代码', '名称']];
+            document.querySelectorAll('.check:checked').forEach(cb => {
+                const tr = cb.closest('tr');
+                rows.push([cb.dataset.code, tr.cells[2].textContent]);
+            });
+            if (rows.length === 1) { alert('请先选择股票'); return; }
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob(['\ufeff' + csv], {type: 'text/csv'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'TD9或MACD金叉.csv';
+            a.click();
+        }
+        
+        function filterTable(keyword) {
+            keyword = keyword.toLowerCase();
+            document.querySelectorAll('#tbody tr').forEach(tr => {
+                tr.style.display = tr.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+            });
+        }
+        
+        function showStock(url) {
+            currentUrl = url;
+            const code = url.match(/([a-z]+\d+)\.html/)[1];
+            document.getElementById('stockTitle').textContent = code.toUpperCase();
+            document.getElementById('openNew').style.display = 'inline';
+            document.getElementById('placeholder').style.display = 'none';
+            const frame = document.getElementById('stockFrame');
+            frame.style.display = 'block';
+            frame.src = url;
+        }
+    </script>
+</body>
+</html>
