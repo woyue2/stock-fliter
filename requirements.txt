@@ -1,0 +1,14 @@
+# Core runtime dependencies
+flask
+flask-cors
+pandas
+numpy
+requests
+tqdm
+baostock
+akshare
+gunicorn
+
+# Optional / test dependencies (可按需安装)
+# playwright  # 用于 HTML 报告端到端测试
+

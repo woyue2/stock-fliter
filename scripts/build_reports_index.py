@@ -7,6 +7,7 @@
 索引页生成在项目根目录，链接为相对路径，便于本地双击打开使用。
 """
 
+import os
 import re
 from pathlib import Path
 import webbrowser
@@ -131,8 +132,14 @@ def build_list_html(project: Path, per_module: dict[str, dict[str, Path]], dates
             data = per_module.get(name, {})
             path = data.get(date_str)
             if path:
-                # 相对路径，用正斜杠便于在浏览器中打开
-                href = path.as_posix()
+                # 使用绝对路径，优先生成适配 WSL 在 Windows 浏览器中的路径:
+                #   file://wsl.localhost/<distro>/home/...
+                full_path = (project / path).resolve()
+                wsl_distro = os.environ.get("WSL_DISTRO_NAME")
+                if wsl_distro:
+                    href = f"file://wsl.localhost/{wsl_distro}{full_path}"
+                else:
+                    href = full_path.as_uri()
                 cells.append(f'<td><a href="{href}" target="_blank">查看</a></td>')
             else:
                 cells.append("<td>-</td>")
@@ -185,7 +192,12 @@ def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], date
             data = per_module.get(name, {})
             path = data.get(date_str)
             if path:
-                href = path.as_posix()
+                full_path = (project / path).resolve()
+                wsl_distro = os.environ.get("WSL_DISTRO_NAME")
+                if wsl_distro:
+                    href = f"file://wsl.localhost/{wsl_distro}{full_path}"
+                else:
+                    href = full_path.as_uri()
                 cells.append(f'<td><a href="{href}" target="_blank" class="link">查看</a></td>')
             else:
                 cells.append("<td>-</td>")
@@ -374,7 +386,7 @@ def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], date
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:5000';
+        const API_BASE = 'http://127.0.0.1:5000';
         
         // 回车搜索
         document.getElementById('searchInput').addEventListener('keypress', function(e) {{

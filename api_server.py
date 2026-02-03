@@ -68,7 +68,8 @@ def search_stock():
     if module:
         df = df[df['模块'] == module]
     
-    # 转换为JSON
+    # 转换为JSON前，将所有 NaN/NaT 转为 None，避免前端 JSON.parse 失败
+    df = df.where(pd.notna(df), None)
     results = df.to_dict('records')
     return jsonify({
         "total": len(results),
@@ -127,4 +128,3 @@ if __name__ == '__main__':
         print("警告: 未找到索引文件")
     print(f"API服务启动: http://localhost:5000")
     app.run(debug=True, port=5000)
-
