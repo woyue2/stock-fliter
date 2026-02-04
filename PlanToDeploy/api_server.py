@@ -88,55 +88,66 @@ class RunnerManager:
 
     def _run_worker(self, end_date: Optional[str], test: bool, mode: str) -> None:
         """
-        根据运行模式执行一个或多个 Runner 脚本:
-        - daily/td: 仅运行 stream_run_daily.py
-        - xuanxue: 仅运行 cloud_xuanxue_stream_runner.py
-        - new: 仅运行 cloud_new_stream_runner.py
-        - all(默认): 依次运行三条脚本
+        根据运行模式执行 Runner 脚本:
+        - all(默认): 运行 unified_optimized_runner.py（统一优化版，读一次数据）
+        - td: 仅运行 TD九底
+        - xuanxue: 仅运行玄学组合
+        - new: 仅运行新指标
+
+        注意：统一优化版（unified_optimized_runner.py）读一次数据运行所有模块，
+        比分别运行三个脚本快3倍
         """
         mode = (mode or "all").lower()
 
         py = sys.executable
 
-        def _build_cmd(script: Path) -> List[str]:
+        def _build_cmd(script: Path, extra_args: List[str] = None) -> List[str]:
             cmd: List[str] = [py, str(script)]
             if end_date:
                 cmd.extend(["--end-date", end_date])
             if test:
                 cmd.append("--test")
+            if extra_args:
+                cmd.extend(extra_args)
             return cmd
 
-        daily_script = BASE_DIR / "stream_run_daily.py"
-        xuanxue_script = BASE_DIR / "cloud_xuanxue_stream_runner.py"
-        new_script = BASE_DIR / "cloud_new_stream_runner.py"
+        unified_script = BASE_DIR / "unified_optimized_runner.py"
         index_script = BASE_DIR / "scripts" / "build_reports_index.py"
 
         commands: List[List[str]] = []
 
-        if mode in ("daily", "td"):
-            if daily_script.exists():
-                commands.append(_build_cmd(daily_script))
+        # 优先使用统一优化版（读一次数据）
+        if unified_script.exists() and mode == "all":
+            self._append_log(f"[Runner] 使用统一优化版（读一次数据）")
+            commands.append(_build_cmd(unified_script))
+        elif mode == "td":
+            if unified_script.exists():
+                commands.append(_build_cmd(unified_script, ["--no-xuanxue", "--no-new"]))
+                self._append_log(f"[Runner] 运行 TD九底（使用统一脚本）")
         elif mode == "xuanxue":
-            if xuanxue_script.exists():
-                commands.append(_build_cmd(xuanxue_script))
+            if unified_script.exists():
+                commands.append(_build_cmd(unified_script, ["--no-td", "--no-new"]))
+                self._append_log(f"[Runner] 运行玄学组合（使用统一脚本）")
         elif mode == "new":
-            if new_script.exists():
-                commands.append(_build_cmd(new_script))
-        elif mode == "all":
-            if daily_script.exists():
-                commands.append(_build_cmd(daily_script))
-            if xuanxue_script.exists():
-                commands.append(_build_cmd(xuanxue_script))
-            if new_script.exists():
-                commands.append(_build_cmd(new_script))
+            if unified_script.exists():
+                commands.append(_build_cmd(unified_script, ["--no-td", "--no-xuanxue"]))
+                self._append_log(f"[Runner] 运行新指标（使用统一脚本）")
         else:
-            self._append_log(f"[Runner] 未知模式: {mode}, 回退到 all")
-            if daily_script.exists():
-                commands.append(_build_cmd(daily_script))
-            if xuanxue_script.exists():
-                commands.append(_build_cmd(xuanxue_script))
-            if new_script.exists():
-                commands.append(_build_cmd(new_script))
+            # 回退到旧的分别运行模式
+            self._append_log(f"[Runner] 未找到统一脚本，使用分别运行模式")
+            daily_script = BASE_DIR / "stream_run_daily.py"
+            xuanxue_script = BASE_DIR / "cloud_xuanxue_stream_runner.py"
+            new_script = BASE_DIR / "cloud_new_stream_runner.py"
+
+            if mode == "all" or mode in ("daily", "td"):
+                if daily_script.exists():
+                    commands.append(_build_cmd(daily_script))
+            if mode == "all" or mode == "xuanxue":
+                if xuanxue_script.exists():
+                    commands.append(_build_cmd(xuanxue_script))
+            if mode == "all" or mode == "new":
+                if new_script.exists():
+                    commands.append(_build_cmd(new_script))
 
         # 无论运行哪种模式, 最后都追加一次索引构建, 确保统一入口更新
         if index_script.exists():

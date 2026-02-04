@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>云端轻量报告索引 - 搜索</title>
+    <title>股票报告索引 - 搜索</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #26a69a 0%, #004d40 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 2rem;
         }
@@ -45,7 +45,7 @@
         }
         .search-box input:focus {
             outline: none;
-            border-color: #26a69a;
+            border-color: #667eea;
         }
         .btn {
             padding: 0.75rem 1.5rem;
@@ -57,12 +57,12 @@
             font-weight: 500;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #26a69a 0%, #004d40 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(38, 166, 154, 0.4);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
         .btn-secondary {
             background: #f5f5f5;
@@ -98,16 +98,49 @@
             gap: 1rem;
             align-items: center;
             margin-bottom: 0.5rem;
+            flex-wrap: wrap;
         }
         .runner-controls label {
             font-size: 0.85rem;
             color: #004d40;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
-        .runner-controls input[type="date"] {
+        .runner-controls input[type="date"],
+        .runner-controls select {
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
             border: 1px solid #b2dfdb;
             font-size: 0.85rem;
+        }
+        .logs {
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 0.75rem;
+            max-height: 260px;
+            overflow-y: auto;
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+        .runner-panel {
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            background: #e0f2f1;
+            border: 1px solid #b2dfdb;
+        }
+        .runner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .runner-status-text {
+            font-size: 0.9rem;
+            color: #004d40;
         }
         .logs {
             background: #f5f5f5;
@@ -133,7 +166,7 @@
         }
         .result-count {
             font-size: 1.1rem;
-            color: #26a69a;
+            color: #667eea;
             font-weight: 600;
         }
         table {
@@ -155,19 +188,12 @@
             background: #f8f9fa;
         }
         .link {
-            color: #26a69a;
+            color: #667eea;
             text-decoration: none;
             font-weight: 500;
         }
         .link:hover {
             text-decoration: underline;
-        }
-        .link-empty {
-            color: #999;
-            cursor: default;
-        }
-        .link-empty:hover {
-            text-decoration: none;
         }
         .empty {
             text-align: center;
@@ -177,7 +203,7 @@
         .loading {
             text-align: center;
             padding: 2rem;
-            color: #26a69a;
+            color: #667eea;
         }
         .error {
             background: #fee;
@@ -186,12 +212,34 @@
             border-radius: 8px;
             margin-bottom: 1rem;
         }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>☁️ 云端轻量报告搜索</h1>
-        <p class="subtitle">只展示 PlanToDeploy/output/cloud_* 生成的报告</p>
+        <h1>📊 股票报告搜索</h1>
+        <p class="subtitle">搜索股票在不同日期、不同分析模块中的出现情况</p>
         
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="输入股票代码或名称（如：600519 或 茅台）" />
@@ -236,75 +284,135 @@
             </div>
             <div id="runnerLogs" class="logs">日志尚未加载</div>
         </div>
-        
+
         <div id="results" class="results"></div>
     </div>
 
     <script>
         // 与当前页面同源的 API 地址
         const API_BASE = '';
+        // 项目根目录(用于将索引中的相对报告路径转换为本地 file:/// 绝对路径)
+        const PROJECT_ROOT = 'file:///home/aa/Park/stock-fliter/PlanToDeploy';
         let logCursor = 0;
         let logTimer = null;
+
+        function resolveReportHref(path) {
+            if (!path) return '#';
+            if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('file://')) {
+                return path;
+            }
+            try {
+                const base = PROJECT_ROOT.endsWith('/') ? PROJECT_ROOT : PROJECT_ROOT + '/';
+                // 去掉开头的 ./ 或 /
+                const clean = path.replace(/^\.?\//, '');
+                return new URL(clean, base).href;
+            } catch (e) {
+                return path;
+            }
+        }
         
+        // 回车搜索
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchStock();
             }
         });
-
+        
+        // 搜索股票
         async function searchStock() {
             const keyword = document.getElementById('searchInput').value.trim();
             if (!keyword) {
                 alert('请输入股票代码或名称');
                 return;
             }
+            
             showLoading();
+            
             try {
+                // 判断是代码还是名称
                 const isCode = /^\d+$/.test(keyword);
                 const param = isCode ? `code=${keyword}` : `name=${keyword}`;
+                
                 const response = await fetch(`${API_BASE}/api/search?${param}`);
                 const data = await response.json();
+                
                 if (data.error) {
                     showError(data.error);
                     return;
                 }
-                // 这里不对模块做过滤, 仍展示 stocks_index 中所有记录, 方便对比
+                
                 displayResults(data.results, `搜索结果：${keyword}`);
             } catch (error) {
-                showError('搜索失败，请检查 API 服务是否已启动');
+                showError('搜索失败，请确保API服务已启动');
+                console.error(error);
             }
         }
-
+        
+        // 显示热门股票
         async function showHotStocks() {
             showLoading();
+            
             try {
-                const response = await fetch(`${API_BASE}/api/hot-stocks`);
+                const response = await fetch(`${API_BASE}/api/hot-stocks?limit=20`);
                 const data = await response.json();
-                if (data.error) {
-                    showError(data.error);
-                    return;
-                }
-                displayHotStocks(data.hot_stocks);
+                
+                displayHotStocks(data);
             } catch (error) {
-                showError('获取热门股票失败，请检查 API 服务是否已启动');
+                showError('获取热门股票失败，请确保API服务已启动');
+                console.error(error);
             }
         }
-
+        
+        // 显示统计信息
         async function showStats() {
             showLoading();
+            
             try {
                 const response = await fetch(`${API_BASE}/api/stats`);
                 const data = await response.json();
+                
                 if (data.error) {
                     showError(data.error);
                     return;
                 }
+                
                 displayStats(data);
             } catch (error) {
-                showError('获取统计信息失败，请检查 API 服务是否已启动');
+                showError('获取统计信息失败，请确保API服务已启动');
+                console.error(error);
             }
         }
-
+        
+        // 显示报告列表（使用数据日期）
+        function showReportIndex() {
+            const html = `
+                <div class="result-header">
+                    <h2>📋 报告列表</h2>
+                    <span class="result-count">按数据日期排序</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>数据日期</th>
+                            <th>玄学(云端)</th><th>TD九底(云端)</th><th>新指标(云端)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>2026-02-04</td><td>-</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_td/2026-02-04/01-31-24/summary_20260204_013124.html" target="_blank" class="link">查看</a></td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_new/2026-02-04/01-31-24/summary_20260204_013124.html" target="_blank" class="link">查看</a></td></tr>
+                        <tr><td>2026-02-03</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_xuanxue/2026-02-03/02-59-25/summary_20260203_025930.html" target="_blank" class="link">查看</a></td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_td/2026-02-03/19-56-17/summary_20260203_195617.html" target="_blank" class="link">查看</a></td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_new/2026-02-03/03-27-50/summary_20260203_032750.html" target="_blank" class="link">查看</a></td></tr>
+                        <tr><td>2026-02-02</td><td>-</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_td/2026-02-02/03-35-20/summary_20260202_033520.html" target="_blank" class="link">查看</a></td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_new/2026-02-02/03-31-24/summary_20260202_033124.html" target="_blank" class="link">查看</a></td></tr>
+                        <tr><td>2026-01-30</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_xuanxue/2026-01-30/04-41-06/summary_20260130_044109.html" target="_blank" class="link">查看</a></td><td>-</td><td>-</td></tr>
+                        <tr><td>2026-01-28</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_xuanxue/2026-01-28/03-33-27/summary_20260128_033333.html" target="_blank" class="link">查看</a></td><td>-</td><td>-</td></tr>
+                        <tr><td>2026-01-27</td><td>-</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_td/2026-01-27/03-58-28/summary_20260127_035828.html" target="_blank" class="link">查看</a></td><td>-</td></tr>
+                        <tr><td>2026-01-20</td><td>-</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_td/2026-01-20/04-11-15/summary_20260120_041115.html" target="_blank" class="link">查看</a></td><td>-</td></tr>
+                        <tr><td>2026-01-09</td><td>-</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_td/2026-01-09/04-39-39/summary_20260109_043939.html" target="_blank" class="link">查看</a></td><td>-</td></tr>
+                        <tr><td>2026-01-08</td><td>-</td><td><a href="file:///home/aa/Park/stock-fliter/PlanToDeploy/output/cloud_td/2026-01-08/04-39-02/summary_20260108_043902.html" target="_blank" class="link">查看</a></td><td>-</td></tr>
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('results').innerHTML = html;
+        }
+        
         // 显示搜索结果
         function displayResults(results, title) {
             if (results.length === 0) {
@@ -348,7 +456,7 @@
                         <td>${item.策略级别}</td>
                         <td>${item.板块}</td>
                         <td>${item.行业}</td>
-                        <td><a href="/reports/${String(item.报告路径 || '').replace(/^\.?\//, '')}" target="_blank" class="link">查看报告</a></td>
+                        <td><a href="${resolveReportHref(item.报告路径)}" target="_blank" class="link">查看报告</a></td>
                     </tr>
                 `;
             });
@@ -356,10 +464,10 @@
             html += '</tbody></table>';
             document.getElementById('results').innerHTML = html;
         }
-
+        
         // 显示热门股票
         function displayHotStocks(data) {
-            if (!data || data.length === 0) {
+            if (data.length === 0) {
                 document.getElementById('results').innerHTML = '<div class="empty">暂无数据</div>';
                 return;
             }
@@ -397,19 +505,17 @@
             html += '</tbody></table>';
             document.getElementById('results').innerHTML = html;
         }
-
+        
         // 显示统计信息
         function displayStats(data) {
             let modulesHtml = '';
-            if (data.modules) {
-                for (const [module, count] of Object.entries(data.modules)) {
-                    modulesHtml += `
-                        <div class="stat-card">
-                            <div class="stat-value">${count}</div>
-                            <div class="stat-label">${module}</div>
-                        </div>
-                    `;
-                }
+            for (const [module, count] of Object.entries(data.modules)) {
+                modulesHtml += `
+                    <div class="stat-card">
+                        <div class="stat-value">${count}</div>
+                        <div class="stat-label">${module}</div>
+                    </div>
+                `;
             }
             
             const html = `
@@ -444,11 +550,21 @@
             
             document.getElementById('results').innerHTML = html;
         }
-
+        
         // 按代码搜索
         function searchByCode(code) {
             document.getElementById('searchInput').value = code;
             searchStock();
+        }
+        
+        // 显示加载中
+        function showLoading() {
+            document.getElementById('results').innerHTML = '<div class="loading">⏳ 加载中...</div>';
+        }
+        
+        // 显示错误
+        function showError(message) {
+            document.getElementById('results').innerHTML = `<div class="error">❌ ${message}</div>`;
         }
 
         function updateRunnerStatus(status) {
@@ -553,44 +669,6 @@
             }
         }
 
-        function showReportIndex() {
-            const resultsDiv = document.getElementById('results');
-            const tableHtml = `
-                <div class="result-header">
-                    <h2>📋 云端轻量报告列表</h2>
-                    <span class="result-count">只显示云端模块</span>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>日期</th>
-                            <th>玄学(云端)</th><th>TD九底(云端)</th><th>新指标(云端)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>2026-02-04</td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="/reports/output/cloud_td/2026-02-04/01-31-24/summary_20260204_013124.html" target="_blank" class="link">查看</a></td><td><a href="/reports/output/cloud_new/2026-02-04/01-31-24/summary_20260204_013124.html" target="_blank" class="link">查看</a></td></tr>
-                        <tr><td>2026-02-03</td><td><a href="/reports/output/cloud_xuanxue/2026-02-03/02-59-25/summary_20260203_025930.html" target="_blank" class="link">查看</a></td><td><a href="/reports/output/cloud_td/2026-02-03/19-56-17/summary_20260203_195617.html" target="_blank" class="link">查看</a></td><td><a href="/reports/output/cloud_new/2026-02-03/03-27-50/summary_20260203_032750.html" target="_blank" class="link">查看</a></td></tr>
-                        <tr><td>2026-02-02</td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="/reports/output/cloud_td/2026-02-02/03-35-20/summary_20260202_033520.html" target="_blank" class="link">查看</a></td><td><a href="/reports/output/cloud_new/2026-02-02/03-31-24/summary_20260202_033124.html" target="_blank" class="link">查看</a></td></tr>
-                        <tr><td>2026-01-30</td><td><a href="/reports/output/cloud_xuanxue/2026-01-30/04-41-06/summary_20260130_044109.html" target="_blank" class="link">查看</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td></tr>
-                        <tr><td>2026-01-28</td><td><a href="/reports/output/cloud_xuanxue/2026-01-28/03-33-27/summary_20260128_033333.html" target="_blank" class="link">查看</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td></tr>
-                        <tr><td>2026-01-27</td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="/reports/output/cloud_td/2026-01-27/03-58-28/summary_20260127_035828.html" target="_blank" class="link">查看</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td></tr>
-                        <tr><td>2026-01-20</td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="/reports/output/cloud_td/2026-01-20/04-11-15/summary_20260120_041115.html" target="_blank" class="link">查看</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td></tr>
-                        <tr><td>2026-01-09</td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="/reports/output/cloud_td/2026-01-09/04-39-39/summary_20260109_043939.html" target="_blank" class="link">查看</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td></tr>
-                        <tr><td>2026-01-08</td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td><td><a href="/reports/output/cloud_td/2026-01-08/04-39-02/summary_20260108_043902.html" target="_blank" class="link">查看</a></td><td><a href="javascript:void(0)" class="link link-empty">无信号</a></td></tr>
-                    </tbody>
-                </table>
-            `;
-            resultsDiv.innerHTML = tableHtml;
-        }
-
-        function showLoading() {
-            document.getElementById('results').innerHTML = '<div class="loading">⏳ 加载中...</div>';
-        }
-
-        function showError(message) {
-            document.getElementById('results').innerHTML = `<div class="error">❌ ${message}</div>`;
-        }
-
         async function stopRunDaily() {
             if (!confirm('确认要停止当前运行中的云端 Runner 吗？')) {
                 return;
@@ -616,8 +694,11 @@
             }
         }
 
-        // 页面加载时刷新一次 Runner 状态
-        refreshRunnerStatus();
+        // 页面加载时显示报告列表
+        window.onload = function() {
+            showReportIndex();
+            refreshRunnerStatus();
+        };
     </script>
 </body>
 </html>

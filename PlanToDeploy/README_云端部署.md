@@ -87,7 +87,7 @@ python stream_run_daily.py --days 365 --limit 500 --end-date 2026-02-03
 
 ```bash
 # 小样本：用 copy 文件，只看 50 只
-python cloud_xuanxue_stream_runner.py --test --limit 50 --days 365 --end-date 2026-02-03
+python cloud_xuanxue_stream_runner.py --test --limit 50 --days 365 --end-date 2026-02-02
 
 # 实际跑一遍（用正式股票池）
 python cloud_xuanxue_stream_runner.py --days 365 --end-date 2026-02-03 --limit 500
@@ -171,56 +171,31 @@ python api_server.py
 
 
 
----
+  一个最小示例（在项目根目录新建 docker-compose.yml）可以是：
 
-## 七、本地 Docker 测试流程（可选）
+  version: "3.9"
+  services:
+    stock-cloud:
+      build: .
+      ports:
+        - "5000:5000"
+      environment:
+        API_APP_MODULE: "PlanToDeploy.api_server:app"
+        # 如需容器内自动跑每日任务再打开：
+        # AUTO_RUN_ENABLED: "1"
+        # AUTO_RUN_HOUR: "3"
+        # AUTO_RUN_MINUTE: "0"
 
-项目根目录已经提供了一份 `docker-compose.yml`，方便你在本机用容器验证“API + 云端 Runner”是否能跑通：
+  然后在本地：
 
-```yaml
-version: "3.9"
+  - docker compose build
+  - docker compose up
 
-services:
-  stock-cloud:
-    build: .
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./:/app
-    environment:
-      API_APP_MODULE: "PlanToDeploy.api_server:app"
+  起来后直接打开：
 
-  stock-cloud-runner:
-    build: .
-    depends_on:
-      - stock-cloud
-    volumes:
-      - ./:/app
-    command: >
-      sh -c "cd /app/PlanToDeploy &&
-             python stream_run_daily.py --test --limit 20 --days 180 &&
-             python cloud_xuanxue_stream_runner.py --test --limit 20 --days 365 &&
-             python cloud_new_stream_runner.py --test --limit 20 --days 365 &&
-             python scripts/build_reports_index.py"
-```
+  - http://localhost:5000/cloud 看云端统一入口 + 手动运行按钮 + 日
+    志
+  - http://localhost:5000/api/search?... 验证搜索接口
 
-本地测试步骤示例（在项目根目录执行）：
-
-1. 构建镜像：
-   ```bash
-   docker compose build
-   ```
-2. 启动 API 服务（后台运行）：
-   ```bash
-   docker compose up -d stock-cloud
-   ```
-3. 在容器内跑一遍“小样本云端轻量流程”（只取 20 只股票）：
-   ```bash
-   docker compose run --rm stock-cloud-runner
-   ```
-   完成后，`PlanToDeploy/output`、`PlanToDeploy/stocks_index`、`PlanToDeploy/cloud_index` 等目录会在宿主机上生成/更新测试数据。
-4. 用浏览器打开本地：
-   - `http://localhost:5000/cloud` 查看云端统一入口和日志面板；
-   - `http://localhost:5000/api/search?code=60` 等接口验证搜索是否正常。
-
-如果这套流程在本地容器环境里跑通，再把同样的镜像和 compose 配置挪到服务器即可。
+  如果这些在本地都正常，再把同样的镜像和 compose 配置挪到服务器就
+  行。
