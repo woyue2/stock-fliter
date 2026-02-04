@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -423,6 +424,22 @@ def _parse_args() -> argparse.Namespace:
 def main() -> int:
     args = _parse_args()
 
+    print("=" * 60)
+    print("[Runner] 云端轻量 Runner 启动")
+    print(
+        f"[Runner] 参数: days={args.days}, "
+        f"end_date={args.end_date or '自动'}, "
+        f"limit={args.limit or '不限'}, "
+        f"test={args.test}"
+    )
+    print(
+        "[Runner] 模块开关: "
+        f"TD={'关闭' if args.no_td else '开启'}, "
+        f"Steady={'关闭' if args.no_steady else '开启'}, "
+        f"New={'关闭' if args.no_new else '开启'}"
+    )
+    print("=" * 60)
+
     # 1) 加载股票池
     if args.test and not args.stocks_file:
         selected_path = BASE_DIR / "selected_stocks_all copy.csv"
@@ -433,11 +450,49 @@ def main() -> int:
         selected_path=selected_path,
         limit=args.limit,
     )
+    total_stocks = len(stocks)
     if not stocks:
         print("[Runner] 股票池为空, 无需执行分析")
         return 0
 
-    print(f"[Runner] 股票池数量: {len(stocks)}")
+    print(f"[Runner] 股票池数量: {total_stocks}")
+    print("[Runner] 准备开始逐只拉取日线数据并执行三大分析模块...")
+
+    # 1.1) 断点续跑: 按日期和股票池规模记录已完成位置
+    if args.end_date:
+        progress_date = args.end_date
+    else:
+        progress_date = datetime.now().strftime("%Y-%m-%d")
+
+    progress_dir = CLOUD_BASE / "runner_state"
+    progress_dir.mkdir(parents=True, exist_ok=True)
+    progress_file = progress_dir / f"stream_daily_{progress_date}.json"
+
+    resume_index = 0
+    if progress_file.exists():
+        try:
+            with progress_file.open("r", encoding="utf-8") as f:
+                progress_data = json.load(f)
+            if (
+                progress_data.get("date") == progress_date
+                and progress_data.get("total_stocks") == total_stocks
+            ):
+                resume_index = int(progress_data.get("last_index", 0))
+        except Exception:
+            resume_index = 0
+
+    if resume_index > 0:
+        if resume_index >= total_stocks:
+            print(
+                f"[Runner] 检测到断点记录: 当日 {progress_date} 的 "
+                f"{total_stocks} 只股票此前已全部完成分析, 本次无需重复执行"
+            )
+            return 0
+
+        print(
+            f"[Runner] 检测到断点记录: 已完成 {resume_index}/{total_stocks} 只股票, "
+            f"本次将从第 {resume_index + 1} 只继续"
+        )
 
     # 2) 导入各模块依赖
     TDAnalyzer, TDAnalyzerConfig, TDHTMLReporter, TDMarkdownReporter = _import_td_dependencies()
@@ -471,6 +526,17 @@ def main() -> int:
     login_baostock()
     try:
         for idx, stock in enumerate(stocks, 1):
+            # 跳过已在断点记录中完成的股票
+            if idx <= resume_index:
+                continue
+
+            # 进度日志: 首只 + 每 10 只 + 最后一只
+            if idx == resume_index + 1 or idx % 10 == 0 or idx == total_stocks:
+                print(
+                    f"[Runner] 进度 {idx}/{total_stocks} - "
+                    f"{stock.code} {stock.name}"
+                )
+
             df_daily = fetch_daily_data_streaming(
                 code=stock.code,
                 bs_code=stock.bs_code,
@@ -478,6 +544,8 @@ def main() -> int:
                 end_date=args.end_date,
             )
             if df_daily is None or df_daily.empty:
+                if idx == resume_index + 1 or idx % 10 == 0:
+                    print(f"[Runner] {stock.code} 无有效日线数据, 跳过")
                 continue
 
             latest_date = df_daily["date"].max()
@@ -508,6 +576,40 @@ def main() -> int:
                 new_row = _analyze_new_single(df_daily, stock, StockAnalyzer)
                 if new_row is not None:
                     new_results.append(new_row)
+
+            if (
+                (not args.no_td and td_row is not None)
+                or (not args.no_steady and steady_row is not None)
+                or (not args.no_new and new_row is not None)
+            ):
+                hit_list = []
+                if not args.no_td and td_row is not None:
+                    hit_list.append("TD九底")
+                if not args.no_steady and steady_row is not None:
+                    hit_list.append("稳步上升")
+                if not args.no_new and new_row is not None:
+                    hit_list.append("新指标")
+                print(
+                    f"[Runner] 命中信号: {stock.code} {stock.name} - "
+                    + " / ".join(hit_list)
+                )
+
+            # 更新断点记录: 成功处理完一只股票后立即写入
+            resume_index = idx
+            try:
+                with progress_file.open("w", encoding="utf-8") as f:
+                    json.dump(
+                        {
+                            "date": progress_date,
+                            "total_stocks": total_stocks,
+                            "last_index": resume_index,
+                        },
+                        f,
+                        ensure_ascii=False,
+                    )
+            except Exception:
+                # 断点记录失败不影响主流程
+                pass
 
             # 用完立即丢弃 df_daily 引用, 降低峰值内存
             del df_daily
@@ -551,7 +653,14 @@ def main() -> int:
             NewReporter,
         )
 
-    # 7) 重建全局报告索引
+    # 7) 清理当日断点记录(本次已完整跑完)
+    try:
+        if progress_file.exists():
+            progress_file.unlink()
+    except Exception:
+        pass
+
+    # 8) 重建全局报告索引
     _build_global_reports_index()
 
     print("[Runner] 云端轻量 Runner 执行完毕")
