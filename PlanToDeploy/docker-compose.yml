@@ -11,8 +11,9 @@ services:
     environment:
       # 使用 PlanToDeploy 内部的 api_server 作为入口
       API_APP_MODULE: "api_server:app"
-      # 如需在容器内启用每日自动运行 Runner, 可取消下方注释并按需调整时间:
-      # AUTO_RUN_ENABLED: "1"
-      # AUTO_RUN_HOUR: "3"
-      # AUTO_RUN_MINUTE: "0"
+      # 启用每日自动运行（晚上8点）
+      AUTO_RUN_ENABLED: "1"
+      AUTO_RUN_HOUR: "13" # 服务器有时差，13+6=19 晚上7点爬
+      AUTO_RUN_MINUTE: "0"
+      AUTO_RUN_MODE: "all"  # 运行模式: all/td/xuanxue/new
 

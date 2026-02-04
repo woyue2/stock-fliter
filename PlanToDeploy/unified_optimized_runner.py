@@ -223,15 +223,23 @@ def _run_xuanxue_pipeline(
     print("📊 运行玄学组合 Pipeline（使用已获取的数据）")
     print("=" * 60)
 
-    # 1. 创建临时 raw 目录，保存已获取的数据
+    # 1. 创建临时 raw 目录，保存已获取的数据（批量写入，跳过已存在的文件）
     temp_raw_dir = BASE_DIR / "temp_raw_for_xuanxue"
     temp_raw_dir.mkdir(parents=True, exist_ok=True)
 
+    saved_count = 0
+    skipped_count = 0
     for code, df in stocks_data.items():
         if df is not None and not df.empty:
-            df.to_csv(temp_raw_dir / f"{code}.csv", index=False)
+            csv_path = temp_raw_dir / f"{code}.csv"
+            # 如果文件已存在且较新，跳过写入（节省IO）
+            if csv_path.exists():
+                skipped_count += 1
+                continue
+            df.to_csv(csv_path, index=False)
+            saved_count += 1
 
-    print(f"[玄学组合] 已保存 {len(stocks_data)} 只股票数据到临时目录")
+    print(f"[玄学组合] 已保存 {saved_count} 个新文件，跳过 {skipped_count} 个已存在文件")
 
     # 2. Monkey-patch data_loader（完全复用 cloud_xuanxue_stream_runner.py 的逻辑）
     steady_root = BASE_DIR / "check-steady-uptrend"
@@ -318,9 +326,28 @@ def _run_xuanxue_pipeline(
         steady_data_loader.iter_stock_items = original_iter
         steady_data_loader.load_daily_data = original_load
 
-        # 清理临时文件
-        shutil.rmtree(temp_raw_dir, ignore_errors=True)
-        print("[玄学组合] 已清理临时数据")
+        # 批量清理临时文件：累计超过100个才删除
+        if temp_raw_dir.exists():
+            temp_files = list(temp_raw_dir.glob("*.csv"))
+            file_count = len(temp_files)
+
+            if file_count >= 100:
+                print(f"\n{'=' * 60}")
+                print(f"[玄学组合] 开始清理临时文件...")
+                print(f"[玄学组合] 临时文件数: {file_count} (已达到100个阈值)")
+                print(f"[玄学组合] 临时目录: {temp_raw_dir}")
+
+                # 执行删除
+                shutil.rmtree(temp_raw_dir, ignore_errors=True)
+
+                # 验证删除结果
+                if temp_raw_dir.exists():
+                    print(f"[玄学组合] ⚠️ 删除完成，但目录仍存在（可能有文件被占用）")
+                else:
+                    print(f"[玄学组合] ✅ 删除成功！")
+                print(f"{'=' * 60}\n")
+            else:
+                print(f"[玄学组合] 保留 {file_count} 个临时数据文件（未达到100个阈值）")
 
 
 def _build_global_reports_index() -> None:
@@ -527,6 +554,7 @@ def main():
 
 
 if __name__ == "__main__":
+    print(f"满100个删除")
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:

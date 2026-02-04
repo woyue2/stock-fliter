@@ -1,3 +1,34 @@
+在我的 unified_optimized_runner.py 中：                             
+                                                                      
+  1. ✅ 生成三个报告（第586-605行）：                                 
+  if not args.no_td:                                                  
+      _build_td_reports(...)  # → output/cloud_td/...                 
+  if not args.no_new:                                                 
+      _build_new_reports(...)  # → output/cloud_new/...               
+  if not args.no_xuanxue:                                             
+      _run_xuanxue_pipeline(...)  # → output/cloud_xuanxue/...        
+  2. ✅ 调用索引生成（第608行）：                                     
+  _build_global_reports_index()  # 生成                               
+  report_index/reports_index_YYYY-MM-DD/...                           
+  3. ✅ 只读一次数据                                                  
+    - 主循环中每只股票调用一次 fetch_daily_data_streaming()           
+    - TD九底 + 新指标在主循环中分析                                   
+    - 所有数据收集完后，运行玄学组合 Pipeline  
+
+
+
+预期输出                                                            
+                                                                      
+  output/                                                             
+  ├── cloud_td/2026-02-04/HH-MM-SS/summary_*.html      ← TD九底报告   
+  ├── cloud_new/2026-02-04/HH-MM-SS/summary_*.html     ← 新指标报告   
+  └── cloud_xuanxue/2026-02-04/HH-MM-SS/summary_*.html  ← 玄学组合报告
+                                                                      
+  report_index/                                                       
+  └── reports_index_2026-02-04/                                       
+      └── reports_index.html  ← 包含三个报告的索引
+
+
  可以的，我们先把“本地跑一遍”的体验优化成几步很顺手的动作，我建议的规划是这
   样分阶段来做：
 

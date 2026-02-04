@@ -25,7 +25,8 @@
 > 一句话：你只要保证服务器上有一个完整的 `PlanToDeploy` 目录，就可以按下面的命令跑。
 
 ---
-
+tar -cvf ./PlanToDeploy
+tar -xvf PlanToDeploy.tar
 ## 二、环境准备（云服务器）
 
 以下假设你已经在服务器上 `cd` 到 `PlanToDeploy` 目录：
@@ -188,9 +189,9 @@ python api_server.py
 
   然后在本地：
 
-  - docker compose build
-  - docker compose up
-
+  - docker-compose build
+  - docker-compose up
+ docker-compose logs -f
   起来后直接打开：
 
   - http://localhost:5000/cloud 看云端统一入口 + 手动运行按钮 + 日
