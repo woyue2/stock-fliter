@@ -223,76 +223,7 @@ class Pipeline:
                 "best_horizon": self.config.grid_horizon
             }
         )
-        df, max_date = analyzer.run()
 
-        # 更新全局数据最新日期
-        if max_date and (self.data_max_date is None or max_date > self.data_max_date):
-            self.data_max_date = max_date
-
-        return AnalysisResult(
-            name="trend_analysis",
-            data=df,
-            summary={
-                "total": len(df),
-                "up_trend_count": df["up_trend"].sum() if "up_trend" in df.columns else 0
-            }
-        )
-
-    def _run_grid_test(self) -> AnalysisResult:
-        """运行网格测试"""
-        from analyzers.grid_analyzer import GridAnalyzer
-
-        analyzer = GridAnalyzer(
-            config=self.config,
-            output_dir=self.result.batch_dir
-        )
-        df, max_date = analyzer.run()
-
-        # 更新全局数据最新日期
-        if max_date and (self.data_max_date is None or max_date > self.data_max_date):
-            self.data_max_date = max_date
-
-        return AnalysisResult(
-            name="grid_test",
-            data=df,
-            summary={
-                "total": len(df)
-            }
-        )
-        df = analyzer.run()
-        
-        return AnalysisResult(
-            name="trend_analysis",
-            data=df,
-            summary={
-                "total": len(df),
-                "trend_follow": df["趋势跟随_是否信号"].sum() if "趋势跟随_是否信号" in df.columns else 0,
-                "pullback": df["上升回撤_是否信号"].sum() if "上升回撤_是否信号" in df.columns else 0,
-                "vol_breakout": df["波动收缩突破_是否信号"].sum() if "波动收缩突破_是否信号" in df.columns else 0,
-            }
-        )
-    
-    def _run_grid_test(self) -> AnalysisResult:
-        """运行网格测试"""
-        from analyzers.grid_analyzer import GridAnalyzer
-        
-        analyzer = GridAnalyzer(
-            limit=self.config.limit,
-            output_dir=self.result.batch_dir,
-            horizon=self.config.grid_horizon,
-            end_date=self.config.end_date
-        )
-        df = analyzer.run()
-        
-        return AnalysisResult(
-            name="grid_test",
-            data=df,
-            summary={
-                "param_combos": len(df),
-                "best_horizon": self.config.grid_horizon
-            }
-        )
-    
     def _extract_mystic_from_trend(self) -> AnalysisResult:
         """从趋势分析结果中提取玄学指标"""
         if self.result.trend_analysis is None:

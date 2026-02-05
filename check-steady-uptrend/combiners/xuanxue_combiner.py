@@ -233,6 +233,12 @@ class XuanxueCombiner:
         if not hasattr(df, 'empty'):
             return None
 
+        # 确保有必要的列
+        if not isinstance(df, pd.DataFrame) or df.empty:
+            return None
+        if "horizon" not in df.columns:
+            return None
+
         df = df[df["horizon"] == self.config.grid_horizon].copy()
         if df.empty:
             return None
@@ -360,28 +366,34 @@ class XuanxueCombiner:
         """检查是否有波动收缩信号"""
         try:
             df = load_daily_data(code)
+
+            # 如果配置了end_date，需要过滤数据
+            if self.config.end_date:
+                df["date"] = pd.to_datetime(df["date"], errors="coerce")
+                df = df[df["date"] <= self.config.end_date].copy()
+
             if df.empty or len(df) < self.config.min_bars:
                 return False
-            
+
             df = df.copy()
             df["date"] = pd.to_datetime(df["date"], errors="coerce")
             df = df.dropna(subset=["date"]).reset_index(drop=True)
-            
+
             close = df["close"].astype(float)
             vols = df["volume"].astype(float)
-            
+
             bb = bollinger_bands(close, combo.bb_window, combo.num_std)
             bandwidth = bb["bandwidth"]
             vol_ratio = volume_ratio(vols, 20)
-            
+
             low_vol = bandwidth <= bandwidth.rolling(combo.quantile_window).quantile(combo.quantile)
             breakout = close > bb["upper"]
             vol_confirm = vol_ratio >= combo.vol_ratio_threshold
-            
+
             signal = low_vol & breakout & vol_confirm
             if not signal.any():
                 return False
-            
+
             last_date = df["date"].iloc[-1]
             cutoff = last_date - pd.Timedelta(days=self.config.lookback_days)
             recent = df[signal & (df["date"] >= cutoff)]
