@@ -188,8 +188,10 @@ class TDAnalyzer:
         # 重采样周线和月线
         df_weekly = TechnicalIndicators.resample_ohlcv(df_daily, "W")
         # pandas 新版本废弃 "M", 使用 "ME"(MonthEnd) 作为月线频率
-        df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "ME")
-        
+        try:
+            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "ME")  
+        except:
+            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "M")  # 使用 "M" 替代 "ME" 以兼容旧版本 pandas
         result = {}
         
         # 日线分析
