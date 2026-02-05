@@ -76,23 +76,57 @@ class PatternAnalyzer:
         # 7. 实体比例 (开盘到收盘的距离)
         body_ratio = abs(close_price - open_price) / (high_price - low_price) * 100 if high_price > low_price else 0
         
-        # 8. 早盘vs午盘价格分析
+        # 8. 早盘vs午盘价格分析（新算法：真实动能法）
         # 早盘特征价格：开盘价权重70%，最高价权重30%（早盘通常冲高）
         morning_price = open_price * 0.7 + high_price * 0.3
-        
+
         # 午盘特征价格：收盘价权重70%，最低价权重30%（午盘可能探底）
         afternoon_price = close_price * 0.7 + low_price * 0.3
-        
-        # 早午盘价格差异（相对昨收）
-        morning_vs_afternoon = (morning_price - afternoon_price) / prev_close * 100 if prev_close > 0 else 0
-        
-        # 判断早盘高还是午盘高
-        if morning_vs_afternoon > 0.5:
-            session_trend = '早盘高'
-        elif morning_vs_afternoon < -0.5:
-            session_trend = '午盘高'
+
+        # ===== 计算相对昨日收盘价的涨幅 =====
+        morning_relative_gain = (morning_price - prev_close) / prev_close * 100 if prev_close > 0 else 0
+        afternoon_relative_gain = (afternoon_price - prev_close) / prev_close * 100 if prev_close > 0 else 0
+
+        # ===== 计算昨日惯性（昨日收盘到今日开盘的惯性）=====
+        # 昨日收盘到今日开盘的跳空
+        gap_open = (open_price - prev_close) / prev_close * 100 if prev_close > 0 else 0
+
+        # 昨日日内走势（如果有的话）
+        yesterday_intraday_strength = 0
+        yesterday_open = row.get('yesterday_open')
+        yesterday_close = row.get('yesterday_close')
+
+        if pd.notna(yesterday_open) and pd.notna(yesterday_close) and yesterday_open > 0:
+            yesterday_intraday_strength = (yesterday_close - yesterday_open) / yesterday_open * 100
+
+        # 惯性因子：昨日涨1%，今日预期惯性0.8%（高惯性影响）
+        inertia_factor = yesterday_intraday_strength * 0.8
+
+        # ===== 核心算法：真实动能比较 =====
+        # 早盘真实动能 = 早盘涨幅 - 惯性（扣除昨日惯性影响）
+        morning_real_momentum = morning_relative_gain - inertia_factor
+
+        # 午盘真实动能 = 午盘涨幅（相对于昨收）
+        afternoon_real_momentum = afternoon_relative_gain
+
+        # 真实差异 = 早盘真实动能 - 午盘真实动能
+        # 如果 > 0，说明早盘更强；如果 < 0，说明午盘更强
+        real_momentum_diff = morning_real_momentum - afternoon_real_momentum
+
+        # 判断标准：
+        # - 扣除惯性后，早盘动能明显大于午盘 → 早盘强
+        # - 扣除惯性后，早盘动能小于午盘 → 午盘强（包含早盘惯性但午后走弱的情况）
+        # - 差异很小 → 持平
+        if real_momentum_diff > 0.2:  # 阈值降低到0.2%，更敏感
+            session_trend = '早盘强'
+        elif real_momentum_diff < -0.2:
+            session_trend = '午盘强'
         else:
             session_trend = '持平'
+
+        # 保留原始差异值（用于报告展示）
+        morning_vs_afternoon = morning_relative_gain - afternoon_relative_gain
+        adjusted_diff = real_momentum_diff  # 重命名以反映真实含义
         
         # 详细指标
         metrics = {
@@ -103,7 +137,11 @@ class PatternAnalyzer:
             'upper_shadow_ratio': round(upper_shadow_ratio, 2),
             'lower_shadow_ratio': round(lower_shadow_ratio, 2),
             'body_ratio': round(body_ratio, 2),
-            'morning_vs_afternoon': round(morning_vs_afternoon, 2),
+            'morning_relative_gain': round(morning_relative_gain, 2),  # 新增：早盘相对涨幅
+            'afternoon_relative_gain': round(afternoon_relative_gain, 2),  # 新增：午盘相对涨幅
+            'inertia_factor': round(inertia_factor, 2),  # 新增：惯性修正因子
+            'morning_vs_afternoon': round(morning_vs_afternoon, 2),  # 保留：原始差异
+            'adjusted_diff': round(adjusted_diff, 2),  # 新增：修正后差异
             'session_trend': session_trend,
         }
         
@@ -263,9 +301,9 @@ class PatternAnalyzer:
         # 市场情绪指数 (-100 到 +100)
         sentiment_index = (bullish_count - bearish_count) / total_stocks * 100 if total_stocks > 0 else 0
         
-        # 早盘vs午盘统计
-        morning_high_count = df[df['session_trend'] == '早盘高'].shape[0]
-        afternoon_high_count = df[df['session_trend'] == '午盘高'].shape[0]
+        # 早盘vs午盘统计（更新为新标签）
+        morning_high_count = df[df['session_trend'] == '早盘强'].shape[0]
+        afternoon_high_count = df[df['session_trend'] == '午盘强'].shape[0]
         session_flat_count = df[df['session_trend'] == '持平'].shape[0]
         
         # 平均指标
@@ -276,6 +314,38 @@ class PatternAnalyzer:
             'avg_amplitude': df['amplitude'].mean(),
             'avg_morning_vs_afternoon': df['morning_vs_afternoon'].mean(),
         }
+
+        # ===== 市场整体早午盘动能判断 =====
+        # 基于加权平均动能，而非个股数量
+        avg_morning_momentum = df['morning_relative_gain'].mean()
+        avg_afternoon_momentum = df['afternoon_relative_gain'].mean()
+        avg_inertia = df['inertia_factor'].mean()
+
+        # 市场真实早盘动能 = 平均早盘涨幅 - 平均惯性
+        market_morning_real = avg_morning_momentum - avg_inertia
+        market_afternoon_real = avg_afternoon_momentum
+
+        # 市场整体动能差异
+        market_momentum_diff = market_morning_real - market_afternoon_real
+
+        # 市场整体判断
+        if market_momentum_diff > 0.2:
+            market_session_trend = '早盘强'
+            market_session_description = f"扣除惯性后，早盘动能({market_morning_real:.2f}%)强于午盘({market_afternoon_real:.2f}%)"
+        elif market_momentum_diff < -0.2:
+            market_session_trend = '午盘强'
+            market_session_description = f"早盘虽有惯性({avg_inertia:.2f}%)，但午盘动能({market_afternoon_real:.2f}%)超越早盘真实动能({market_morning_real:.2f}%)"
+        else:
+            market_session_trend = '持平'
+            market_session_description = f"早盘({market_morning_real:.2f}%)与午盘({market_afternoon_real:.2f}%)动能接近"
+
+        avg_metrics['market_session_trend'] = market_session_trend
+        avg_metrics['market_session_description'] = market_session_description
+        avg_metrics['avg_morning_momentum'] = avg_morning_momentum
+        avg_metrics['avg_afternoon_momentum'] = avg_afternoon_momentum
+        avg_metrics['avg_inertia'] = avg_inertia
+        avg_metrics['market_morning_real'] = market_morning_real
+        avg_metrics['market_afternoon_real'] = market_afternoon_real
         
         # 构建结果
         result = {
@@ -289,7 +359,7 @@ class PatternAnalyzer:
             'morning_high_count': morning_high_count,
             'afternoon_high_count': afternoon_high_count,
             'session_flat_count': session_flat_count,
-            'avg_metrics': {k: round(v, 2) for k, v in avg_metrics.items()},
+            'avg_metrics': avg_metrics,  # 不再对所有字段round，因为包含字符串
         }
         
         return result
@@ -343,16 +413,33 @@ class PatternAnalyzer:
         report_lines.append("")
         
         # 早盘vs午盘
-        report_lines.append("早盘vs午盘:")
-        report_lines.append(f"  早盘价格高: {result['morning_high_count']} ({result['morning_high_count']/result['total_stocks']*100:.1f}%)")
-        report_lines.append(f"  午盘价格高: {result['afternoon_high_count']} ({result['afternoon_high_count']/result['total_stocks']*100:.1f}%)")
+        report_lines.append("早盘vs午盘（个股统计）:")
+        report_lines.append(f"  早盘强: {result['morning_high_count']} ({result['morning_high_count']/result['total_stocks']*100:.1f}%)")
+        report_lines.append(f"  午盘强: {result['afternoon_high_count']} ({result['afternoon_high_count']/result['total_stocks']*100:.1f}%)")
         report_lines.append(f"  持平: {result['session_flat_count']} ({result['session_flat_count']/result['total_stocks']*100:.1f}%)")
         report_lines.append("")
+
+        # 市场整体动能判断
+        avg_mtr = result['avg_metrics']
+        if 'market_session_trend' in avg_mtr:
+            report_lines.append("市场整体动能判断（基于加权平均）:")
+            report_lines.append(f"  整体趋势: {avg_mtr['market_session_trend']}")
+            report_lines.append(f"  早盘平均涨幅: {avg_mtr['avg_morning_momentum']:.2f}%")
+            report_lines.append(f"  午盘平均涨幅: {avg_mtr['avg_afternoon_momentum']:.2f}%")
+            report_lines.append(f"  昨日惯性因子: {avg_mtr['avg_inertia']:.2f}%")
+            report_lines.append(f"  早盘真实动能: {avg_mtr['market_morning_real']:.2f}% (扣除惯性后)")
+            report_lines.append(f"  午盘真实动能: {avg_mtr['market_afternoon_real']:.2f}%")
+            report_lines.append("")
+            report_lines.append(f"  解读: {avg_mtr['market_session_description']}")
+            report_lines.append("")
         
         # 平均指标
         report_lines.append("市场平均指标:")
         for key, value in result['avg_metrics'].items():
-            report_lines.append(f"  {key}: {value:.2f}%")
+            if isinstance(value, (int, float)):
+                report_lines.append(f"  {key}: {value:.2f}%")
+            else:
+                report_lines.append(f"  {key}: {value}")
         report_lines.append("")
         
         # 形态分布

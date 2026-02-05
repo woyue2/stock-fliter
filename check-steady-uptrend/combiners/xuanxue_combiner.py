@@ -241,8 +241,9 @@ class XuanxueCombiner:
         if df.empty:
             return None
 
-        df = df.sort_values(by=["avg_return", "count"], ascending=[False, False])
-        row = df.iloc[0]
+        # 平衡收益和信号数量：选择前5名中信号数最多的参数
+        df_top5 = df.sort_values(by="avg_return", ascending=False).head(5)
+        row = df_top5.sort_values(by="count", ascending=False).iloc[0]
 
         return GridCombo(
             bb_window=int(row["bb_window"]),

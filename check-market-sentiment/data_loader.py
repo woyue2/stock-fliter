@@ -344,21 +344,23 @@ class MarketDataLoader:
     
     def calculate_previous_close(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        计算每只股票的前一交易日收盘价
-        
+        计算每只股票的前一交易日数据（收盘价、开盘价等）
+
         Args:
             df: 股票数据DataFrame
-        
+
         Returns:
-            添加了 prev_close 列的DataFrame
+            添加了前一日数据列的DataFrame
         """
         if df.empty:
             return df
-        
+
         # 确保按代码和日期排序
         df = df.sort_values(['code', 'date'])
-        
-        # 使用 groupby + shift 计算前一日收盘价
+
+        # 使用 groupby + shift 计算前一日数据
         df['prev_close'] = df.groupby('code')['close'].shift(1)
-        
+        df['yesterday_open'] = df.groupby('code')['open'].shift(1)
+        df['yesterday_close'] = df.groupby('code')['close'].shift(1)
+
         return df

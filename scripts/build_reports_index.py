@@ -122,7 +122,7 @@ def collect_all_dates(per_module: dict[str, dict[str, Path]]) -> list[str]:
     return sorted(dates, reverse=True)
 
 
-def build_list_html(project: Path, per_module: dict[str, dict[str, Path]], dates: list[str]) -> str:
+def build_list_html(project: Path, per_module: dict[str, dict[str, Path]], dates: list[str], output_dir: Path) -> str:
     """生成简单列表页 HTML 内容（reports_list.html）。"""
     module_names = [name for name, _ in CONFIG]
     rows = []
@@ -132,15 +132,9 @@ def build_list_html(project: Path, per_module: dict[str, dict[str, Path]], dates
             data = per_module.get(name, {})
             path = data.get(date_str)
             if path:
-                # 使用绝对路径，优先生成适配 WSL 在 Windows 浏览器中的路径:
-                #   file://wsl.localhost/<distro>/home/...
-                full_path = (project / path).resolve()
-                wsl_distro = os.environ.get("WSL_DISTRO_NAME")
-                if wsl_distro:
-                    href = f"file://wsl.localhost/{wsl_distro}{full_path}"
-                else:
-                    href = full_path.as_uri()
-                cells.append(f'<td><a href="{href}" target="_blank">查看</a></td>')
+                # 使用相对路径（从 output_dir 到 report 文件）
+                rel_path = os.path.relpath(project / path, output_dir)
+                cells.append(f'<td><a href="{rel_path}" target="_blank">查看</a></td>')
             else:
                 cells.append("<td>-</td>")
         rows.append("<tr>" + "".join(cells) + "</tr>")
@@ -180,10 +174,10 @@ def build_list_html(project: Path, per_module: dict[str, dict[str, Path]], dates
     return html
 
 
-def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], dates: list[str]) -> str:
+def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], dates: list[str], output_dir: Path) -> str:
     """生成带搜索功能的索引页 HTML 内容（reports_index.html）。"""
     module_names = [name for name, _ in CONFIG]
-    
+
     # 构建报告列表的表格行
     table_rows = []
     for date_str in dates:
@@ -192,17 +186,13 @@ def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], date
             data = per_module.get(name, {})
             path = data.get(date_str)
             if path:
-                full_path = (project / path).resolve()
-                wsl_distro = os.environ.get("WSL_DISTRO_NAME")
-                if wsl_distro:
-                    href = f"file://wsl.localhost/{wsl_distro}{full_path}"
-                else:
-                    href = full_path.as_uri()
-                cells.append(f'<td><a href="{href}" target="_blank" class="link">查看</a></td>')
+                # 使用相对路径（从 output_dir 到 report 文件）
+                rel_path = os.path.relpath(project / path, output_dir)
+                cells.append(f'<td><a href="{rel_path}" target="_blank" class="link">查看</a></td>')
             else:
                 cells.append("<td>-</td>")
         table_rows.append("<tr>" + "".join(cells) + "</tr>")
-    
+
     table_body = "\n                        ".join(table_rows)
     
     html = f"""<!DOCTYPE html>
@@ -387,7 +377,7 @@ def build_index_html(project: Path, per_module: dict[str, dict[str, Path]], date
 
     <script>
         const API_BASE = 'http://127.0.0.1:5000';
-        
+
         // 回车搜索
         document.getElementById('searchInput').addEventListener('keypress', function(e) {{
             if (e.key === 'Enter') {{
@@ -681,13 +671,13 @@ def main() -> None:
         output_dir = project
     
     # 生成 reports_list.html（简单列表）
-    list_html = build_list_html(project, per_module, dates)
+    list_html = build_list_html(project, per_module, dates, output_dir)
     list_path = output_dir / "reports_list.html"
     list_path.write_text(list_html, encoding="utf-8")
     print(f"已生成: {list_path}")
-    
+
     # 生成 reports_index.html（带搜索功能）
-    index_html = build_index_html(project, per_module, dates)
+    index_html = build_index_html(project, per_module, dates, output_dir)
     index_path = output_dir / "reports_index.html"
     index_path.write_text(index_html, encoding="utf-8")
     print(f"已生成: {index_path}")

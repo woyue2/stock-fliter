@@ -264,6 +264,7 @@ def main():
             'code', 'name', 'date', 'open', 'close', 'high', 'low', 'prev_close',
             'pattern_name', 'open_change_pct', 'intraday_change_pct', 'total_change_pct',
             'amplitude', 'upper_shadow_ratio', 'lower_shadow_ratio', 'body_ratio',
+            'morning_relative_gain', 'afternoon_relative_gain', 'inertia_factor', 'adjusted_diff',  # 新增指标
             'morning_vs_afternoon', 'session_trend'
         ]
         export_cols = [col for col in export_cols if col in df.columns]

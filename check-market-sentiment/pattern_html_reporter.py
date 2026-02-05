@@ -429,23 +429,47 @@ class PatternHTMLReporter:
         afternoon_high_count = result['afternoon_high_count']
         session_flat_count = result['session_flat_count']
         total = result['total_stocks']
-        
+
         morning_pct = morning_high_count / total * 100
         afternoon_pct = afternoon_high_count / total * 100
         flat_pct = session_flat_count / total * 100
-        
-        avg_diff = result['avg_metrics']['avg_morning_vs_afternoon']
-        
-        # 判断市场特征
-        if morning_pct > afternoon_pct + 10:
-            market_feature = "早盘冲高，午盘回落"
-            feature_class = "bearish"
-        elif afternoon_pct > morning_pct + 10:
-            market_feature = "午盘走强，持续上涨"
-            feature_class = "bullish"
+
+        avg_metrics = result['avg_metrics']
+
+        # 使用市场整体动能判断（基于加权平均，而非个股数量）
+        if 'market_session_trend' in avg_metrics:
+            market_trend = avg_metrics['market_session_trend']
+            market_description = avg_metrics['market_session_description']
+            avg_morning = avg_metrics.get('avg_morning_momentum', 0)
+            avg_afternoon = avg_metrics.get('avg_afternoon_momentum', 0)
+            avg_inertia = avg_metrics.get('avg_inertia', 0)
+            market_morning_real = avg_metrics.get('market_morning_real', 0)
+            market_afternoon_real = avg_metrics.get('market_afternoon_real', 0)
+
+            # 根据市场整体动能判断特征
+            if market_trend == '早盘强':
+                market_feature = "早盘动能强（扣除惯性后）"
+                feature_class = "bearish"
+            elif market_trend == '午盘强':
+                market_feature = "午盘动能强（超越早盘惯性）"
+                feature_class = "bullish"
+            else:
+                market_feature = "早盘午盘动能均衡"
+                feature_class = "neutral"
         else:
-            market_feature = "全天走势均衡"
-            feature_class = "neutral"
+            # 降级：使用原始的个股数量判断
+            avg_diff = avg_metrics.get('avg_morning_vs_afternoon', 0)
+            if morning_pct > afternoon_pct + 10:
+                market_feature = "早盘冲高，午盘回落"
+                feature_class = "bearish"
+            elif afternoon_pct > morning_pct + 10:
+                market_feature = "午盘走强，持续上涨"
+                feature_class = "bullish"
+            else:
+                market_feature = "全天走势均衡"
+                feature_class = "neutral"
+            avg_morning = avg_afternoon = avg_inertia = market_morning_real = market_afternoon_real = 0
+            market_description = f"平均早午盘差异: {avg_diff:+.2f}%"
         
         html = f"""
             <div class="section">
@@ -453,7 +477,7 @@ class PatternHTMLReporter:
                 
                 <div class="pattern-grid">
                     <div class="pattern-card">
-                        <div class="pattern-name" style="color: #e74c3c;">早盘价格高</div>
+                        <div class="pattern-name" style="color: #e74c3c;">早盘强</div>
                         <div class="pattern-stats">
                             <span class="stat-label">数量:</span>
                             <span class="stat-value">{morning_high_count}</span>
@@ -466,12 +490,12 @@ class PatternHTMLReporter:
                             <div class="progress-fill" style="width: {morning_pct}%; background: linear-gradient(90deg, #fa709a 0%, #fee140 100%);"></div>
                         </div>
                         <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                            开盘冲高，午盘回落
+                            扣除惯性后早盘仍更强，主动性买盘积极
                         </div>
                     </div>
                     
                     <div class="pattern-card">
-                        <div class="pattern-name" style="color: #27ae60;">午盘价格高</div>
+                        <div class="pattern-name" style="color: #27ae60;">午盘强</div>
                         <div class="pattern-stats">
                             <span class="stat-label">数量:</span>
                             <span class="stat-value">{afternoon_high_count}</span>
@@ -484,7 +508,7 @@ class PatternHTMLReporter:
                             <div class="progress-fill" style="width: {afternoon_pct}%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);"></div>
                         </div>
                         <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                            持续走强，午盘更高
+                            午盘超越早盘惯性，持续走强
                         </div>
                     </div>
                     
@@ -508,24 +532,42 @@ class PatternHTMLReporter:
                 </div>
                 
                 <div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white;">
-                    <h3 style="margin-bottom: 15px; font-size: 1.3em;">市场特征</h3>
-                    <div style="font-size: 1.5em; font-weight: bold; margin-bottom: 10px;">{market_feature}</div>
-                    <div style="font-size: 1.1em; opacity: 0.9;">
-                        平均早午盘价格差异: {avg_diff:+.2f}%
-                        {'（早盘价格更高）' if avg_diff > 0 else '（午盘价格更高）' if avg_diff < 0 else '（基本持平）'}
+                    <h3 style="margin-bottom: 15px; font-size: 1.3em;">市场整体动能判断（基于加权平均）</h3>
+                    <div style="font-size: 1.8em; font-weight: bold; margin-bottom: 10px;">{market_feature}</div>
+                    <div style="font-size: 1.05em; opacity: 0.95; line-height: 1.6;">
+                        {market_description}
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.95em;">
+                        <strong>详细数据：</strong><br>
+                        早盘平均涨幅: {avg_morning:+.2f}% | 惯性因子: {avg_inertia:+.2f}% | 早盘真实动能: {market_morning_real:+.2f}%<br>
+                        午盘平均涨幅: {avg_afternoon:+.2f}% | 午盘真实动能: {market_afternoon_real:+.2f}%
                     </div>
                 </div>
                 
                 <div style="margin-top: 20px; padding: 15px; background: #f8f9ff; border-radius: 10px; border-left: 4px solid #667eea;">
-                    <h4 style="color: #667eea; margin-bottom: 10px;">💡 分析说明</h4>
+                    <h4 style="color: #667eea; margin-bottom: 10px;">💡 改进算法说明</h4>
                     <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
-                        <li><strong>早盘价格高</strong>：早盘特征价格 = 开盘价×70% + 最高价×30%</li>
-                        <li><strong>午盘价格高</strong>：午盘特征价格 = 收盘价×70% + 最低价×30%</li>
-                        <li><strong>判断标准</strong>：早午盘价格差异 > 0.5% 视为有明显差异</li>
+                        <li><strong>相对涨幅法</strong>：
+                            <ul style="margin-top: 5px;">
+                                <li>早盘涨幅 = (早盘特征价 - 昨收) / 昨收 × 100%</li>
+                                <li>午盘涨幅 = (午盘特征价 - 昨收) / 昨收 × 100%</li>
+                                <li>早盘特征价 = 开盘价×70% + 最高价×30%</li>
+                                <li>午盘特征价 = 收盘价×70% + 最低价×30%</li>
+                            </ul>
+                        </li>
+                        <li><strong>惯性修正</strong>：
+                            <ul style="margin-top: 5px;">
+                                <li>如果昨天是"午盘攀升"，今天早盘高开是正常的</li>
+                                <li>惯性修正因子 = 昨日日内涨幅 × 30%</li>
+                                <li>修正后差异 = 早盘涨幅 - 午盘涨幅 - 惯性因子</li>
+                            </ul>
+                        </li>
+                        <li><strong>判断标准</strong>：修正后差异 > 0.5% 视为有明显差异</li>
                         <li><strong>市场含义</strong>：
                             <ul style="margin-top: 5px;">
-                                <li>早盘高 → 开盘冲高后回落，可能存在获利盘抛压</li>
-                                <li>午盘高 → 持续走强，买盘积极，市场承接力好</li>
+                                <li>早盘强 → 扣除惯性后早盘仍更强，主动性买盘积极</li>
+                                <li>午盘强 → 午盘超越早盘惯性，持续走强</li>
+                                <li>持平 → 早午盘走势均衡，无显著差异</li>
                             </ul>
                         </li>
                     </ul>

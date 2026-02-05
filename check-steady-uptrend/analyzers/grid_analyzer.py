@@ -42,7 +42,16 @@ def bollinger_bands(series: pd.Series, window: int = 20, num_std: float = 2.0) -
 def volume_ratio(volumes: pd.Series, window: int = 20) -> pd.Series:
     return volumes / volumes.rolling(window=window).mean()
 
-
+## 网格测试修改 2026年2月5日
+#             参数组合            │ 6连阳 │ 近10天6涨1跌 │  说明  │                           
+#   ├────────────────────────────────┼───────┼──────────────┼────────┤                           
+#   │ 当前参数 (q=0.1, vol=1.5)      │ 3只   │ 17只         │ 太严格 │                           
+#   ├────────────────────────────────┼───────┼──────────────┼────────┤                           
+#   │ 宽松1 (q=0.3, vol=1.2)         │ 14只  │ 53只         │ 较合理 │         use                  
+#   ├────────────────────────────────┼───────┼──────────────┼────────┤                           
+#   │ 宽松2 (q=0.4, vol=1.0)         │ 25只  │ 66只         │ 很合理 │                           
+#   ├────────────────────────────────┼───────┼──────────────┼────────┤                           
+#   │ 宽松3 (q=0.5, vol=1.0, win=90) │ 28只  │ 73只         │ 最宽松 │  
 @dataclass
 class GridConfig:
     """网格测试配置"""
@@ -63,11 +72,13 @@ class GridConfig:
         if self.num_stds is None:
             self.num_stds = [2.0]
         if self.quantiles is None:
-            self.quantiles = [0.1, 0.2, 0.3]
+            # 宽松参数：允许波动率在历史较低（而非极低）水平
+            self.quantiles = [0.2, 0.3, 0.4]
         if self.quantile_windows is None:
             self.quantile_windows = [60, 120]
         if self.vol_ratio_thresholds is None:
-            self.vol_ratio_thresholds = [1.2, 1.5, 1.8]
+            # 宽松参数：降低成交量放大要求
+            self.vol_ratio_thresholds = [1.0, 1.2, 1.5]
 
 
 def process_stock_task(code: str, config: GridConfig, param_grid: List[Dict[str, float]], end_date: Optional[str] = None) -> Optional[List[Dict[int, List[float]]]]:
@@ -301,10 +312,20 @@ class GridAnalyzer:
             f"- 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             f"- 参数组合数: {len(df)}",
             "",
+        ]
+
+        # 如果DataFrame为空或没有horizon列，直接返回
+        if df.empty or "horizon" not in df.columns:
+            lines.append("⚠️ 未找到有效的网格测试结果，请检查数据或参数配置。")
+            with open(report_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+            return
+
+        lines.extend([
             "## 最优参数（按平均收益）",
             "",
-        ]
-        
+        ])
+
         for h in self.config.horizons:
             h_df = df[df["horizon"] == h].copy()
             if h_df.empty:
