@@ -123,7 +123,7 @@ def main():
     
     filter_levels = args.level
     if filter_levels is None:
-        filter_levels = ["三周期九底", "双周期九底", "单周期九底"]
+        filter_levels = ["三周期9底", "双周期9底", "单周期9底"]
     
     # 运行分析
     try:

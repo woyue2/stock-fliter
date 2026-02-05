@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-TD九底分析器
+TD多底分析器
 
 实现TD序列分析：
 - 日线九底
 - 周线九底
 - 月线九底
 - 多周期共振
+- 支持6底/7底/8底/9底
 
 使用项目统一的技术指标库
 """
@@ -50,6 +51,7 @@ class TDAnalyzerConfig:
     days: int = 365  # 分析最近天数
     td_threshold: int = 9  # 九底阈值
     near_threshold: int = 7  # 接近九底阈值
+    six_threshold: int = 6  # 六底阈值
 
 
 class TDAnalyzer:
@@ -155,15 +157,15 @@ class TDAnalyzer:
             # 股票标识
             "代码", "名称", "板块", "行业",
             # 核心筛选指标
-            "日TD计数", "周TD计数", "月TD计数", 
-            "9底周期数", "8底周期数", "7底周期数",
+            "日TD计数", "周TD计数", "月TD计数",
+            "9底周期数", "8底周期数", "7底周期数", "6底周期数",
             "共振级别", "底部详情",
             # 各周期底部级别
             "日底部级别", "周底部级别", "月底部级别",
-            # 各周期9/8/7底状态
-            "日9底", "日8底", "日7底",
-            "周9底", "周8底", "周7底",
-            "月9底", "月8底", "月7底",
+            # 各周期9/8/7/6底状态
+            "日9底", "日8底", "日7底", "日6底",
+            "周9底", "周8底", "周7底", "周6底",
+            "月9底", "月8底", "月7底", "月6底",
             # 最近高底位置
             "日最近高底日期", "日最近高底价格",
             "周最近高底日期", "周最近高底价格",
@@ -244,44 +246,49 @@ class TDAnalyzer:
                 f"{prefix}9底": False,
                 f"{prefix}8底": False,
                 f"{prefix}7底": False,
+                f"{prefix}6底": False,
                 f"{prefix}底部级别": "无",
                 f"{prefix}最近高底日期": "",
                 f"{prefix}最近高底价格": None,
             }
-        
+
         close_series = df["close"].reset_index(drop=True).astype(float)
         sequence = TechnicalIndicators.calculate_td_sequence(close_series)
         td_count = int(sequence.iloc[-1]) if not sequence.empty else 0
-        
+
         # 判断底部级别
         is_9 = td_count >= 9
         is_8 = td_count >= 8
         is_7 = td_count >= 7
-        
+        is_6 = td_count >= 6
+
         if is_9:
             level = "9底"
         elif is_8:
             level = "8底"
         elif is_7:
             level = "7底"
+        elif is_6:
+            level = "6底"
         else:
             level = "无"
-        
-        # 查找最近高底位置（>=7）
+
+        # 查找最近高底位置（>=6）
         last_high_date = ""
         last_high_price = None
         for idx in range(len(sequence) - 1, -1, -1):
-            if sequence.iloc[idx] >= 7:
+            if sequence.iloc[idx] >= 6:
                 row = df.iloc[idx]
                 last_high_date = pd.Timestamp(row["date"]).strftime("%Y-%m-%d")
                 last_high_price = round(float(row["close"]), 2)
                 break
-        
+
         return {
             f"{prefix}TD计数": td_count,
             f"{prefix}9底": is_9,
             f"{prefix}8底": is_8,
             f"{prefix}7底": is_7,
+            f"{prefix}6底": is_6,
             f"{prefix}底部级别": level,
             f"{prefix}最近高底日期": last_high_date,
             f"{prefix}最近高底价格": last_high_price,
@@ -291,15 +298,16 @@ class TDAnalyzer:
         """
         计算多周期共振，生成所有满足条件的组合并按降序排列
         优先级: 周期数越多越靠前，同周期数时阈值越高越靠前
+        支持6底/7底/8底/9底
         """
         # 判断各周期是否达到各级别
-        d9, d8, d7 = daily_td >= 9, daily_td >= 8, daily_td >= 7
-        w9, w8, w7 = weekly_td >= 9, weekly_td >= 8, weekly_td >= 7
-        m9, m8, m7 = monthly_td >= 9, monthly_td >= 8, monthly_td >= 7
-        
+        d9, d8, d7, d6 = daily_td >= 9, daily_td >= 8, daily_td >= 7, daily_td >= 6
+        w9, w8, w7, w6 = weekly_td >= 9, weekly_td >= 8, weekly_td >= 7, weekly_td >= 6
+        m9, m8, m7, m6 = monthly_td >= 9, monthly_td >= 8, monthly_td >= 7, monthly_td >= 6
+
         # 收集所有满足条件的组合
         combinations = []
-        
+
         # ========== 单周期组合 ==========
         if d9: combinations.append(("日", 9))
         if w9: combinations.append(("周", 9))
@@ -310,55 +318,64 @@ class TDAnalyzer:
         if d7: combinations.append(("日", 7))
         if w7: combinations.append(("周", 7))
         if m7: combinations.append(("月", 7))
-        
+        if d6: combinations.append(("日", 6))
+        if w6: combinations.append(("周", 6))
+        if m6: combinations.append(("月", 6))
+
         # ========== 双周期组合 ==========
         # 日周双周期
         if d9 and w9: combinations.append(("日周", 9))
         if d8 and w8: combinations.append(("日周", 8))
         if d7 and w7: combinations.append(("日周", 7))
+        if d6 and w6: combinations.append(("日周", 6))
         # 日月双周期
         if d9 and m9: combinations.append(("日月", 9))
         if d8 and m8: combinations.append(("日月", 8))
         if d7 and m7: combinations.append(("日月", 7))
+        if d6 and m6: combinations.append(("日月", 6))
         # 周月双周期
         if w9 and m9: combinations.append(("周月", 9))
         if w8 and m8: combinations.append(("周月", 8))
         if w7 and m7: combinations.append(("周月", 7))
-        
+        if w6 and m6: combinations.append(("周月", 6))
+
         # ========== 三周期组合 ==========
         if d9 and w9 and m9: combinations.append(("日周月", 9))
         if d8 and w8 and m8: combinations.append(("日周月", 8))
         if d7 and w7 and m7: combinations.append(("日周月", 7))
-        
+        if d6 and w6 and m6: combinations.append(("日周月", 6))
+
         # 按降序排列: 先按周期数(名称长度)，同周期数时按阈值降序
         def sort_key(item):
             name, threshold = item
             cycle_count = len(name)  # 单周期=1, 双周期=2, 三周期=3
             return (cycle_count, threshold)
-        
+
         combinations.sort(key=sort_key, reverse=True)
-        
+
         # 构建共振级别字符串
         if combinations:
             level = combinations[0][0] + str(combinations[0][1]) + "底"
         else:
             level = "无底部信号"
-        
+
         # 构建详细底部描述 (所有组合)
         details = []
         for name, threshold in combinations:
             details.append(f"{name}{threshold}")
         detail_str = "+".join(details) if details else "无"
-        
+
         # 计算各级别的周期数
         cycles_9 = sum([d9, w9, m9])
         cycles_8 = sum([d8, w8, m8])
         cycles_7 = sum([d7, w7, m7])
-        
+        cycles_6 = sum([d6, w6, m6])
+
         return {
             "9底周期数": cycles_9,
             "8底周期数": cycles_8,
             "7底周期数": cycles_7,
+            "6底周期数": cycles_6,
             "共振级别": level,
             "底部详情": detail_str,
         }

@@ -19,6 +19,7 @@ class MarkdownReporter:
         "三周期9底", "双周期9底", "单周期9底",
         "3周期8底", "2周期8底", "1周期8底",
         "3周期7底", "2周期7底", "1周期7底",
+        "3周期6底", "2周期6底", "1周期6底",
     ]
     
     def __init__(self, output_dir: Path, end_date: Optional[str] = None):
@@ -54,15 +55,21 @@ class MarkdownReporter:
                 count = level_counts.get(level, 0)
                 if count > 0:
                     lines.append(f"- {level}: {count}\n")
-            
+
             lines.append("\n### 8底信号\n")
             for level in ["3周期8底", "2周期8底", "1周期8底"]:
                 count = level_counts.get(level, 0)
                 if count > 0:
                     lines.append(f"- {level}: {count}\n")
-            
+
             lines.append("\n### 7底信号\n")
             for level in ["3周期7底", "2周期7底", "1周期7底"]:
+                count = level_counts.get(level, 0)
+                if count > 0:
+                    lines.append(f"- {level}: {count}\n")
+
+            lines.append("\n### 6底信号\n")
+            for level in ["3周期6底", "2周期6底", "1周期6底"]:
                 count = level_counts.get(level, 0)
                 if count > 0:
                     lines.append(f"- {level}: {count}\n")

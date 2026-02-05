@@ -40,11 +40,12 @@ class PipelineConfig:
     limit: Optional[int] = None  # 限制股票数量
     skip_fetch: bool = False  # 跳过数据获取
     
-    # 筛选配置：默认筛选有7底及以上的股票
+    # 筛选配置：默认筛选有6底及以上的股票
     filter_levels: list = field(default_factory=lambda: [
         "三周期9底", "双周期9底", "单周期9底",
         "3周期8底", "2周期8底", "1周期8底",
         "3周期7底", "2周期7底", "1周期7底",
+        "3周期6底", "2周期6底", "1周期6底",
     ])
     
     end_date: Optional[str] = None  # 截止日期

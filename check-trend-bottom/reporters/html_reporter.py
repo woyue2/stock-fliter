@@ -85,8 +85,8 @@ class HTMLReporter:
                           available_levels: list, level_data: dict, filename: str = "summary.html", date_str: str = None) -> Path:
         """生成主页"""
 
-        # 按底部级别分组（9底、8底、7底）
-        groups = {"9底": [], "8底": [], "7底": []}
+        # 按底部级别分组（9底、8底、7底、6底）
+        groups = {"9底": [], "8底": [], "7底": [], "6底": []}
         for level in available_levels:
             if "9底" in level:
                 groups["9底"].append((level, level_data[level]))
@@ -94,6 +94,8 @@ class HTMLReporter:
                 groups["8底"].append((level, level_data[level]))
             elif "7底" in level:
                 groups["7底"].append((level, level_data[level]))
+            elif "6底" in level:
+                groups["6底"].append((level, level_data[level]))
 
         # 生成导航项
         nav_items = ""
