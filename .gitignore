@@ -58,12 +58,14 @@ check-steady-uptrend/output/*
 check-new-indicators/output/*
 check-trend-bottom/output/*
 get-data/output/*
+check-market-sentiment/output/*
 
 # 保留 output 目录结构
 !check-steady-uptrend/output/.gitkeep
 !check-new-indicators/output/.gitkeep
 !check-trend-bottom/output/.gitkeep
 !get-data/output/.gitkeep
+!check-market-sentiment/output/.gitkeep
 
 # OS
 .DS_Store
@@ -98,3 +100,8 @@ check-steady-uptrend/.git/
 check-trend-bottom/.git/
 check-new-indicators/.git/
 
+# 临时分析输出与个人文件
+check-sell-decision/stock_analysis_*.md
+report_index/reports_index_*/
+Untitled.ipynb
+每日运行.md

@@ -147,10 +147,30 @@ def merge_minute_data(existing_df: Optional[pd.DataFrame], new_df: pd.DataFrame)
     return combined
 
 
+def get_realtime_file_path(code: str, data_dir: Path) -> Path:
+    """获取实时数据的文件路径"""
+    today = datetime.now().strftime('%Y-%m-%d')
+    date_dir = data_dir / today
+    date_dir.mkdir(parents=True, exist_ok=True)
+    return date_dir / f"{code}.csv"
+
+
+def is_file_valid(file_path: Path, min_rows: int = 100) -> bool:
+    """检查文件是否有效（存在且数据足够）"""
+    if not file_path.exists():
+        return False
+
+    try:
+        df = pd.read_csv(file_path)
+        return len(df) >= min_rows
+    except Exception:
+        return False
+
+
 def save_data(df: pd.DataFrame, code: str, data_dir: Path):
     """保存数据（按日期分类）"""
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # 按日期分文件夹存储
     if 'datetime' in df.columns and len(df) > 0:
         # 获取数据日期（取最新日期）
@@ -160,9 +180,9 @@ def save_data(df: pd.DataFrame, code: str, data_dir: Path):
         file_path = date_dir / f"{code}.csv"
     else:
         file_path = data_dir / f"{code}.csv"
-    
+
     df.to_csv(file_path, index=False, encoding='utf-8-sig')
-    
+
     # 返回保存的路径
     return file_path
 
@@ -242,9 +262,18 @@ def main():
     print(f"\n开始获取 {len(codes)} 只股票...")
     success = 0
     fail = 0
-    
+    skipped = 0
+
     for i, code in enumerate(codes):
         if args.realtime:
+            # 检查文件是否已存在且有效
+            file_path = get_realtime_file_path(code, data_dir)
+
+            if is_file_valid(file_path, min_rows=100):
+                print(f"  ⊙ {code}: 跳过（已存在 {len(pd.read_csv(file_path))} 条数据）")
+                skipped += 1
+                continue
+
             # 获取实时分钟数据
             df = fetch_realtime_minute(code)
             if df is not None and not df.empty:
@@ -257,10 +286,10 @@ def main():
             # 加载现有数据
             existing_file = data_dir / f"{code}.csv"
             existing_df = pd.read_csv(existing_file) if existing_file.exists() else None
-            
+
             # 获取新数据
             df = fetch_minute_data(code, start_date, end_date)
-            
+
             if df is not None:
                 # 合并
                 merged_df = merge_minute_data(existing_df, df)
@@ -269,14 +298,22 @@ def main():
                 success += 1
             else:
                 fail += 1
-        
+
         # 避免请求过快
         if (i + 1) % 10 == 0:
             time.sleep(0.5)
-    
-    print(f"\n✓ 完成！成功: {success}, 失败: {fail}")
+
+    print(f"\n✓ 完成！成功: {success}, 跳过: {skipped}, 失败: {fail}")
     print(f"数据保存至: {data_dir}")
-    
+
+    # 显示今天已下载的股票数量
+    if args.realtime:
+        today = datetime.now().strftime('%Y-%m-%d')
+        today_dir = data_dir / today
+        if today_dir.exists():
+            csv_files = list(today_dir.glob('*.csv'))
+            print(f"\n今天({today})已下载: {len(csv_files)} 只股票")
+
     # 显示样本
     if success > 0 and not args.realtime:
         sample_file = data_dir / f"{codes[0]}.csv"
