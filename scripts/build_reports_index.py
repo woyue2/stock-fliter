@@ -18,6 +18,7 @@ CONFIG = [
     ("稳步上升", "check-steady-uptrend/output"),
     ("TD九底", "check-trend-bottom/output"),
     ("新指标", "check-new-indicators/output"),  # 新增
+    ("量价确认", "check-volume-confirmation/output"),
 ]
 
 # 日期目录 YYYY-MM-DD
