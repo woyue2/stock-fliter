@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  pd.DataFrame, output path info
+# OUTPUT: Path
+# POS:    check-volume-confirmation/reporters/markdown_reporter.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 

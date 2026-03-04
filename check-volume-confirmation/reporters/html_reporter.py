@@ -26,15 +26,25 @@ def generate_html_report(
     report_date: str,
     module_name: str,
     strategy_name: str,
+    full_market_df: Optional[pd.DataFrame] = None,
 ) -> Path:
     ts = datetime.now().strftime("%H%M%S")
     summary_path = output_dir / f"summary_{report_date}_{ts}.html"
 
     data_date = f"{report_date[:4]}-{report_date[4:6]}-{report_date[6:8]}"
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 汇总各组数据
+    matched_groups = _build_groups(df)
+    final_groups = []
+    
+    # 如果有全市场数据，先加入全市场组（方便搜索全量）
+    if full_market_df is not None and not full_market_df.empty:
+        final_groups.append(("全市场", full_market_df.copy()))
+        
+    final_groups.extend(matched_groups)
 
-    grouped = _build_groups(df)
-    for group_name, group_df in grouped:
+    for group_name, group_df in final_groups:
         _write_detail_page(
             output_dir=output_dir,
             group_name=group_name,
@@ -44,14 +54,14 @@ def generate_html_report(
             generated_at=generated_at,
         )
 
-    default_group = grouped[0][0] if grouped else "全部命中"
+    default_group = final_groups[0][0] if final_groups else "全市场"
     summary_html = _build_summary_html(
         title=title,
         data_date=data_date,
         generated_at=generated_at,
         strategy_name=strategy_name,
         total_count=len(df),
-        groups=grouped,
+        groups=final_groups,
         default_group=default_group,
     )
     summary_path.write_text(summary_html, encoding="utf-8")
@@ -383,11 +393,12 @@ def _write_detail_page(
       <div class="header">
         <div>
           <span class="title">{escape(title)} - {escape(group_name)}</span>
-          <span class="count">共 {len(group_df)} 只</span>
+          <span class="count" id="visibleCount">共 {len(group_df)} 只</span>
         </div>
         <div class="toolbar">
           <span class="checked-info" id="checkedInfo">已选 0</span>
           <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
+          <button id="hideChuangKeBtn" class="btn active" onclick="toggleHideChuangKe()">隐藏创/科</button>
           <button class="btn" onclick="selectAll()">全选</button>
           <button class="btn" onclick="clearAll()">清除</button>
           <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
@@ -397,11 +408,11 @@ def _write_detail_page(
       <div class="stats">
         <div class="stats-group">
           <span class="stats-label">板块:</span>
-          {_build_stats_tags(group_df, 'board')}
+          <span id="boardStatsContainer">{_build_stats_tags(group_df, 'board')}</span>
         </div>
         <div class="stats-group">
           <span class="stats-label">行业:</span>
-          {_build_stats_tags(group_df, 'industry')}
+          <span id="industryStatsContainer">{_build_stats_tags(group_df, 'industry')}</span>
         </div>
       </div>
       <div class="table-wrap">
@@ -443,6 +454,7 @@ def _write_detail_page(
     const STORAGE_KEY = 'volume_confirmation_{escape(group_name.replace(" ", "_"))}';
     let currentUrl = '';
     let isPriceFilterActive = true; // 默认开启
+    let isHideChuangKeActive = true; // 默认隐藏创/科
     let currentSearchKeyword = '';
 
     // 初始化
@@ -462,21 +474,61 @@ def _write_detail_page(
       applyFilters();
     }}
 
+    function toggleHideChuangKe() {{
+      isHideChuangKeActive = !isHideChuangKeActive;
+      const btn = document.getElementById('hideChuangKeBtn');
+      if (isHideChuangKeActive) {{
+        btn.classList.add('active');
+      }} else {{
+        btn.classList.remove('active');
+      }}
+      applyFilters();
+    }}
+
     function filterTable(keyword) {{
       currentSearchKeyword = keyword.toLowerCase();
       applyFilters();
     }}
 
     function applyFilters() {{
+      const boardCounts = {{}};
+      const industryCounts = {{}};
+      let visibleCount = 0;
+
       document.querySelectorAll('#tbody tr').forEach(tr => {{
         const price = parseFloat(tr.dataset.price || 0);
         const text = tr.textContent.toLowerCase();
+        const b = tr.dataset.board || '';
+        const i = tr.dataset.industry || '';
         
         const matchesSearch = text.includes(currentSearchKeyword);
         const matchesPrice = !isPriceFilterActive || price < 10;
+        const isChuangKe = b === '创业板' || b === '科创板';
+        const matchesChuangKe = !isHideChuangKeActive || !isChuangKe;
         
-        tr.style.display = (matchesSearch && matchesPrice) ? '' : 'none';
+        if (matchesSearch && matchesPrice && matchesChuangKe) {{
+          tr.style.display = '';
+          visibleCount++;
+          if (b) boardCounts[b] = (boardCounts[b] || 0) + 1;
+          if (i) industryCounts[i] = (industryCounts[i] || 0) + 1;
+        }} else {{
+          tr.style.display = 'none';
+        }}
       }});
+
+      renderStats('boardStatsContainer', boardCounts);
+      renderStats('industryStatsContainer', industryCounts);
+      
+      const countEl = document.getElementById('visibleCount');
+      if (countEl) countEl.textContent = '共 ' + visibleCount + ' 只';
+    }}
+
+    function renderStats(containerId, countsObj) {{
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      const sorted = Object.entries(countsObj).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      container.innerHTML = sorted.map(item => `<span class="tag">${{item[0]}} ${{item[1]}}</span>`).join('\\n');
     }}
 
     function loadChecked() {{
@@ -565,13 +617,20 @@ def _build_rows_html(df: pd.DataFrame) -> str:
             
         conf_class = "conf-high" if confidence >= 60 else ""
         
+        board_str = escape(str(row['board']))
+        industry_str = escape(str(row['industry']))
+        is_hit = row.get('is_hit', True)
+        
+        row_style = "" if is_hit else "style=\"opacity: 0.6; filter: grayscale(0.8);\""
+        hit_tag = "" if is_hit else "<span style=\"color:#999;font-size:11px\"> (未命中)</span>"
+        
         chunks.append(
-            f"<tr data-code=\"{code}\" data-price=\"{close_price}\">"
+            f"<tr data-code=\"{code}\" data-price=\"{close_price}\" data-board=\"{board_str}\" data-industry=\"{industry_str}\" {row_style}>"
             f"<td><input type=\"checkbox\" class=\"check\" data-code=\"{code}\" onchange=\"saveChecked()\"></td>"
             f"<td><a href=\"javascript:void(0)\" class=\"code\" onclick=\"showStock('{escape(em_url)}')\">{escape(code)}</a></td>"
-            f"<td>{escape(str(row['name']))}</td>"
-            f"<td>{escape(str(row['board']))}</td>"
-            f"<td>{escape(str(row['industry']))}</td>"
+            f"<td>{escape(str(row['name']))}{hit_tag}</td>"
+            f"<td>{board_str}</td>"
+            f"<td>{industry_str}</td>"
             f"<td class=\"{conf_class}\">{confidence}</td>"
             f"<td class=\"{tag_class}\">{tag}</td>"
             f"<td>{shipan_display}</td>"

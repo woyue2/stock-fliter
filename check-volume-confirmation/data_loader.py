@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  CSV paths
+# OUTPUT: DataFrames and dicts
+# POS:    check-volume-confirmation/data_loader.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 

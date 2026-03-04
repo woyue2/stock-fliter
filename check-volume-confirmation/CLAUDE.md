@@ -13,9 +13,10 @@ Phase 6 补全结构，分离分析逻辑到 `analyzers/`。
 ```
 check-volume-confirmation/
 ├── main.py               ← 入口，CLI 参数解析
-├── pipeline.py           ← 流程包装（已存在 + Phase 6 引用 analyzers）
+├── pipeline.py           ← 流程包装（收集命中+全市场数据）
 ├── data_loader.py        ← 股票列表 + 日线数据加载
 ├── shipan_logic.py       ← 试盘行为识别
+├── 策略.md               ← 策略逻辑详细说明
 ├── analyzers/
 │   ├── __init__.py       ← 暴露 evaluate_stock, empty_result_df
 │   └── volume_analyzer.py ← 策略核心逻辑（Phase 6 从 pipeline.py 提取）

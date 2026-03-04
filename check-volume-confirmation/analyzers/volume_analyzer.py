@@ -1,6 +1,6 @@
 # [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
-# INPUT:  pd.DataFrame — 单股日线数据（需含 date/open/close/volume 列）；end_date: Optional[str]
-# OUTPUT: Tuple[Optional[dict], Optional[str]] — (命中结果行, 跳过原因)
+# INPUT:  pd.DataFrame — 单股日线数据; end_date: Optional[str]; return_all: bool
+# OUTPUT: Tuple[Optional[dict], Optional[str]] — 包含指标的字典（含 is_hit 字段）, 跳过原因
 # POS:    check-volume-confirmation/analyzers/volume_analyzer.py（Phase 6 从 pipeline.py 提取）
 # -*- coding: utf-8 -*-
 """
@@ -60,15 +60,10 @@ def _calc_confidence(
         包含"涨停" → +10
         包含"上影" → +5
     """
-    # 基础分
-    if volume_ratio >= 2.0:
-        base = 60
-    elif volume_ratio >= 1.5:
-        base = 45
-    elif volume_ratio >= 1.2:
-        base = 30
-    else:
-        base = 20
+    # 基础分（线性平滑）：量比 1.0 -> 20分，量比 2.0 -> 60分
+    # 计算公式：20 + (volume_ratio - 1.0) * 40，上限 60
+    base = 20 + max(0, (volume_ratio - 1.0)) * 40
+    base = min(60, int(base))
 
     # 试盘次数加分
     shipan_bonus = min(shipan_count * 10, 30)
@@ -95,55 +90,46 @@ def _calc_tag(shipan_count: int) -> str:
 def evaluate_stock(
     df: pd.DataFrame,
     end_date: Optional[str] = None,
+    return_all: bool = False,
 ) -> Tuple[Optional[dict], Optional[str]]:
     """
-    判断单只股票是否命中"昨放量+今阳线"策略
+    分析股票量价特征逻辑
 
     Args:
-        df:       单股日线 DataFrame，列需含 date/open/close/volume
-        end_date: 截断日期 YYYY-MM-DD（None=使用全部数据）
-
-    Returns:
-        (result_row, None)  — 命中时返回数据行，跳过原因为 None
-        (None, reason)      — 未命中时返回 None，附带跳过原因字符串
+        df:         单股日线 DataFrame
+        end_date:   结束日期
+        return_all: 是否即使不符合策略条件也返回数据（用于全量页）
     """
     if df is None or df.empty:
         return None, "无数据"
 
-    # 如果指定了结束日期，截断数据
     if end_date:
         try:
             target_dt = pd.to_datetime(end_date)
             df = df[df["date"] <= target_dt].copy()
         except Exception:
-            return None, "结束日期格式错误"
+            return None, "日期错误"
 
     if len(df) < 5:
-        return None, "样本不足5天"
+        return None, "样本不足"
 
     last5 = df.tail(5).copy()
     if last5[["open", "close", "volume"]].isna().any().any():
         return None, "关键值缺失"
-    if (last5["volume"] <= 0).any():
-        return None, "成交量无效"
-
-    d0 = last5.iloc[-1]   # 今天
-    d1 = last5.iloc[-2]   # 昨天
+    
+    d0 = last5.iloc[-1]
+    d1 = last5.iloc[-2]
     d2 = last5.iloc[-3]
     d3 = last5.iloc[-4]
     d4 = last5.iloc[-5]
 
-    # 核心条件：昨放量 + 今阳线
-    yday_breakout = bool(
-        d1["volume"] > d2["volume"]
-        and d1["volume"] > d3["volume"]
-        and d1["volume"] > d4["volume"]
-    )
+    # 核心策略条件
+    yday_breakout = bool(d1["volume"] > d2["volume"] and d1["volume"] > d3["volume"] and d1["volume"] > d4["volume"])
     today_up = bool(d0["close"] > d0["open"])
+    is_hit = bool(yday_breakout and today_up)
 
-    if not (yday_breakout and today_up):
-        reason = "非昨放量" if not yday_breakout else "今日非阳线"
-        return None, reason
+    if not is_hit and not return_all:
+        return None, ("非昨放量" if not yday_breakout else "今日非阳线")
 
     # 计算试盘行为
     shipan_count, shipan_detail = analyze_shipan_behavior(df)
@@ -174,7 +160,8 @@ def evaluate_stock(
         "shipan_detail": shipan_detail,
         "confidence":    confidence,
         "tag":           tag,
-        "signal":        "昨放量+今阳线",
+        "is_hit":        is_hit,
+        "signal":        "量价确认系统" if return_all else "昨放量+今阳线",
     }, None
 
 

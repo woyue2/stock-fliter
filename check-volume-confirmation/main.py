@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  CLI arguments
+# OUTPUT: Return code (int)
+# POS:    check-volume-confirmation/main.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
