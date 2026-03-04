@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>MAxRSIx6U1D+非放量突破</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            font-size: 13px;
+            color: #333;
+            background: #fff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .left-panel {
+            width: 35%;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+        }
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fafafa;
+        }
+        .right-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stock-frame {
+            flex: 1;
+            border: none;
+            width: 100%;
+        }
+        .placeholder {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+        .header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .count {
+            color: #666;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn:hover {
+            background: #f5f5f5;
+        }
+        .search {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 150px;
+        }
+        .stats {
+            padding: 12px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .stats-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .stats-label {
+            font-size: 12px;
+            color: #999;
+            margin-right: 4px;
+        }
+        .tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #fafafa;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        tr.checked {
+            background: #e8f5e9;
+        }
+        .code {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        .code:hover {
+            text-decoration: underline;
+        }
+        .td {
+            font-weight: 600;
+            text-align: center;
+        }
+        .td-high { color: #d32f2f; }
+        .td-mid { color: #f57c00; }
+        .td-low { color: #999; }
+        .macd-strength {
+            text-align: center;
+            font-weight: 600;
+        }
+        .detail {
+            font-size: 11px;
+            color: #1976d2;
+        }
+        .table-wrap {
+            overflow: auto;
+            flex: 1;
+        }
+        .checked-info {
+            font-size: 12px;
+            color: #4caf50;
+        }
+        .open-new {
+            font-size: 11px;
+            color: #1976d2;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .open-new:hover {
+            text-decoration: underline;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+            .left-panel { border-color: #333; }
+            .right-panel { background: #242424; }
+            .right-header { border-color: #333; color: #999; background: #1f1f1f; }
+            .header { background: #1f1f1f; border-color: #333; }
+            .toolbar { background: #1f1f1f; border-color: #333; }
+            .title { color: #e0e0e0; }
+            .count { color: #999; }
+            .stock-list { background: #1a1a1a; }
+            .stock-item { border-color: #333; }
+            .stock-item:hover { background: #2a2a2a; }
+            .stock-item.selected { background: #1e3a5f; border-color: #2d5a8e; }
+            .code { color: #8ab4f8; }
+            .name { color: #e0e0e0; }
+            .board { color: #999; }
+            .badge { background: #2a2a2a; color: #aaa; }
+            .badge.hit { background: #1e3a5f; color: #8ab4f8; }
+            .score { color: #81c784; }
+            .open-new { color: #8ab4f8; }
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <div class="header">
+        <div>
+            <span class="title">MAxRSIx6U1D+非放量突破</span>
+            <span class="count">共 109 只</span>
+        </div>
+        <div class="toolbar">
+            <span class="checked-info" id="checkedInfo">已选 0</span>
+            <button class="btn" onclick="selectAll()">全选</button>
+            <button class="btn" onclick="clearAll()">清除</button>
+            <button class="btn" onclick="exportCSV()">导出</button>
+            <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stats-group">
+            <span class="stats-label">板块:</span>
+            <span class="tag">上海主板 84</span><span class="tag">创业板 14</span><span class="tag">科创板 11</span>
+        </div>
+        <div class="stats-group">
+            <span class="stats-label">行业:</span>
+            <span class="tag">D44电力、热力生产和供应业 17</span><span class="tag">C26化学原料和化学制品制造业 11</span><span class="tag">C38电气机械和器材制造业 7</span><span class="tag">B06煤炭开采和洗选业 6</span><span class="tag">C39计算机、通信和其他电子设备制造业 6</span><span class="tag">D46水的生产和供应业 5</span><span class="tag">C35专用设备制造业 5</span><span class="tag">G55水上运输业 4</span><span class="tag">N77生态保护和环境治理业 4</span><span class="tag">C34通用设备制造业 4</span>
+        </div>
+    </div>
+    
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th width="30"></th>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>板块</th>
+                    <th>行业</th>
+                    <th>最新收盘</th>
+                    <th>最新日期</th>
+                    <th>MAxRSIx6U1D</th>
+                    <th>放量突破</th>
+                    <th>MACD金叉</th>
+                    <th>MACD强度</th>
+                    <th>TD计数</th>
+                    <th>所属策略</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                
+            <tr data-code="600008">
+                <td><input type="checkbox" class="check" data-code="600008" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600008.html')" class="code">600008</a></td>
+                <td>首创环保</td>
+                <td>上海主板</td>
+                <td>D46水的生产和供应业</td>
+                <td>3.13</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0282</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600017">
+                <td><input type="checkbox" class="check" data-code="600017" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600017.html')" class="code">600017</a></td>
+                <td>日照港</td>
+                <td>上海主板</td>
+                <td>G55水上运输业</td>
+                <td>3.16</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0297</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600023">
+                <td><input type="checkbox" class="check" data-code="600023" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600023.html')" class="code">600023</a></td>
+                <td>浙能电力</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>5.41</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0954</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600028">
+                <td><input type="checkbox" class="check" data-code="600028" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600028.html')" class="code">600028</a></td>
+                <td>中国石化</td>
+                <td>上海主板</td>
+                <td>B07石油和天然气开采业</td>
+                <td>7.4</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.271</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600032">
+                <td><input type="checkbox" class="check" data-code="600032" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600032.html')" class="code">600032</a></td>
+                <td>浙江新能</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>8.35</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1376</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600072">
+                <td><input type="checkbox" class="check" data-code="600072" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600072.html')" class="code">600072</a></td>
+                <td>中船科技</td>
+                <td>上海主板</td>
+                <td>E48土木工程建筑业</td>
+                <td>13.04</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3043</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600098">
+                <td><input type="checkbox" class="check" data-code="600098" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600098.html')" class="code">600098</a></td>
+                <td>广州发展</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>7.63</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1859</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600116">
+                <td><input type="checkbox" class="check" data-code="600116" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600116.html')" class="code">600116</a></td>
+                <td>三峡水利</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>6.81</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0503</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600131">
+                <td><input type="checkbox" class="check" data-code="600131" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600131.html')" class="code">600131</a></td>
+                <td>国网信通</td>
+                <td>上海主板</td>
+                <td>I65软件和信息技术服务业</td>
+                <td>19.45</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3747</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600132">
+                <td><input type="checkbox" class="check" data-code="600132" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600132.html')" class="code">600132</a></td>
+                <td>重庆啤酒</td>
+                <td>上海主板</td>
+                <td>C15酒、饮料和精制茶制造业</td>
+                <td>56.03</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.7411</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600157">
+                <td><input type="checkbox" class="check" data-code="600157" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600157.html')" class="code">600157</a></td>
+                <td>永泰能源</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>1.84</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0491</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600160">
+                <td><input type="checkbox" class="check" data-code="600160" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600160.html')" class="code">600160</a></td>
+                <td>巨化股份</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>40.87</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.978</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600176">
+                <td><input type="checkbox" class="check" data-code="600176" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600176.html')" class="code">600176</a></td>
+                <td>中国巨石</td>
+                <td>上海主板</td>
+                <td>C30非金属矿物制品业</td>
+                <td>26.42</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">2.1539</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600188">
+                <td><input type="checkbox" class="check" data-code="600188" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600188.html')" class="code">600188</a></td>
+                <td>兖矿能源</td>
+                <td>上海主板</td>
+                <td>B06煤炭开采和洗选业</td>
+                <td>19.5</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.3103</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600216">
+                <td><input type="checkbox" class="check" data-code="600216" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600216.html')" class="code">600216</a></td>
+                <td>浙江医药</td>
+                <td>上海主板</td>
+                <td>C27医药制造业</td>
+                <td>16.91</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.635</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600233">
+                <td><input type="checkbox" class="check" data-code="600233" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600233.html')" class="code">600233</a></td>
+                <td>圆通速递</td>
+                <td>上海主板</td>
+                <td>G60邮政业</td>
+                <td>18.93</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.488</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600256">
+                <td><input type="checkbox" class="check" data-code="600256" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600256.html')" class="code">600256</a></td>
+                <td>广汇能源</td>
+                <td>上海主板</td>
+                <td>B07石油和天然气开采业</td>
+                <td>6.88</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3475</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600299">
+                <td><input type="checkbox" class="check" data-code="600299" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600299.html')" class="code">600299</a></td>
+                <td>安迪苏</td>
+                <td>上海主板</td>
+                <td>C14食品制造业</td>
+                <td>11.8</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.6101</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600308">
+                <td><input type="checkbox" class="check" data-code="600308" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600308.html')" class="code">600308</a></td>
+                <td>华泰股份</td>
+                <td>上海主板</td>
+                <td>C22造纸和纸制品业</td>
+                <td>4.18</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0569</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600310">
+                <td><input type="checkbox" class="check" data-code="600310" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600310.html')" class="code">600310</a></td>
+                <td>广西能源</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>4.15</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0621</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600388">
+                <td><input type="checkbox" class="check" data-code="600388" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600388.html')" class="code">600388</a></td>
+                <td>龙净环保</td>
+                <td>上海主板</td>
+                <td>C35专用设备制造业</td>
+                <td>19.49</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.8506</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600395">
+                <td><input type="checkbox" class="check" data-code="600395" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600395.html')" class="code">600395</a></td>
+                <td>盘江股份</td>
+                <td>上海主板</td>
+                <td>B06煤炭开采和洗选业</td>
+                <td>6.04</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2666</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600396">
+                <td><input type="checkbox" class="check" data-code="600396" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600396.html')" class="code">600396</a></td>
+                <td>华电辽能</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>3.29</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0701</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600406">
+                <td><input type="checkbox" class="check" data-code="600406" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600406.html')" class="code">600406</a></td>
+                <td>国电南瑞</td>
+                <td>上海主板</td>
+                <td>I65软件和信息技术服务业</td>
+                <td>28.6</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.901</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600452">
+                <td><input type="checkbox" class="check" data-code="600452" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600452.html')" class="code">600452</a></td>
+                <td>涪陵电力</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>13.62</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.728</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600461">
+                <td><input type="checkbox" class="check" data-code="600461" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600461.html')" class="code">600461</a></td>
+                <td>洪城环境</td>
+                <td>上海主板</td>
+                <td>D46水的生产和供应业</td>
+                <td>9.84</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0879</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600482">
+                <td><input type="checkbox" class="check" data-code="600482" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600482.html')" class="code">600482</a></td>
+                <td>中国动力</td>
+                <td>上海主板</td>
+                <td>C37铁路、船舶、航空航天和其他运输设备制造业</td>
+                <td>34.31</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">2.4024</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600505">
+                <td><input type="checkbox" class="check" data-code="600505" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600505.html')" class="code">600505</a></td>
+                <td>西昌电力</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>15.05</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3576</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600508">
+                <td><input type="checkbox" class="check" data-code="600508" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600508.html')" class="code">600508</a></td>
+                <td>上海能源</td>
+                <td>上海主板</td>
+                <td>B06煤炭开采和洗选业</td>
+                <td>13.43</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2641</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600511">
+                <td><input type="checkbox" class="check" data-code="600511" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600511.html')" class="code">600511</a></td>
+                <td>国药股份</td>
+                <td>上海主板</td>
+                <td>F51批发业</td>
+                <td>29.78</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1532</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600517">
+                <td><input type="checkbox" class="check" data-code="600517" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600517.html')" class="code">600517</a></td>
+                <td>国网英大</td>
+                <td>上海主板</td>
+                <td>J69其他金融业</td>
+                <td>7.2</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1781</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600526">
+                <td><input type="checkbox" class="check" data-code="600526" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600526.html')" class="code">600526</a></td>
+                <td>菲达环保</td>
+                <td>上海主板</td>
+                <td>C35专用设备制造业</td>
+                <td>5.78</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0909</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600546">
+                <td><input type="checkbox" class="check" data-code="600546" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600546.html')" class="code">600546</a></td>
+                <td>山煤国际</td>
+                <td>上海主板</td>
+                <td>B06煤炭开采和洗选业</td>
+                <td>11.89</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3395</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600583">
+                <td><input type="checkbox" class="check" data-code="600583" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600583.html')" class="code">600583</a></td>
+                <td>海油工程</td>
+                <td>上海主板</td>
+                <td>B11开采专业及辅助性活动</td>
+                <td>8.17</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.4901</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600585">
+                <td><input type="checkbox" class="check" data-code="600585" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600585.html')" class="code">600585</a></td>
+                <td>海螺水泥</td>
+                <td>上海主板</td>
+                <td>C30非金属矿物制品业</td>
+                <td>25.07</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.5462</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600642">
+                <td><input type="checkbox" class="check" data-code="600642" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600642.html')" class="code">600642</a></td>
+                <td>申能股份</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>8.98</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1664</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600710">
+                <td><input type="checkbox" class="check" data-code="600710" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600710.html')" class="code">600710</a></td>
+                <td>苏美达</td>
+                <td>上海主板</td>
+                <td>F51批发业</td>
+                <td>13.12</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.5366</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600726">
+                <td><input type="checkbox" class="check" data-code="600726" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600726.html')" class="code">600726</a></td>
+                <td>华电能源</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>2.72</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0525</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600727">
+                <td><input type="checkbox" class="check" data-code="600727" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600727.html')" class="code">600727</a></td>
+                <td>鲁北化工</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>8.05</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2345</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600731">
+                <td><input type="checkbox" class="check" data-code="600731" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600731.html')" class="code">600731</a></td>
+                <td>湖南海利</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>7.6</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1209</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600742">
+                <td><input type="checkbox" class="check" data-code="600742" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600742.html')" class="code">600742</a></td>
+                <td>富维股份</td>
+                <td>上海主板</td>
+                <td>C36汽车制造业</td>
+                <td>10.67</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.279</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600746">
+                <td><input type="checkbox" class="check" data-code="600746" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600746.html')" class="code">600746</a></td>
+                <td>江苏索普</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>8.08</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2039</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600780">
+                <td><input type="checkbox" class="check" data-code="600780" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600780.html')" class="code">600780</a></td>
+                <td>通宝能源</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>6.52</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1341</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600866">
+                <td><input type="checkbox" class="check" data-code="600866" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600866.html')" class="code">600866</a></td>
+                <td>星湖科技</td>
+                <td>上海主板</td>
+                <td>C14食品制造业</td>
+                <td>7.62</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.127</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600873">
+                <td><input type="checkbox" class="check" data-code="600873" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600873.html')" class="code">600873</a></td>
+                <td>梅花生物</td>
+                <td>上海主板</td>
+                <td>C14食品制造业</td>
+                <td>11.19</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2012</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600874">
+                <td><input type="checkbox" class="check" data-code="600874" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600874.html')" class="code">600874</a></td>
+                <td>创业环保</td>
+                <td>上海主板</td>
+                <td>D46水的生产和供应业</td>
+                <td>6.33</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0507</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600901">
+                <td><input type="checkbox" class="check" data-code="600901" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600901.html')" class="code">600901</a></td>
+                <td>江苏金租</td>
+                <td>上海主板</td>
+                <td>J66货币金融服务</td>
+                <td>6.41</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0543</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600926">
+                <td><input type="checkbox" class="check" data-code="600926" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600926.html')" class="code">600926</a></td>
+                <td>杭州银行</td>
+                <td>上海主板</td>
+                <td>J66货币金融服务</td>
+                <td>16.49</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1951</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600938">
+                <td><input type="checkbox" class="check" data-code="600938" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600938.html')" class="code">600938</a></td>
+                <td>中国海油</td>
+                <td>上海主板</td>
+                <td>B07石油和天然气开采业</td>
+                <td>42.85</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">2.4054</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600982">
+                <td><input type="checkbox" class="check" data-code="600982" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600982.html')" class="code">600982</a></td>
+                <td>宁波能源</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>4.93</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0891</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="600995">
+                <td><input type="checkbox" class="check" data-code="600995" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600995.html')" class="code">600995</a></td>
+                <td>南网储能</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>14.67</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3248</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601016">
+                <td><input type="checkbox" class="check" data-code="601016" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601016.html')" class="code">601016</a></td>
+                <td>节能风电</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>3.24</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0405</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601018">
+                <td><input type="checkbox" class="check" data-code="601018" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601018.html')" class="code">601018</a></td>
+                <td>宁波港</td>
+                <td>上海主板</td>
+                <td>G55水上运输业</td>
+                <td>4.2</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1139</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601101">
+                <td><input type="checkbox" class="check" data-code="601101" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601101.html')" class="code">601101</a></td>
+                <td>昊华能源</td>
+                <td>上海主板</td>
+                <td>B06煤炭开采和洗选业</td>
+                <td>8.64</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2258</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601117">
+                <td><input type="checkbox" class="check" data-code="601117" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601117.html')" class="code">601117</a></td>
+                <td>中国化学</td>
+                <td>上海主板</td>
+                <td>E48土木工程建筑业</td>
+                <td>9.15</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2521</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601139">
+                <td><input type="checkbox" class="check" data-code="601139" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601139.html')" class="code">601139</a></td>
+                <td>深圳燃气</td>
+                <td>上海主板</td>
+                <td>D45燃气生产和供应业</td>
+                <td>7.3</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.144</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601199">
+                <td><input type="checkbox" class="check" data-code="601199" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601199.html')" class="code">601199</a></td>
+                <td>江南水务</td>
+                <td>上海主板</td>
+                <td>D46水的生产和供应业</td>
+                <td>6.09</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0846</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601200">
+                <td><input type="checkbox" class="check" data-code="601200" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601200.html')" class="code">601200</a></td>
+                <td>上海环境</td>
+                <td>上海主板</td>
+                <td>N77生态保护和环境治理业</td>
+                <td>8.54</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0679</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601218">
+                <td><input type="checkbox" class="check" data-code="601218" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601218.html')" class="code">601218</a></td>
+                <td>吉鑫科技</td>
+                <td>上海主板</td>
+                <td>C33金属制品业</td>
+                <td>5.54</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0652</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601330">
+                <td><input type="checkbox" class="check" data-code="601330" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601330.html')" class="code">601330</a></td>
+                <td>绿色动力</td>
+                <td>上海主板</td>
+                <td>N77生态保护和环境治理业</td>
+                <td>7.35</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0736</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601339">
+                <td><input type="checkbox" class="check" data-code="601339" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601339.html')" class="code">601339</a></td>
+                <td>百隆东方</td>
+                <td>上海主板</td>
+                <td>C17纺织业</td>
+                <td>7.09</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2075</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601368">
+                <td><input type="checkbox" class="check" data-code="601368" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601368.html')" class="code">601368</a></td>
+                <td>绿城水务</td>
+                <td>上海主板</td>
+                <td>D46水的生产和供应业</td>
+                <td>5.34</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0552</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601369">
+                <td><input type="checkbox" class="check" data-code="601369" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601369.html')" class="code">601369</a></td>
+                <td>陕鼓动力</td>
+                <td>上海主板</td>
+                <td>C34通用设备制造业</td>
+                <td>11.32</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3154</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601778">
+                <td><input type="checkbox" class="check" data-code="601778" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601778.html')" class="code">601778</a></td>
+                <td>晶科科技</td>
+                <td>上海主板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>4.54</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1193</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601798">
+                <td><input type="checkbox" class="check" data-code="601798" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601798.html')" class="code">601798</a></td>
+                <td>蓝科高新</td>
+                <td>上海主板</td>
+                <td>C35专用设备制造业</td>
+                <td>9.68</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1135</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601880">
+                <td><input type="checkbox" class="check" data-code="601880" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601880.html')" class="code">601880</a></td>
+                <td>辽港股份</td>
+                <td>上海主板</td>
+                <td>G55水上运输业</td>
+                <td>1.71</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.025</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="601918">
+                <td><input type="checkbox" class="check" data-code="601918" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh601918.html')" class="code">601918</a></td>
+                <td>新集能源</td>
+                <td>上海主板</td>
+                <td>B06煤炭开采和洗选业</td>
+                <td>8.16</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2537</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603050">
+                <td><input type="checkbox" class="check" data-code="603050" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603050.html')" class="code">603050</a></td>
+                <td>科林电气</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>21.37</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.5155</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603071">
+                <td><input type="checkbox" class="check" data-code="603071" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603071.html')" class="code">603071</a></td>
+                <td>物产环能</td>
+                <td>上海主板</td>
+                <td>F51批发业</td>
+                <td>14.33</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2079</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603227">
+                <td><input type="checkbox" class="check" data-code="603227" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603227.html')" class="code">603227</a></td>
+                <td>雪峰科技</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>8.84</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0956</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603306">
+                <td><input type="checkbox" class="check" data-code="603306" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603306.html')" class="code">603306</a></td>
+                <td>华懋科技</td>
+                <td>上海主板</td>
+                <td>C36汽车制造业</td>
+                <td>87.41</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">5.1016</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603345">
+                <td><input type="checkbox" class="check" data-code="603345" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603345.html')" class="code">603345</a></td>
+                <td>安井食品</td>
+                <td>上海主板</td>
+                <td>C13农副食品加工业</td>
+                <td>92.58</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.9584</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603379">
+                <td><input type="checkbox" class="check" data-code="603379" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603379.html')" class="code">603379</a></td>
+                <td>三美股份</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>72.35</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">2.7313</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603400">
+                <td><input type="checkbox" class="check" data-code="603400" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603400.html')" class="code">603400</a></td>
+                <td>华之杰</td>
+                <td>上海主板</td>
+                <td>C34通用设备制造业</td>
+                <td>68.6</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">3.8793</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603507">
+                <td><input type="checkbox" class="check" data-code="603507" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603507.html')" class="code">603507</a></td>
+                <td>振江股份</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>31.12</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.9041</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603565">
+                <td><input type="checkbox" class="check" data-code="603565" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603565.html')" class="code">603565</a></td>
+                <td>中谷物流</td>
+                <td>上海主板</td>
+                <td>G55水上运输业</td>
+                <td>10.98</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2092</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603639">
+                <td><input type="checkbox" class="check" data-code="603639" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603639.html')" class="code">603639</a></td>
+                <td>海利尔</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>14.33</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.263</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603689">
+                <td><input type="checkbox" class="check" data-code="603689" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603689.html')" class="code">603689</a></td>
+                <td>皖天然气</td>
+                <td>上海主板</td>
+                <td>D45燃气生产和供应业</td>
+                <td>8.94</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1387</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603790">
+                <td><input type="checkbox" class="check" data-code="603790" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603790.html')" class="code">603790</a></td>
+                <td>雅运股份</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>25.53</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.2353</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603912">
+                <td><input type="checkbox" class="check" data-code="603912" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603912.html')" class="code">603912</a></td>
+                <td>佳力图</td>
+                <td>上海主板</td>
+                <td>C34通用设备制造业</td>
+                <td>9.58</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2564</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="603989">
+                <td><input type="checkbox" class="check" data-code="603989" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh603989.html')" class="code">603989</a></td>
+                <td>艾华集团</td>
+                <td>上海主板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>18.86</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3929</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="605066">
+                <td><input type="checkbox" class="check" data-code="605066" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh605066.html')" class="code">605066</a></td>
+                <td>天正电气</td>
+                <td>上海主板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>8.58</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1558</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="605118">
+                <td><input type="checkbox" class="check" data-code="605118" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh605118.html')" class="code">605118</a></td>
+                <td>力鼎光电</td>
+                <td>上海主板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>43.46</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.9612</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="605589">
+                <td><input type="checkbox" class="check" data-code="605589" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh605589.html')" class="code">605589</a></td>
+                <td>圣泉集团</td>
+                <td>上海主板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>34.59</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.3867</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688009">
+                <td><input type="checkbox" class="check" data-code="688009" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688009.html')" class="code">688009</a></td>
+                <td>中国通号</td>
+                <td>科创板</td>
+                <td>C37铁路、船舶、航空航天和其他运输设备制造业</td>
+                <td>5.71</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0702</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688016">
+                <td><input type="checkbox" class="check" data-code="688016" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688016.html')" class="code">688016</a></td>
+                <td>心脉医疗</td>
+                <td>科创板</td>
+                <td>C35专用设备制造业</td>
+                <td>107.51</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">2.91</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688151">
+                <td><input type="checkbox" class="check" data-code="688151" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688151.html')" class="code">688151</a></td>
+                <td>华强科技</td>
+                <td>科创板</td>
+                <td>C27医药制造业</td>
+                <td>23.46</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.5706</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688301">
+                <td><input type="checkbox" class="check" data-code="688301" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688301.html')" class="code">688301</a></td>
+                <td>奕瑞科技</td>
+                <td>科创板</td>
+                <td>C35专用设备制造业</td>
+                <td>122.51</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">2.8121</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688378">
+                <td><input type="checkbox" class="check" data-code="688378" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688378.html')" class="code">688378</a></td>
+                <td>奥来德</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>38.05</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.5528</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688398">
+                <td><input type="checkbox" class="check" data-code="688398" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688398.html')" class="code">688398</a></td>
+                <td>赛特新材</td>
+                <td>科创板</td>
+                <td>C30非金属矿物制品业</td>
+                <td>24.54</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.3311</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688450">
+                <td><input type="checkbox" class="check" data-code="688450" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688450.html')" class="code">688450</a></td>
+                <td>光格科技</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>31.35</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.8315</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688455">
+                <td><input type="checkbox" class="check" data-code="688455" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688455.html')" class="code">688455</a></td>
+                <td>科捷智能</td>
+                <td>科创板</td>
+                <td>C34通用设备制造业</td>
+                <td>24.27</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.5354</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688517">
+                <td><input type="checkbox" class="check" data-code="688517" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688517.html')" class="code">688517</a></td>
+                <td>金冠电气</td>
+                <td>科创板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>18.08</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.276</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688616">
+                <td><input type="checkbox" class="check" data-code="688616" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688616.html')" class="code">688616</a></td>
+                <td>西力科技</td>
+                <td>科创板</td>
+                <td>C40仪器仪表制造业</td>
+                <td>13.68</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.1731</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="688667">
+                <td><input type="checkbox" class="check" data-code="688667" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh688667.html')" class="code">688667</a></td>
+                <td>菱电电控</td>
+                <td>科创板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>94.97</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">5.0606</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="300040">
+                <td><input type="checkbox" class="check" data-code="300040" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300040.html')" class="code">300040</a></td>
+                <td>九洲集团</td>
+                <td>创业板</td>
+                <td>D44电力、热力生产和供应业</td>
+                <td>7.52</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2193</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="300048">
+                <td><input type="checkbox" class="check" data-code="300048" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300048.html')" class="code">300048</a></td>
+                <td>合康新能</td>
+                <td>创业板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>7.81</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.2833</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="300185">
+                <td><input type="checkbox" class="check" data-code="300185" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300185.html')" class="code">300185</a></td>
+                <td>通裕重工</td>
+                <td>创业板</td>
+                <td>C33金属制品业</td>
+                <td>3.07</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0313</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="300569">
+                <td><input type="checkbox" class="check" data-code="300569" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300569.html')" class="code">300569</a></td>
+                <td>天能重工</td>
+                <td>创业板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>6.33</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.0676</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="300708">
+                <td><input type="checkbox" class="check" data-code="300708" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300708.html')" class="code">300708</a></td>
+                <td>聚灿光电</td>
+                <td>创业板</td>
+                <td>C39计算机、通信和其他电子设备制造业</td>
+                <td>10.43</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.21</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="300873">
+                <td><input type="checkbox" class="check" data-code="300873" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300873.html')" class="code">300873</a></td>
+                <td>海晨股份</td>
+                <td>创业板</td>
+                <td>G58多式联运和运输代理业</td>
+                <td>25.24</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.5135</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="300930">
+                <td><input type="checkbox" class="check" data-code="300930" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz300930.html')" class="code">300930</a></td>
+                <td>屹通新材</td>
+                <td>创业板</td>
+                <td>C42废弃资源综合利用业</td>
+                <td>32.86</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.4938</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="301059">
+                <td><input type="checkbox" class="check" data-code="301059" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301059.html')" class="code">301059</a></td>
+                <td>金三江</td>
+                <td>创业板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>14.74</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3718</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="301109">
+                <td><input type="checkbox" class="check" data-code="301109" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301109.html')" class="code">301109</a></td>
+                <td>军信股份</td>
+                <td>创业板</td>
+                <td>N77生态保护和环境治理业</td>
+                <td>17.02</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.4885</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="301115">
+                <td><input type="checkbox" class="check" data-code="301115" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301115.html')" class="code">301115</a></td>
+                <td>联检科技</td>
+                <td>创业板</td>
+                <td>M74专业技术服务业</td>
+                <td>20.05</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.7267</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="301193">
+                <td><input type="checkbox" class="check" data-code="301193" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301193.html')" class="code">301193</a></td>
+                <td>家联科技</td>
+                <td>创业板</td>
+                <td>C29橡胶和塑料制品业</td>
+                <td>26.96</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">1.0476</span></td>
+                <td class="td td-low">0</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="301203">
+                <td><input type="checkbox" class="check" data-code="301203" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301203.html')" class="code">301203</a></td>
+                <td>国泰环保</td>
+                <td>创业板</td>
+                <td>N77生态保护和环境治理业</td>
+                <td>46.13</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">3.1961</span></td>
+                <td class="td td-low">2</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="301386">
+                <td><input type="checkbox" class="check" data-code="301386" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301386.html')" class="code">301386</a></td>
+                <td>未来电器</td>
+                <td>创业板</td>
+                <td>C38电气机械和器材制造业</td>
+                <td>27.39</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.3668</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            <tr data-code="301395">
+                <td><input type="checkbox" class="check" data-code="301395" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sz301395.html')" class="code">301395</a></td>
+                <td>仁信新材</td>
+                <td>创业板</td>
+                <td>C26化学原料和化学制品制造业</td>
+                <td>15.0</td>
+                <td>2026-03-04</td>
+                <td>✅</td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #4caf50;">0.5786</span></td>
+                <td class="td td-low">1</td>
+                <td class="detail">MAxRSIx6U1D+非放量突破</td>
+            </tr>
+            
+            </tbody>
+        </table>
+    </div>
+    </div>
+    
+    <div class="right-panel">
+        <div class="right-header">
+            <span id="stockTitle">点击左侧股票代码查看详情</span>
+            <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+        </div>
+        <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+        <iframe id="stockFrame" class="stock-frame" style="display:none"></iframe>
+    </div>
+    
+    <script>
+        const STORAGE_KEY = 'new_strategy_MAxRSIx6U1D+非放量突破';
+        let currentUrl = '';
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', loadChecked);
+        
+        function loadChecked() {
+            const checked = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            checked.forEach(code => {
+                const cb = document.querySelector(`input[data-code="${code}"]`);
+                if (cb) {
+                    cb.checked = true;
+                    cb.closest('tr').classList.add('checked');
+                }
+            });
+            updateInfo();
+        }
+        
+        function saveChecked() {
+            const checked = [];
+            document.querySelectorAll('.check:checked').forEach(cb => {
+                checked.push(cb.dataset.code);
+                cb.closest('tr').classList.add('checked');
+            });
+            document.querySelectorAll('.check:not(:checked)').forEach(cb => {
+                cb.closest('tr').classList.remove('checked');
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+            updateInfo();
+            
+            // 通知父窗口更新已选股票列表
+            try {
+                window.parent.addSelectedStockFromChild(checked);
+            } catch (e) {}
+        }
+        
+        // 供父窗口调用：更新当前页面的勾选状态
+        function updateSelectionFromParent(selectedCodes) {
+            document.querySelectorAll('.check').forEach(cb => {
+                const isChecked = selectedCodes.includes(cb.dataset.code);
+                cb.checked = isChecked;
+                if (isChecked) {
+                    cb.closest('tr').classList.add('checked');
+                } else {
+                    cb.closest('tr').classList.remove('checked');
+                }
+            });
+            updateInfo();
+        }
+        
+        // 供父窗口调用：移除勾选
+        function removeStockSelection(code) {
+            const cb = document.querySelector(`input[data-code="${code}"]`);
+            if (cb) {
+                cb.checked = false;
+                cb.closest('tr').classList.remove('checked');
+            }
+            saveChecked();
+        }
+        
+        function updateInfo() {
+            const count = document.querySelectorAll('.check:checked').length;
+            document.getElementById('checkedInfo').textContent = '已选 ' + count;
+        }
+        
+        function selectAll() {
+            document.querySelectorAll('.check').forEach(cb => cb.checked = true);
+            saveChecked();
+        }
+        
+        function clearAll() {
+            document.querySelectorAll('.check').forEach(cb => cb.checked = false);
+            saveChecked();
+        }
+        
+        function exportCSV() {
+            const rows = [['代码', '名称']];
+            document.querySelectorAll('.check:checked').forEach(cb => {
+                const tr = cb.closest('tr');
+                rows.push([cb.dataset.code, tr.cells[2].textContent]);
+            });
+            if (rows.length === 1) { alert('请先选择股票'); return; }
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob(['\ufeff' + csv], {type: 'text/csv'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'MAxRSIx6U1D+非放量突破.csv';
+            a.click();
+        }
+        
+        function filterTable(keyword) {
+            keyword = keyword.toLowerCase();
+            document.querySelectorAll('#tbody tr').forEach(tr => {
+                tr.style.display = tr.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+            });
+        }
+        
+        function showStock(url) {
+            currentUrl = url;
+            const code = url.match(/([a-z]+\d+)\.html/)[1];
+            document.getElementById('stockTitle').textContent = code.toUpperCase();
+            document.getElementById('openNew').style.display = 'inline';
+            document.getElementById('placeholder').style.display = 'none';
+            const frame = document.getElementById('stockFrame');
+            frame.style.display = 'block';
+            frame.src = url;
+        }
+    </script>
+</body>
+</html>

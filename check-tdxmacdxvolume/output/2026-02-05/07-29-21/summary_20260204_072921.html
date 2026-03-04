@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新策略分析 - 2026-02-04</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .layout {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 200px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        .logo {
+            padding: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        .nav-group {
+            padding: 12px 20px 6px;
+            font-size: 12px;
+            color: #ff6b00;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .nav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-item:hover {
+            background: #f5f5f5;
+        }
+        .nav-item.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .strategy-name {
+            font-size: 14px;
+        }
+        .strategy-count {
+            font-size: 12px;
+            background: #e0e0e0;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .nav-item.active .strategy-count {
+            background: #1976d2;
+            color: #fff;
+        }
+        .nav-item.disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        .nav-item.disabled:hover {
+            background: #fff;
+        }
+        .nav-item.disabled .strategy-count {
+            background: #eee;
+            color: #ccc;
+        }
+        .selected-stocks {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            background: #fafafa;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .selected-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .selected-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .selected-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            background: #e3f2fd;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #1976d2;
+        }
+        .selected-item .remove {
+            margin-left: 4px;
+            cursor: pointer;
+            color: #999;
+        }
+        .selected-item .remove:hover {
+            color: #d32f2f;
+        }
+        .notes-section {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            background: #fff;
+        }
+        .notes-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .notes-input {
+            width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 12px;
+            resize: none;
+            font-family: inherit;
+        }
+        .notes-input:focus {
+            outline: none;
+            border-color: #1976d2;
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+            background: #fff;
+        }
+        .content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="logo">📊 新策略分析</div>
+            <div class="nav">
+                <div class="nav-group">强买入信号</div>
+                    <div class="nav-item  disabled" data-strategy="TD9+MACD金叉+放量突破" >
+                        <span class="strategy-name">TD9+MACD金叉+放量突破</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item active " data-strategy="TD9+MACD金叉" onclick="showStrategy('TD9+MACD金叉')">
+                        <span class="strategy-name">TD9+MACD金叉</span>
+                        <span class="strategy-count">1</span>
+                    </div>
+                    
+                    <div class="nav-item  " data-strategy="MAxRSIx6U1D+放量突破" onclick="showStrategy('MAxRSIx6U1D+放量突破')">
+                        <span class="strategy-name">MAxRSIx6U1D+放量突破</span>
+                        <span class="strategy-count">7</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD9+放量突破" >
+                        <span class="strategy-name">TD9+放量突破</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD9+MACD金叉+阴线+放量突破" >
+                        <span class="strategy-name">TD9+MACD金叉+阴线+放量突破</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  " data-strategy="TD7+MACD金叉" onclick="showStrategy('TD7+MACD金叉')">
+                        <span class="strategy-name">TD7+MACD金叉</span>
+                        <span class="strategy-count">1</span>
+                    </div>
+                    
+                    <div class="nav-item  " data-strategy="TD8+MACD金叉" onclick="showStrategy('TD8+MACD金叉')">
+                        <span class="strategy-name">TD8+MACD金叉</span>
+                        <span class="strategy-count">1</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD7+放量突破" >
+                        <span class="strategy-name">TD7+放量突破</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD8+放量突破" >
+                        <span class="strategy-name">TD8+放量突破</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD8+MACD金叉+阴线+放量突破" >
+                        <span class="strategy-name">TD8+MACD金叉+阴线+放量突破</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    <div class="nav-group">中买入信号</div>
+                    <div class="nav-item  disabled" data-strategy="TD9+MACD金叉+阴线" >
+                        <span class="strategy-name">TD9+MACD金叉+阴线</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  " data-strategy="MACD金叉+放量突破" onclick="showStrategy('MACD金叉+放量突破')">
+                        <span class="strategy-name">MACD金叉+放量突破</span>
+                        <span class="strategy-count">3</span>
+                    </div>
+                    
+                    <div class="nav-item  " data-strategy="非MAxRSIx6U1D+MACD金叉" onclick="showStrategy('非MAxRSIx6U1D+MACD金叉')">
+                        <span class="strategy-name">非MAxRSIx6U1D+MACD金叉</span>
+                        <span class="strategy-count">57</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD9+MAxRSIx6U1D" >
+                        <span class="strategy-name">TD9+MAxRSIx6U1D</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD7+MACD金叉+阴线" >
+                        <span class="strategy-name">TD7+MACD金叉+阴线</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD8+MACD金叉+阴线" >
+                        <span class="strategy-name">TD8+MACD金叉+阴线</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    <div class="nav-group">观察信号</div>
+                    <div class="nav-item  disabled" data-strategy="MAxRSIx6U1D+MACD金叉" >
+                        <span class="strategy-name">MAxRSIx6U1D+MACD金叉</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+                    <div class="nav-item  " data-strategy="MAxRSIx6U1D+非放量突破" onclick="showStrategy('MAxRSIx6U1D+非放量突破')">
+                        <span class="strategy-name">MAxRSIx6U1D+非放量突破</span>
+                        <span class="strategy-count">30</span>
+                    </div>
+                    
+                    <div class="nav-item  " data-strategy="TD9或MACD金叉" onclick="showStrategy('TD9或MACD金叉')">
+                        <span class="strategy-name">TD9或MACD金叉</span>
+                        <span class="strategy-count">97</span>
+                    </div>
+                    
+                    <div class="nav-item  disabled" data-strategy="TD7+MACD金叉+阴线+放量突破" >
+                        <span class="strategy-name">TD7+MACD金叉+阴线+放量突破</span>
+                        <span class="strategy-count">0</span>
+                    </div>
+                    
+            </div>
+            <!-- 已选股票 -->
+            <div class="selected-stocks">
+                <div class="selected-title">
+                    <span>⭐ 已选股票</span>
+                    <span id="selectedCount">0只</span>
+                </div>
+                <div class="selected-list" id="selectedList"></div>
+            </div>
+            <!-- 备注 -->
+            <div class="notes-section">
+                <div class="notes-label">📝 备注</div>
+                <textarea class="notes-input" id="notesInput" placeholder="添加备注..." rows="3"></textarea>
+            </div>
+        </div>
+        <div class="main">
+            <div class="content" id="content">
+                <iframe src="TD9+MACD金叉.html"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const availableStrategies = ["TD9+MACD金叉", "MAxRSIx6U1D+放量突破", "TD7+MACD金叉", "TD8+MACD金叉", "MACD金叉+放量突破", "非MAxRSIx6U1D+MACD金叉", "MAxRSIx6U1D+非放量突破", "TD9或MACD金叉"];
+        const emptyStrategies = {"TD9+MACD金叉+放量突破": true, "TD9+MACD金叉": false, "MAxRSIx6U1D+放量突破": false, "TD9+放量突破": true, "TD9+MACD金叉+阴线": true, "TD9+MACD金叉+阴线+放量突破": true, "TD7+MACD金叉": false, "TD8+MACD金叉": false, "TD7+放量突破": true, "TD8+放量突破": true, "TD8+MACD金叉+阴线+放量突破": true, "MACD金叉+放量突破": false, "非MAxRSIx6U1D+MACD金叉": false, "TD9+MAxRSIx6U1D": true, "TD7+MACD金叉+阴线": true, "TD8+MACD金叉+阴线": true, "MAxRSIx6U1D+MACD金叉": true, "MAxRSIx6U1D+非放量突破": false, "TD9或MACD金叉": false, "TD7+MACD金叉+阴线+放量突破": true};
+        const STORAGE_KEY = 'selected_stocks';
+        const NOTES_KEY = 'report_notes';
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSelectedStocks();
+            loadNotes();
+            
+            // 监听 iframe 消息
+            window.addEventListener('message', handleIframeMessage);
+        });
+        
+        // 处理 iframe 消息
+        function handleIframeMessage(event) {
+            if (event.data && event.data.type === 'selectionUpdate') {
+                renderSelectedStocks(event.data.stocks);
+            }
+        }
+        
+        // 供子页面调用：更新已选股票列表
+        window.addSelectedStockFromChild = function(selectedCodes) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedCodes));
+            renderSelectedStocks(selectedCodes);
+            
+            // 同步到所有 iframe
+            document.querySelectorAll('iframe').forEach(iframe => {
+                try {
+                    iframe.contentWindow.updateSelectionFromParent(selectedCodes);
+                } catch (e) {}
+            });
+        };
+        
+        // 加载已选股票
+        function loadSelectedStocks() {
+            const stocks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            renderSelectedStocks(stocks);
+        }
+        
+        // 渲染已选股票列表
+        function renderSelectedStocks(stocks) {
+            const container = document.getElementById('selectedList');
+            const countEl = document.getElementById('selectedCount');
+            countEl.textContent = stocks.length + '只';
+            
+            if (stocks.length === 0) {
+                container.innerHTML = '<span style="color:#999;font-size:11px;">暂无</span>';
+                return;
+            }
+            
+            container.innerHTML = stocks.map(code => `
+                <span class="selected-item" data-code="${code}">
+                    ${code}
+                    <span class="remove" onclick="removeStock('${code}')">×</span>
+                </span>
+            `).join('');
+        }
+        
+        // 添加已选股票（供 iframe 调用）
+        function addSelectedStock(code) {
+            const stocks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            if (!stocks.includes(code)) {
+                stocks.push(code);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(stocks));
+                renderSelectedStocks(stocks);
+                
+                // 同步到所有 iframe
+                document.querySelectorAll('iframe').forEach(iframe => {
+                    try {
+                        iframe.contentWindow.updateSelectionFromParent(stocks);
+                    } catch (e) {}
+                });
+            }
+        }
+        
+        // 移除已选股票
+        function removeStock(code) {
+            let stocks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            stocks = stocks.filter(c => c !== code);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stocks));
+            renderSelectedStocks(stocks);
+            
+            // 通知所有 iframe 更新勾选状态
+            document.querySelectorAll('iframe').forEach(iframe => {
+                try {
+                    iframe.contentWindow.removeStockSelection(code);
+                } catch (e) {}
+            });
+        }
+        
+        // 加载备注
+        function loadNotes() {
+            const notes = localStorage.getItem(NOTES_KEY) || '';
+            document.getElementById('notesInput').value = notes;
+        }
+        
+        // 保存备注
+        document.getElementById('notesInput').addEventListener('input', function() {
+            localStorage.setItem(NOTES_KEY, this.value);
+        });
+        
+        // 显示策略
+        function showStrategy(strategy) {
+            // 更新导航状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.strategy === strategy) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // 更新 iframe
+            if (availableStrategies.includes(strategy)) {
+                document.getElementById('content').innerHTML = 
+                    `<iframe src="${strategy}.html"></iframe>`;
+            } else {
+                // 显示空状态页面
+                const emptyHtml = `
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;">
+                    <div style="text-align:center;">
+                        <div style="font-size:48px;margin-bottom:16px;">📭</div>
+                        <div style="font-size:16px;">暂无符合该策略的股票</div>
+                        <div style="font-size:14px;color:#ccc;margin-top:8px;">策略: ${strategy}</div>
+                    </div>
+                </div>`;
+                document.getElementById('content').innerHTML = emptyHtml;
+            }
+        }
+    </script>
+</body>
+</html>

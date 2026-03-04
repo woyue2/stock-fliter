@@ -76,7 +76,7 @@ python -c "import pandas as pd; df = pd.read_csv('data/selected_stocks_all.csv')
 恢复数据后，重新运行分析：
 
 ```bash
-cd C:\Users\Administrator\Desktop\Park\stocks-fliter\check-steady-uptrend
+cd C:\Users\Administrator\Desktop\Park\stocks-fliter\check-maxrsix6u1d
 python main.py --end-date 2026-01-30
 ```
 

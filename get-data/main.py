@@ -568,30 +568,32 @@ def main() -> int:
                     source = "baostock"
 
                 # 如果 BaoStock 失败或无数据，尝试 Tencent
-                # 修改逻辑：只要 new_df 为空就尝试 Tencent，不仅限于有 error_msg 的情况
                 baostock_failed = new_df is None or new_df.empty
                 if baostock_failed and start_date <= end_date:
                     bs_error = error_msg if error_msg else "无数据返回"
-                    # 清除当前行（进度条），打印重试信息
                     sys.stdout.write("\r" + " " * 100 + "\r")
                     print(f"[重试] {item.code} {item.name}: BaoStock 异常 ({bs_error}) -> 尝试腾讯接口")
                     
                     try:
                         new_df = fetch_tencent_daily(item.code, count=args.days)
                         source = "tencent"
-                        error_msg = None # 重置错误信息，因为腾讯可能成功
+                        error_msg = None
                         if new_df is None or new_df.empty:
                             error_msg = "腾讯接口也未返回数据"
+                        else:
+                            print(f"[重试] {item.code} {item.name}: 腾讯接口成功获取 {len(new_df)} 条数据")
                     except Exception as exc:
                         error_msg = f"腾讯接口报错: {str(exc)}"
 
                 row_count = 0
                 status = "failed"
                 merged_df = None
+                
+                # 合并数据
                 if new_df is not None and not new_df.empty:
                     new_df = new_df.copy()
                     new_df["code"] = item.code
-                    new_df["source"] = source
+                    new_df["source"] = source  # 这里会使用 try...except 中更新的 source ("tencent")
                     merged_df = merge_and_save(existing_df, new_df, path)
                     row_count = len(new_df)
                     status = "ok"

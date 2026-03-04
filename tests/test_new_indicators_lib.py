@@ -93,6 +93,18 @@ class TestNewIndicators(unittest.TestCase):
         self.assertEqual(td_seq.iloc[8], 5)
         # i=12: 70 < 80 -> 9
         self.assertEqual(td_seq.iloc[12], 9)
+        
+        # Test unbounded growth (i=13..16: 60)
+        # i=13: 60 < 80 -> 10
+        # i=14: 60 < 80 -> 11
+        # i=15: 60 < 80 -> 12
+        # i=16: 60 < 70 -> 13
+        for i in range(13, 17):
+            vals[i] = 60
+        close_long = pd.Series(vals, index=self.dates[:20])
+        td_seq_long = TechnicalIndicators.calculate_td_sequence(close_long)
+        self.assertEqual(td_seq_long.iloc[13], 10)
+        self.assertEqual(td_seq_long.iloc[16], 13)
 
 
     def test_resample_ohlcv(self):

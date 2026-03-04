@@ -1,0 +1,46 @@
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; }
+        .layout { display: flex; height: 100vh; }
+        .sidebar { width: 200px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; }
+        .logo { padding: 20px; font-size: 16px; font-weight: 600; color: #333; border-bottom: 1px solid #e0e0e0; }
+        .nav { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .nav-group { padding: 12px 20px 6px; font-size: 12px; color: #ff6b00; font-weight: 700; font-size: 13px; }
+        .nav-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; cursor: pointer; transition: all 0.2s; }
+        .nav-item:hover { background: #f5f5f5; }
+        .nav-item.active { background: #e3f2fd; color: #1976d2; }
+        .strategy-name { font-size: 14px; }
+        .strategy-count { font-size: 12px; background: #e0e0e0; padding: 2px 8px; border-radius: 10px; }
+        .nav-item.active .strategy-count { background: #1976d2; color: #fff; }
+        .nav-item.disabled { color: #ccc; cursor: not-allowed; }
+        .nav-item.disabled:hover { background: #fff; }
+        .nav-item.disabled .strategy-count { background: #eee; color: #ccc; }
+        .selected-stocks { padding: 15px 20px; border-top: 1px solid #e0e0e0; background: #fafafa; max-height: 150px; overflow-y: auto; }
+        .selected-title { font-size: 12px; color: #666; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .selected-list { display: flex; flex-wrap: wrap; gap: 4px; }
+        .selected-item { display: inline-flex; align-items: center; padding: 2px 6px; background: #e3f2fd; border-radius: 3px; font-size: 11px; color: #1976d2; }
+        .selected-item .remove { margin-left: 4px; cursor: pointer; color: #999; }
+        .selected-item .remove:hover { color: #d32f2f; }
+        .notes-section { padding: 15px 20px; border-top: 1px solid #e0e0e0; background: #fff; }
+        .notes-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+        .notes-input { width: 100%; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px; font-size: 12px; resize: none; font-family: inherit; }
+        .notes-input:focus { outline: none; border-color: #1976d2; }
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .content { flex: 1; background: #fff; }
+        .content iframe { width: 100%; height: 100%; border: none; }
+        .empty { display: flex; align-items: center; justify-content: center; height: 100%; color: #999; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+            .sidebar { background: #242424; border-color: #333; }
+            .logo { color: #e0e0e0; border-color: #333; }
+            .nav-item { color: #ccc; border-color: #333; }
+            .nav-item:hover { background: #2e2e2e; }
+            .nav-item.active { background: #1e3a5f; color: #8ab4f8; border-color: #2d5a8e; }
+            .nav-group { color: #999; }
+            .notes-section { background: #242424; border-color: #444; color: #e0e0e0; }
+            .notes-input { background: #1e1e1e; border-color: #555; color: #e0e0e0; }
+            .content { background: #1a1a1a; }
+            .selected-stocks { background: #1b1b1b; border-color: #333; }
+            .selected-item { background: #1e3a5f; color: #8ab4f8; }
+        }
+        

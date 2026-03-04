@@ -54,20 +54,20 @@ get-data/data/*
 get-data/data/raw/**
 
 # Output directories
-check-steady-uptrend/output/*
+check-maxrsix6u1d/output/*
 check-new-indicators/output/*
-check-trend-bottom/output/*
+check-td/output/*
 get-data/output/*
 check-market-sentiment/output/*
-check-volume-confirmation/output/*
+check-volupxyangxshipan/output/*
 
 # 保留 output 目录结构
-!check-steady-uptrend/output/.gitkeep
+!check-maxrsix6u1d/output/.gitkeep
 !check-new-indicators/output/.gitkeep
-!check-trend-bottom/output/.gitkeep
+!check-td/output/.gitkeep
 !get-data/output/.gitkeep
 !check-market-sentiment/output/.gitkeep
-!check-volume-confirmation/output/.gitkeep
+!check-volupxyangxshipan/output/.gitkeep
 
 # OS
 .DS_Store
@@ -98,8 +98,8 @@ git-history-backup/
 *.hdf5
 
 # 子目录的 .git（防止子模块问题）
-check-steady-uptrend/.git/
-check-trend-bottom/.git/
+check-maxrsix6u1d/.git/
+check-td/.git/
 check-new-indicators/.git/
 
 # 临时分析输出与个人文件

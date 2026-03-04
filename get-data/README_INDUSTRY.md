@@ -65,7 +65,7 @@ python fetch_industry_akshare.py
 
 ## 与 HTML 报告的集成
 
-更新行业信息后，运行 `check-steady-uptrend` 模块生成的 HTML 报告将自动显示：
+更新行业信息后，运行 `check-maxrsix6u1d` 模块生成的 HTML 报告将自动显示：
 
 1. **股票列表中的行业**: 在股票名称后以括号形式显示，如 "浦发银行 (银行)"
 2. **行业统计**: 在侧边栏显示行业分布统计

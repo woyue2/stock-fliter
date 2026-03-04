@@ -2,7 +2,7 @@
 """
 生成选股报告索引页 reports_index.html。
 
-扫描 check-steady-uptrend/output 与 check-trend-bottom/output，
+扫描 check-maxrsix6u1d/output 与 check-td/output，
 按日期聚合，同一日期只链接该日最新时间戳下的 summary 报告。
 索引页生成在项目根目录，链接为相对路径，便于本地双击打开使用。
 """
@@ -15,10 +15,10 @@ import webbrowser
 
 # 模块显示名 -> output 相对路径（相对项目根）
 CONFIG = [
-    ("稳步上升", "check-steady-uptrend/output"),
-    ("TD九底", "check-trend-bottom/output"),
-    ("指标组合", "check-indicator-combo/output"),  # 新增
-    ("量价确认", "check-volume-confirmation/output"),
+    ("MAxRSIx6U1D", "check-maxrsix6u1d/output"),
+    ("TD分析", "check-td/output"),
+    ("TDxMACDxVolume", "check-tdxmacdxvolume/output"),  # 新增
+    ("VolUp x Yang x Shipan", "check-volupxyangxshipan/output"),
 ]
 
 # 日期目录 YYYY-MM-DD

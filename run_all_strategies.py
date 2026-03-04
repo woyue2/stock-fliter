@@ -4,10 +4,10 @@
 
 默认执行顺序：
 1. get-data/main.py --all
-2. check-trend-bottom/main.py --skip-fetch
-3. check-steady-uptrend/main.py
-4. check-indicator-combo/main.py
-5. check-volume-confirmation/main.py
+2. check-td/main.py --skip-fetch
+3. check-maxrsix6u1d/main.py
+4. check-tdxmacdxvolume/main.py
+5. check-volupxyangxshipan/main.py
 
 设计目标：
 - 便于在本地或云端用单个入口脚本挂到定时任务
@@ -121,10 +121,10 @@ def run_steps_parallel(steps: List[Step], ignore_errors: bool) -> int:
 
 def build_steps(
     skip_get_data: bool,
-    skip_trend_bottom: bool,
-    skip_steady_uptrend: bool,
-    skip_indicator_combo: bool,
-    skip_volume_confirmation: bool,
+    skip_td: bool,
+    skip_maxrsix6u1d: bool,
+    skip_tdxmacdxvolume: bool,
+    skip_volupxyangxshipan: bool,
     skip_build_index: bool,
     get_minutes: bool,
     end_date: Optional[str],
@@ -161,8 +161,8 @@ def build_steps(
     # 公共 end_date 参数
     end_date_args: List[str] = ["--end-date", end_date] if end_date else []
 
-    # 2. TD九底分析
-    if not skip_trend_bottom:
+    # 2. TD分析
+    if not skip_td:
         # 在静默模式下附加 --no-open，否则允许自动打开浏览器
         cmd = [sys.executable, "main.py", "--skip-fetch"]
         if browser_silent:
@@ -172,46 +172,46 @@ def build_steps(
             cmd.extend(["--limit", str(limit)])
         steps.append(
             Step(
-                name="TD九底分析 (check-trend-bottom)",
+                name="TD分析 (check-td)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-trend-bottom",
+                workdir=PROJECT_ROOT / "check-td",
                 group="analysis",
             )
         )
 
-    # 3. 稳步上升 / 趋势分析
-    if not skip_steady_uptrend:
+    # 3. MA x RSI x 6U1D 动量分析
+    if not skip_maxrsix6u1d:
         # 使用完整流程（读取 get-data/raw 数据并重新分析），不再复用旧结果，
-        # 便于在自动化/定时任务中每次得到新的稳步上升扫描结果。
+        # 便于在自动化/定时任务中每次得到新的扫描结果。
         cmd = [sys.executable, "main.py", *end_date_args]
         if limit:
             cmd.extend(["--limit", str(limit)])
         steps.append(
             Step(
-                name="稳步上升分析 (check-steady-uptrend)",
+                name="MAxRSIx6U1D分析 (check-maxrsix6u1d)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-steady-uptrend",
+                workdir=PROJECT_ROOT / "check-maxrsix6u1d",
                 group="analysis",
             )
         )
 
-    # 4. 指标组合分析
-    if not skip_indicator_combo:
+    # 4. TD x MACD x Volume 指标组合分析
+    if not skip_tdxmacdxvolume:
         cmd = [sys.executable, "main.py", *end_date_args]
         if limit:
             cmd.extend(["--limit", str(limit)])
         steps.append(
             Step(
-                name="指标组合分析 (check-indicator-combo)",
+                name="TDxMACDxVolume分析 (check-tdxmacdxvolume)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-indicator-combo",
+                workdir=PROJECT_ROOT / "check-tdxmacdxvolume",
                 group="analysis",
             )
         )
 
 
-    # 4.5 量价确认分析
-    if not skip_volume_confirmation:
+    # 4.5 VolUp x Yang x Shipan 动量分析
+    if not skip_volupxyangxshipan:
         cmd = [sys.executable, "main.py", *end_date_args]
         if limit:
             cmd.extend(["--limit", str(limit)])
@@ -219,9 +219,9 @@ def build_steps(
             cmd.append("--no-open")
         steps.append(
             Step(
-                name="量价确认分析 (check-volume-confirmation)",
+                name="VolUp x Yang x Shipan 分析 (check-volupxyangxshipan)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-volume-confirmation",
+                workdir=PROJECT_ROOT / "check-volupxyangxshipan",
                 group="analysis",
             )
         )
@@ -244,7 +244,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="统一运行 get-data + 各分析模块的调度脚本",
         epilog=(
-            "默认顺序: get-data → TD九底 → 稳步上升 → 指标组合 → 量价确认\n"
+            "默认顺序: get-data → TD分析 → MAxRSIx6U1D → 指标组合 → VolUp x Yang x Shipan\n"
             "示例:\n"
             "  python run_all_strategies.py                 # 全量运行\n"
             "  python run_all_strategies.py --skip-get-data # 仅重新跑分析模块\n"
@@ -262,24 +262,24 @@ def parse_args() -> argparse.Namespace:
         help="执行分钟数据拉取 (get-data/fetch_minute_data.py)，默认跳过",
     )
     parser.add_argument(
-        "--skip-trend-bottom",
+        "--skip-td",
         action="store_true",
-        help="跳过 TD九底模块 (check-trend-bottom)",
+        help="跳过 TD模块 (check-td)",
     )
     parser.add_argument(
-        "--skip-steady-uptrend",
+        "--skip-maxrsix6u1d",
         action="store_true",
-        help="跳过 稳步上升模块 (check-steady-uptrend)",
+        help="跳过 MAxRSIx6U1D 模块 (check-maxrsix6u1d)",
     )
     parser.add_argument(
-        "--skip-indicator-combo",
+        "--skip-tdxmacdxvolume",
         action="store_true",
-        help="跳过 指标组合模块 (check-indicator-combo)",
+        help="跳过 TDxMACDxVolume 模块 (check-tdxmacdxvolume)",
     )
     parser.add_argument(
-        "--skip-volume-confirmation",
+        "--skip-volupxyangxshipan",
         action="store_true",
-        help="跳过 量价确认模块 (check-volume-confirmation)",
+        help="跳过 VolUp x Yang x Shipan 模块 (check-volupxyangxshipan)",
     )
     parser.add_argument(
         "--skip-build-index",
@@ -335,17 +335,17 @@ def interactive_prompt(args: argparse.Namespace) -> None:
 
     # 2. 策略模块问询
     print("\n[步骤 2] 分析环境配置完成。以下是可用的策略模块：")
-    print("[1] TD九底分析 (check-trend-bottom)")
-    print("[2] 稳步上升分析 (check-steady-uptrend)")
-    print("[3] 指标组合分析 (check-indicator-combo)")
-    print("[4] 量价确认分析 (check-volume-confirmation)")
+    print("[1] TD分析 (check-td)")
+    print("[2] MAxRSIx6U1D 分析 (check-maxrsix6u1d)")
+    print("[3] TDxMACDxVolume 分析 (check-tdxmacdxvolume)")
+    print("[4] VolUp x Yang x Shipan 分析 (check-volupxyangxshipan)")
     print("\n有不需要执行的模组吗？(默认全跑，多线程并行)")
     ans_skip = input("👉 请输入要【跳过】的序号组合（比如 '23' 跳过稳步和组合，直接回车代表全跑）: ").strip()
     
-    if "1" in ans_skip: args.skip_trend_bottom = True
-    if "2" in ans_skip: args.skip_steady_uptrend = True
-    if "3" in ans_skip: args.skip_indicator_combo = True
-    if "4" in ans_skip: args.skip_volume_confirmation = True
+    if "1" in ans_skip: args.skip_td = True
+    if "2" in ans_skip: args.skip_maxrsix6u1d = True
+    if "3" in ans_skip: args.skip_tdxmacdxvolume = True
+    if "4" in ans_skip: args.skip_volupxyangxshipan = True
 
     # 交互模式下默认开启多线程
     args.parallel = True
@@ -361,10 +361,10 @@ def main() -> int:
 
     steps = build_steps(
         skip_get_data=args.skip_get_data,
-        skip_trend_bottom=args.skip_trend_bottom,
-        skip_steady_uptrend=args.skip_steady_uptrend,
-        skip_indicator_combo=args.skip_indicator_combo,
-        skip_volume_confirmation=args.skip_volume_confirmation,
+        skip_td=args.skip_td,
+        skip_maxrsix6u1d=args.skip_maxrsix6u1d,
+        skip_tdxmacdxvolume=args.skip_tdxmacdxvolume,
+        skip_volupxyangxshipan=args.skip_volupxyangxshipan,
         skip_build_index=args.skip_build_index,
         get_minutes=args.get_minutes,
         end_date=args.end_date,

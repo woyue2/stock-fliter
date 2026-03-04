@@ -36,18 +36,18 @@ python fetch_minute_akshare.py --all --realtime  # Real-time minute data
 
 **Analysis Modules** (read from `get-data/data/raw/`)
 ```bash
-# TD Bottom Analysis (TD Sequential 9/8/7 bottom signals)
-cd check-trend-bottom
+# TD Bottom Analysis (TD Sequential (check-td) 9/8/7 bottom signals)
+cd check-td
 python main.py --skip-fetch       # Use local data
 python main.py --test --skip-fetch
 
 # Steady Uptrend Analysis (trend following + volatility contraction)
-cd check-steady-uptrend
+cd check-maxrsix6u1d
 python main.py
 python main.py --analyzers 134    # Specific analyzer combo
 
 # Volume Confirmation (yesterday breakout + today bullish)
-cd check-volume-confirmation
+cd check-volupxyangxshipan
 python main.py --test --no-open
 ```
 
@@ -57,10 +57,7 @@ python main.py --test --no-open
 python scripts/build_reports_index.py
 
 # Network diagnostics
-python diagnose.py
-
-# Compare results between modules
-python compare_modules.py
+python scripts/diagnose.py
 ```
 
 ## Architecture
@@ -90,16 +87,23 @@ check-<strategy>/
 - `indicators_lib.py` - Technical indicators (RSI, MACD, Bollinger, etc.)
 - `progress.py` - Progress bar utilities
 - `stream_fetch.py` - Streaming data fetching
-- `url_utils.py` - `infer_market_prefix()` / `get_eastmoney_url()` — 东方财富 URL 工具（Phase 5）
-- `index_writer.py` - `write_to_stocks_index()` — 索引 CSV 公共写入（Phase 5）
-- `minute_analysis/` - Minute-level intraday analysis algorithms (SentimentEngine, TomorrowPredictor, MinutePatternAnalyzer, PatternAnalyzer, DataLoader)
+- `url_utils.py` - `url` logic (Eastmoney/Market prefix)
+- `index_writer.py` - Stock index CSV shared logic
+- `minute_analysis/` - Intraday pattern algorithms
 
-**tools/** - Developer utilities (Phase 2 迁入，不是业务组件)
-- `diagnose.py` - 网络/环境诊断工具
-- `compare_modules.py` - 模块输出对比工具
+**scripts/** - Infrastructure, diagnostics and automation
+- `build_reports_index.py` - Generates global report index
+- `diagnose.py` - Network and environment diagnostics
+- Run: `python scripts/{script_name}.py`
 
 **docs/** - 项目文档与演进日志
-- `evolution.md` - 技术债 / TODO / 已完成重构的时序记录（由 /git_commit 维护）
+**server/** - API services
+- `api_server.py` - Flask API for stock searching
+- Run: `python server/api_server.py`
+
+**tests/** - Core logic validation (regression tests)
+- `test_new_indicators_lib.py` - Indicators (TD 13/drawdown, etc.)
+- Run: `python tests/test_new_indicators_lib.py`
 
 **get-data/** - Central data hub
 - Outputs to `data/raw/{code}.csv` with columns: date, open, high, low, close, volume, amount, pctChg
@@ -110,10 +114,10 @@ check-<strategy>/
 
 | Module | Strategy | Key Metrics |
 |--------|----------|-------------|
-| check-trend-bottom | TD Sequential | TD9/TD8/TD7 multi-period resonance |
-| check-steady-uptrend | Trend following | MA alignment, volatility contraction |
-| check-indicator-combo | Indicator combos | 21-strategy combination: TD/MACD/volume/steady (Phase 3 架构对齐) |
-| check-volume-confirmation | Volume breakout | Yesterday volume > prior 3 days, today bullish (Phase 6 补全 analyzers/) |
+| check-td | TD Sequential (check-td) | TD9/TD8/TD7 multi-period resonance |
+| check-maxrsix6u1d | MAxRSIx6U1D | MA alignment, RSI filtering, 6U1D momentum |
+| check-tdxmacdxvolume | TDxMACDxVolume | 21-strategy combination: TD/MACD/volume/steady (Phase 3 架构对齐) |
+| check-volupxyangxshipan | VolUp x Yang x Shipan | Yesterday volume > 3d avg, today bullish, historical tests (Phase 6 补全) |
 | util/minute_analysis | Intraday pattern algorithms | MinutePatternAnalyzer, SentimentEngine, TomorrowPredictor, PatternAnalyzer, DataLoader (migrated from check-market-sentiment, Phase 0) |
 
 

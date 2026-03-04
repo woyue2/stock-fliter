@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>TD9或MACD金叉</title>
+    <link rel="stylesheet" href="assets/common_detail.css">
+</head>
+<body>
+    <div class="left-panel">
+        <div class="header">
+        <div>
+            <span class="title">TD9或MACD金叉</span>
+            <span class="count">共 2 只</span>
+        </div>
+        <div class="toolbar">
+            <span class="checked-info" id="checkedInfo">已选 0</span>
+            <button class="btn" onclick="selectAll()">全选</button>
+            <button class="btn" onclick="clearAll()">清除</button>
+            <button class="btn" onclick="exportCSV()">导出</button>
+            <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stats-group">
+            <span class="stats-label">板块:</span>
+            <span class="tag">上海主板 2</span>
+        </div>
+        <div class="stats-group">
+            <span class="stats-label">行业:</span>
+            <span class="tag">J66货币金融服务 1</span><span class="tag">C36汽车制造业 1</span>
+        </div>
+    </div>
+    
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th width="30"></th>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>板块</th>
+                    <th>行业</th>
+                    <th>最新收盘</th>
+                    <th>最新日期</th>
+                    <th>MAxRSIx6U1D</th>
+                    <th>放量突破</th>
+                    <th>MACD金叉</th>
+                    <th>MACD强度</th>
+                    <th>TD计数</th>
+                    <th>所属策略</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                
+            <tr data-code="600000">
+                <td><input type="checkbox" class="check" data-code="600000" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600000.html')" class="code">600000</a></td>
+                <td>浦发银行</td>
+                <td>上海主板</td>
+                <td>J66货币金融服务</td>
+                <td>9.6</td>
+                <td>2026-03-04</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.3228</span></td>
+                <td class="td td-high">10</td>
+                <td class="detail">TD9或MACD金叉</td>
+            </tr>
+            
+            <tr data-code="600006">
+                <td><input type="checkbox" class="check" data-code="600006" onchange="saveChecked()"></td>
+                <td><a href="javascript:void(0)" onclick="showStock('https://quote.eastmoney.com/sh600006.html')" class="code">600006</a></td>
+                <td>东风股份</td>
+                <td>上海主板</td>
+                <td>C36汽车制造业</td>
+                <td>6.86</td>
+                <td>2026-03-04</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="macd-strength"><span style="color: #999;">-0.0869</span></td>
+                <td class="td td-low">3</td>
+                <td class="detail">非MAxRSIx6U1D+MACD金叉,TD9或MACD金叉</td>
+            </tr>
+            
+            </tbody>
+        </table>
+    </div>
+    </div>
+    
+    <div class="right-panel">
+        <div class="right-header">
+            <span id="stockTitle">点击左侧股票代码查看详情</span>
+            <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+        </div>
+        <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+        <iframe id="stockFrame" class="stock-frame" style="display:none"></iframe>
+    </div>
+    
+    <script>
+        const STRATEGY_NAME = 'TD9或MACD金叉';
+        const STORAGE_KEY = 'new_strategy_TD9或MACD金叉';
+    </script>
+    <script src="assets/common_detail.js"></script>
+</body>
+</html>

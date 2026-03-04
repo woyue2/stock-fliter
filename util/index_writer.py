@@ -63,7 +63,7 @@ def write_to_stocks_index(
         from util.index_writer import write_to_stocks_index
         write_to_stocks_index([
             {"代码": "600519", "名称": "贵州茅台", "日期": "2026-03-04",
-             "模块": "TD九底", "策略级别": "日9底", "报告路径": "...",
+             "模块": "TD分析", "策略级别": "日9底", "报告路径": "...",
              "板块": "主板", "行业": "白酒", "生成时间": "2026-03-04 14:00:00"}
         ], report_date="20260304")
     """

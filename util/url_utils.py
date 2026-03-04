@@ -1,13 +1,13 @@
 # [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
 # INPUT:  code: str — 6位股票代码；board: Optional[str] — 板块名称（可选）
 # OUTPUT: str — 东方财富行情页面 URL
-# POS:    util/url_utils.py（从 check-steady-uptrend/utils.py 提升，Phase 5）
+# POS:    util/url_utils.py（从 check-maxrsix6u1d/utils.py 提升，Phase 5）
 # -*- coding: utf-8 -*-
 """
 东方财富 URL 工具函数
 
 提供股票代码 → 市场前缀 → eastmoney URL 的转换。
-迁移自 check-steady-uptrend/utils.py，统一供所有 check-* 模块使用。
+迁移自 check-maxrsix6u1d/utils.py，统一供所有 check-* 模块使用。
 
 约束：只依赖标准库，绝不 import check-* 模块（防循环依赖）。
 """

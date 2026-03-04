@@ -138,7 +138,7 @@ class TechnicalIndicators:
         max_drawdown=0.08
     ) -> pd.DataFrame:
         """
-        检测稳步上升形态
+        检测MAxRSIx6U1D形态
         
         Returns:
             DataFrame 包含中间计算结果和最终标志 'steady_uptrend'
@@ -200,7 +200,7 @@ class TechnicalIndicators:
         Returns:
             Series 包含TD计数 (正数为上涨序列，这里只实现下跌买入序列通常用正数表示下跌计数，或者根据具体策略)
             
-            在此实现中，逻辑参照 check-trend-bottom/analyzers/td_analyzer.py:
+            在此实现中，逻辑参照 check-td/analyzers/td_analyzer.py:
             如果 close[i] < close[i-4], 计数+1, 否则重置为0
             返回的序列是下跌计数序列（寻找底部）
         """
