@@ -42,6 +42,62 @@ class Step:
     workdir: Path
     group: str = "analysis"  # get-data / analysis / index
     low_mem_mode: bool = False
+    shared_raw_dir: Optional[str] = None
+
+
+def setup_shared_disk_cache() -> Optional[str]:
+    """
+    如果内存充足且在 Linux/WSL 环境下，利用 /dev/shm (共享内存) 创建数据缓存目录。
+    返回缓存目录路径，如果无法创建则返回 None。
+    """
+    # 如果内存不足 3.5G，不开启此优化（避免 Swap 抖动）
+    from util.system_utils import get_total_memory_gb
+    if get_total_memory_gb() < 3.5:
+        return None
+    
+    shm_path = Path("/dev/shm")
+    if not shm_path.exists():
+        return None
+    
+    cache_dir = shm_path / "stock_filter_cache"
+    raw_src = PROJECT_ROOT / "get-data" / "data" / "raw"
+    
+    if not raw_src.exists():
+        return None
+        
+    print(f"\n🚀 [I/O 优化] 检测到内存充足，正在预载 K 线数据到内存磁盘 (/dev/shm)...")
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        # 统计文件数量
+        files = list(raw_src.glob("*.csv"))
+        if not files:
+            return None
+            
+        print(f"  📂 正在将 {len(files)} 个 CSV 文件从硬盘同步到共享内存...")
+        # 调用 shell cp -u 只同步更新的文件，对于重复运行非常快
+        subprocess.run(f"cp -u -r {raw_src}/*.csv {cache_dir}/", shell=True, check=False, capture_output=True)
+        print(f"✅ 数据预载完成。后续阶段将从内存硬盘读取，消除重复磁盘 I/O。")
+        return str(cache_dir)
+    except Exception as e:
+        print(f"⚠️ 数据预载失败 (非致命错误): {e}")
+        return None
+
+
+def cleanup_shared_disk_cache(cache_dir_str: Optional[str]):
+    """
+    清理 /dev/shm 中的共享内存缓存文件夹，释放物理内存。
+    """
+    if not cache_dir_str:
+        return
+    
+    import shutil
+    cache_dir = Path(cache_dir_str)
+    if cache_dir.exists():
+        try:
+            shutil.rmtree(cache_dir, ignore_errors=True)
+            print(f"🗑️ [I/O 优化] 已清理内存磁盘缓存文件夹，物理内存已完全释放。")
+        except:
+            pass
 
 
 def run_step(step: Step, capture: bool = False) -> int:
@@ -62,6 +118,9 @@ def run_step(step: Step, capture: bool = False) -> int:
     # 传递低内存模式标记
     if getattr(step, "low_mem_mode", False):
         env["LOW_MEM_MODE"] = "1"
+    
+    if getattr(step, "shared_raw_dir", None):
+        env["STOCK_RAW_DIR"] = step.shared_raw_dir
 
     result = subprocess.run(step.command, cwd=str(step.workdir), env=env, capture_output=capture, text=capture)
 
@@ -154,6 +213,7 @@ def build_steps(
     end_date: Optional[str],
     limit: Optional[int],
     low_mem_mode: bool = False,
+    shared_raw_dir: Optional[str] = None,
 ) -> List[Step]:
     """根据参数构建需要执行的步骤列表。"""
     steps: List[Step] = []
@@ -203,14 +263,13 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-td",
                 group="analysis",
-                low_mem_mode=low_mem_mode
+                low_mem_mode=low_mem_mode,
+                shared_raw_dir=shared_raw_dir
             )
         )
 
     # 3. MA x RSI x 6U1D 动量分析
     if not skip_maxrsix6u1d:
-        # 使用完整流程（读取 get-data/raw 数据并重新分析），不再复用旧结果，
-        # 便于在自动化/定时任务中每次得到新的扫描结果。
         cmd = [sys.executable, "main.py", *end_date_args]
         if limit:
             cmd.extend(["--limit", str(limit)])
@@ -220,7 +279,8 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-maxrsix6u1d",
                 group="analysis",
-                low_mem_mode=low_mem_mode
+                low_mem_mode=low_mem_mode,
+                shared_raw_dir=shared_raw_dir
             )
         )
 
@@ -235,7 +295,8 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-tdxmacdxvolume",
                 group="analysis",
-                low_mem_mode=low_mem_mode
+                low_mem_mode=low_mem_mode,
+                shared_raw_dir=shared_raw_dir
             )
         )
 
@@ -253,7 +314,8 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-volupxyangxshipan",
                 group="analysis",
-                low_mem_mode=low_mem_mode
+                low_mem_mode=low_mem_mode,
+                shared_raw_dir=shared_raw_dir
             )
         )
 
@@ -265,7 +327,8 @@ def build_steps(
                 command=[sys.executable, "build_reports_index.py"],
                 workdir=PROJECT_ROOT / "scripts",
                 group="index",
-                low_mem_mode=low_mem_mode
+                low_mem_mode=low_mem_mode,
+                shared_raw_dir=shared_raw_dir
             )
         )
 
@@ -422,6 +485,11 @@ def main() -> int:
     if not is_explicit and sys.stdin.isatty():
         interactive_prompt(args)
 
+    # I/O 优化：如果内存充足，设置共享 RAM 磁盘缓存
+    shared_raw_dir = None
+    if not args.no_server_optimization:
+        shared_raw_dir = setup_shared_disk_cache()
+
     steps = build_steps(
         skip_get_data=args.skip_get_data,
         skip_td=args.skip_td,
@@ -432,7 +500,8 @@ def main() -> int:
         get_minutes=args.get_minutes,
         end_date=args.end_date,
         limit=args.limit,
-        low_mem_mode=args.no_server_optimization or is_low_memory()
+        low_mem_mode=args.no_server_optimization or is_low_memory(),
+        shared_raw_dir=shared_raw_dir
     )
 
     if not steps:
@@ -443,32 +512,36 @@ def main() -> int:
     print("🚀 统一调度开始")
     print("=" * 60)
 
-    if args.parallel:
-        # 分阶段执行：先 get-data，再并行 analysis，最后 index
-        pre_steps = [s for s in steps if s.group == "get-data"]
-        analysis_steps = [s for s in steps if s.group == "analysis"]
-        post_steps = [s for s in steps if s.group == "index"]
+    try:
+        if args.parallel:
+            # 分阶段执行：先 get-data，再并行 analysis，最后 index
+            pre_steps = [s for s in steps if s.group == "get-data"]
+            analysis_steps = [s for s in steps if s.group == "analysis"]
+            post_steps = [s for s in steps if s.group == "index"]
 
-        code = run_steps_sequential(pre_steps, ignore_errors=args.ignore_errors)
-        if code != 0 and not args.ignore_errors:
-            return code
+            code = run_steps_sequential(pre_steps, ignore_errors=args.ignore_errors)
+            if code != 0 and not args.ignore_errors:
+                return code
 
-        code = run_steps_parallel(analysis_steps, ignore_errors=args.ignore_errors)
-        if code != 0 and not args.ignore_errors:
-            return code
+            code = run_steps_parallel(analysis_steps, ignore_errors=args.ignore_errors)
+            if code != 0 and not args.ignore_errors:
+                return code
 
-        code = run_steps_sequential(post_steps, ignore_errors=args.ignore_errors)
-        if code != 0 and not args.ignore_errors:
-            return code
-    else:
-        code = run_steps_sequential(steps, ignore_errors=args.ignore_errors)
-        if code != 0:
-            return code
+            code = run_steps_sequential(post_steps, ignore_errors=args.ignore_errors)
+            if code != 0 and not args.ignore_errors:
+                return code
+        else:
+            code = run_steps_sequential(steps, ignore_errors=args.ignore_errors)
+            if code != 0:
+                return code
 
-    print("\n" + "=" * 60)
-    print("✅ 所有步骤执行完成")
-    print("=" * 60)
-    return 0
+        print("\n" + "=" * 60)
+        print("✅ 所有步骤执行完成")
+        print("=" * 60)
+        return 0
+    finally:
+        # 释放内存磁盘
+        cleanup_shared_disk_cache(shared_raw_dir)
 
 
 if __name__ == "__main__":
