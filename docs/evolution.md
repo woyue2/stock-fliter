@@ -38,4 +38,8 @@ def http_get(url: str, timeout: int = 10) -> requests.Response:
 
 ## 已完成重构记录
 
-*(暂无，后续 /git_commit 时追加)*
+# 2026-03-05
+
+## 变动  实现全系统并行扫描优化与智能资源调度
+### 原因  单线程扫描 5000+ 股票耗时过长（1-2分钟），且需适配 2G 低配服务器避免 OOM
+### 影响  引入 `ProcessPoolExecutor` 并行化 4 大核心分析模块；新增 `system_utils` 自动检测内存并触发 `LOW_MEM_MODE`；升级 `run_all_strategies.py` 为交互式调度向导。
