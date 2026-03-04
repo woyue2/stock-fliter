@@ -5,8 +5,9 @@
 默认执行顺序：
 1. get-data/main.py --all
 2. check-trend-bottom/main.py --skip-fetch
-3. check-steady-uptrend/main.py --skip-fetch
+3. check-steady-uptrend/main.py
 4. check-indicator-combo/main.py
+5. check-volume-confirmation/main.py
 
 设计目标：
 - 便于在本地或云端用单个入口脚本挂到定时任务
@@ -231,7 +232,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="统一运行 get-data + 各分析模块的调度脚本",
         epilog=(
-            "默认顺序: get-data → TD九底 → 稳步上升 → 指标组合\n"
+            "默认顺序: get-data → TD九底 → 稳步上升 → 指标组合 → 量价确认\n"
             "示例:\n"
             "  python run_all_strategies.py                 # 全量运行\n"
             "  python run_all_strategies.py --skip-get-data # 仅重新跑分析模块\n"
