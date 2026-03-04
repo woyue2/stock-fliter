@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  pd.DataFrame, HTML titles and config
+# OUTPUT: Path (HTML summary)
+# POS:    check-trend-bottom/reporters/html_reporter.py
 # -*- coding: utf-8 -*-
 """
 HTML 报告生成器 - 极简风格
@@ -92,25 +96,47 @@ class HTMLReporter:
                           available_levels: list, level_data: dict, filename: str = "summary.html", date_str: str = None) -> Path:
         """生成主页"""
 
-        # 按底部级别分组（9底、8底、7底、6底）
-        groups = {"9底": [], "8底": [], "7底": [], "6底": []}
-        for level in available_levels:
-            if "9底" in level:
-                groups["9底"].append((level, level_data[level]))
-            elif "8底" in level:
-                groups["8底"].append((level, level_data[level]))
-            elif "7底" in level:
-                groups["7底"].append((level, level_data[level]))
-            elif "6底" in level:
-                groups["6底"].append((level, level_data[level]))
+        # 按底部级别分组
+        groups = {
+            "(20+极限)": [],
+            "(15-20极地)": [],
+            "(10-15深底)": [],
+            "9底": [],
+            "8底": [],
+            "7底": [],
+            "6底": []
+        }
+        
+        # 预先根据权重排序 available_levels
+        # 获取每个 level 的代表性权重（由于同一 level 内权重可能不同，取并集中的最大值或直接用 df 辅助）
+        level_weights = df.groupby("共振级别")["底部权重"].max()
+        sorted_levels = sorted(available_levels, key=lambda l: level_weights.get(l, 0), reverse=True)
+
+        for level in sorted_levels:
+            found = False
+            for group_key in ["(20+极限)", "(15-20极地)", "(10-15深底)"]:
+                if group_key in level:
+                    groups[group_key].append((level, level_data[level]))
+                    found = True
+                    break
+            if not found:
+                for single_key in ["9底", "8底", "7底", "6底"]:
+                    if single_key in level:
+                        groups[single_key].append((level, level_data[level]))
+                        break
 
         # 生成导航项
         nav_items = ""
-        first_level = available_levels[0] if available_levels else ""
+        first_level = sorted_levels[0] if sorted_levels else ""
 
-        for group_name, items in groups.items():
+        # 分组显示：极限->极地->深底->9->8->7->6
+        display_order = ["(20+极限)", "(15-20极地)", "(10-15深底)", "9底", "8底", "7底", "6底"]
+        for group_name in display_order:
+            items = groups[group_name]
             if items:
-                nav_items += f'<div class="nav-group">{group_name}</div>'
+                # 标题美化
+                clean_name = group_name.strip("()")
+                nav_items += f'<div class="nav-group">{clean_name}</div>'
                 for level, count in items:
                     active = "active" if level == first_level else ""
                     nav_items += f'''
@@ -280,7 +306,10 @@ class HTMLReporter:
     
     def _generate_detail_page(self, df: pd.DataFrame, report_dir: Path, level: str) -> Path:
         """生成详情页（极简风格）"""
-        
+        # 按权重排序
+        if "底部权重" in df.columns:
+            df = df.sort_values("底部权重", ascending=False)
+            
         # 生成表格行
         rows_html = ""
         for idx, row in df.iterrows():

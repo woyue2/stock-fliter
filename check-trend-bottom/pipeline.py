@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  Pipeline parameters
+# OUTPUT: dict (analysis results)
+# POS:    check-trend-bottom/pipeline.py
 # -*- coding: utf-8 -*-
 """
 TD九底分析流程管理
@@ -42,10 +46,7 @@ class PipelineConfig:
     
     # 筛选配置：默认筛选有6底及以上的股票
     filter_levels: list = field(default_factory=lambda: [
-        "三周期9底", "双周期9底", "单周期9底",
-        "3周期8底", "2周期8底", "1周期8底",
-        "3周期7底", "2周期7底", "1周期7底",
-        "3周期6底", "2周期6底", "1周期6底",
+        "20+极限", "15-20极地", "10-15深底", "9底", "8底", "7底", "6底"
     ])
     
     end_date: Optional[str] = None  # 截止日期
@@ -217,7 +218,7 @@ def run_pipeline(
         分析结果字典
     """
     if filter_levels is None:
-        filter_levels = ["三周期九底", "双周期九底", "单周期九底"]
+        filter_levels = ["20+极限", "15-20极地", "10-15深底", "9底", "8底", "7底", "6底"]
     
     config = PipelineConfig(
         days=days,

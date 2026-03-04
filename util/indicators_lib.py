@@ -214,7 +214,7 @@ class TechnicalIndicators:
                 continue
             
             if values[i] < values[i - 4]:
-                current = current + 1 if current < 9 else 1
+                current += 1
             else:
                 current = 0
             sequence[i] = current

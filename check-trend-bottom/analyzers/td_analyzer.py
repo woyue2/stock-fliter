@@ -1,15 +1,10 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  Configuration and limits
+# OUTPUT: DataFrame with analysis result
+# POS:    check-trend-bottom/analyzers/td_analyzer.py
 # -*- coding: utf-8 -*-
 """
 TD多底分析器
-
-实现TD序列分析：
-- 日线九底
-- 周线九底
-- 月线九底
-- 多周期共振
-- 支持6底/7底/8底/9底
-
-使用项目统一的技术指标库
 """
 from __future__ import annotations
 
@@ -17,11 +12,10 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Any
 
 import pandas as pd
 
-# 添加 util 目录到路径
 util_dir = Path(__file__).resolve().parent.parent.parent / "util"
 if str(util_dir) not in sys.path:
     sys.path.append(str(util_dir))
@@ -37,198 +31,133 @@ except ImportError:
 
 from data_loader import (
     iter_stock_items, load_daily_data, get_board_type, 
-    get_stock_industry, login_baostock, logout_baostock,
-    OUTPUT_DIR
 )
-
-# 使用项目统一的技术指标库
 from indicators_lib import TechnicalIndicators
 
 
 @dataclass
 class TDAnalyzerConfig:
-    """TD分析器配置"""
-    days: int = 365  # 分析最近天数
-    td_threshold: int = 9  # 九底阈值
-    near_threshold: int = 7  # 接近九底阈值
-    six_threshold: int = 6  # 六底阈值
+    days: int = 365
+    td_threshold: int = 9
+    near_threshold: int = 7
+    six_threshold: int = 6
 
 
 class TDAnalyzer:
-    """TD九底分析器"""
-    
     def __init__(self, config: TDAnalyzerConfig, output_dir: Path):
         self.config = config
         self.output_dir = output_dir
     
+    def _pre_check_date(self, stocks: list) -> None:
+        if not stocks:
+            return
+        for item in stocks[:3]:
+            try:
+                df = load_daily_data(item.code, self.config.days)
+                if not df.empty and "date" in df.columns:
+                    last_dt = pd.to_datetime(df["date"].iloc[-1])
+                    print(f"[数据] 分析数据基准日期: {last_dt.strftime('%Y-%m-%d')}")
+                    break
+            except Exception:
+                continue
+
+    def _process_single_stock(self, item: Any, pbar: Any) -> Tuple[Optional[Dict], Optional[datetime]]:
+        df = load_daily_data(item.code, self.config.days)
+        if df.empty:
+            pbar.update(1, success=False)
+            return None, None
+            
+        last_dt = None
+        if "date" in df.columns and not df.empty:
+            last_dt = pd.to_datetime(df["date"].iloc[-1])
+            
+        analysis = self._analyze_stock(df)
+        if "error" in analysis:
+            pbar.update(1, success=False)
+            return None, last_dt
+            
+        analysis.update({
+            "代码": item.code,
+            "名称": item.name,
+            "板块": get_board_type(item.code),
+            "行业": getattr(item, "industry", "未知") or "未知"
+        })
+        
+        pbar.update(1, success=True)
+        return analysis, last_dt
+
     def run(self, limit: Optional[int] = None, use_local_files: bool = False) -> tuple[pd.DataFrame, Optional[datetime]]:
-        """
-        运行TD分析
-
-        Args:
-            limit: 限制股票数量（测试用）
-            use_local_files: 是否使用本地文件（遍历raw目录）
-
-        Returns:
-            (分析结果DataFrame, 数据最新日期)
-            分析结果 DataFrame
-        """
-        bs_ok = False
-        
-        results = []
         stocks = list(iter_stock_items(limit=limit, from_raw=use_local_files))
-        
         print(f"  📈 开始分析 {len(stocks)} 只股票...")
-        
-        # 预先显示数据日期
-        if stocks:
-            for item in stocks[:3]:
-                try:
-                    df = load_daily_data(item.code, self.config.days)
-                    if not df.empty and "date" in df.columns:
-                        last_date_val = df["date"].iloc[-1]
-                        last_dt = pd.to_datetime(last_date_val) if isinstance(last_date_val, str) else last_date_val
-                        print(f"[数据] 分析数据基准日期: {last_dt.strftime('%Y-%m-%d')}")
-                        break
-                except Exception:
-                    continue
+        self._pre_check_date(stocks)
 
+        results = []
         global_max_date = None
-        success_count = 0
-        fail_count = 0
+        fails = 0
         
         with ProgressBar(len(stocks), desc="TD分析") as pbar:
             for item in stocks:
                 try:
-                    df = load_daily_data(item.code, self.config.days)
-                    if df.empty:
-                        pbar.update(1, success=False)
-                        fail_count += 1
-                        continue
-                
-                    # 更新全局最新日期
-                    if "date" in df.columns and not df.empty:
-                        last_date_val = df["date"].iloc[-1]
-                        if isinstance(last_date_val, str):
-                             last_dt = pd.to_datetime(last_date_val)
-                        else:
-                             last_dt = last_date_val
-                             
-                        if global_max_date is None or last_dt > global_max_date:
-                            global_max_date = last_dt
-                
-                    analysis = self._analyze_stock(df)
-                    if "error" in analysis:
-                        pbar.update(1, success=False)
-                        fail_count += 1
-                        continue
-                
-                    # 添加股票基本信息
-                    analysis["代码"] = item.code
-                    analysis["名称"] = item.name
-                    analysis["板块"] = get_board_type(item.code)
-                    analysis["行业"] = item.industry if hasattr(item, "industry") and item.industry else "未知"
-                
-                    results.append(analysis)
-                    success_count += 1
-                    pbar.update(1, success=True)
-                
+                    res, dt = self._process_single_stock(item, pbar)
+                    if dt and (global_max_date is None or dt > global_max_date):
+                        global_max_date = dt
+                    if res:
+                        results.append(res)
+                    else:
+                        fails += 1
                 except Exception as e:
-                    if fail_count == 0:
+                    if fails == 0:
                         print(f"\n❌ 首次错误 (code={item.code}): {e}")
-                        import traceback
-                        traceback.print_exc()
                     pbar.update(1, success=False)
-                    fail_count += 1
-                    continue
-        
-        # 显示统计信息
-        print(f"[统计] 总计: {len(stocks)} | 成功: {success_count} | 失败: {fail_count}")
-        if global_max_date:
-             print(f"[数据] 数据最新日期: {global_max_date.strftime('%Y-%m-%d')}")
-        
+                    fails += 1
+                    
+        print(f"[统计] 总计: {len(stocks)} | 成功: {len(results)} | 失败: {fails}")
+        return self._format_results(results), global_max_date
+
+    def _format_results(self, results: list) -> pd.DataFrame:
         if not results:
-            return pd.DataFrame(), global_max_date
+            return pd.DataFrame()
         
         result_df = pd.DataFrame(results)
-        
-        # 调整列顺序
         column_order = [
-            # 股票标识
             "代码", "名称", "板块", "行业",
-            # 核心筛选指标
             "日TD计数", "周TD计数", "月TD计数",
-            "9底周期数", "8底周期数", "7底周期数", "6底周期数",
-            "共振级别", "底部详情",
-            # 各周期底部级别
+            "共振级别", "底部详情", "底部权重", "9底及以上周期数",
             "日底部级别", "周底部级别", "月底部级别",
-            # 各周期9/8/7/6底状态
-            "日9底", "日8底", "日7底", "日6底",
-            "周9底", "周8底", "周7底", "周6底",
+            "日9底", "日8底", "日7底", "日6底", "周9底", "周8底", "周7底", "周6底",
             "月9底", "月8底", "月7底", "月6底",
-            # 最近高底位置
-            "日最近高底日期", "日最近高底价格",
-            "周最近高底日期", "周最近高底价格",
+            "日最近高底日期", "日最近高底价格", "周最近高底日期", "周最近高底价格",
             "月最近高底日期", "月最近高底价格",
-            # 最新行情
-            "日最新日期", "日最新价",
-            "周最新日期", "周最新价",
-            "月最新日期", "月最新价",
-            # 价格区间
-            "日最高价", "日最低价", "日均价",
-            "周最高价", "周最低价", "周均价",
+            "日最新日期", "日最新价", "周最新日期", "周最新价", "月最新日期", "月最新价",
+            "日最高价", "日最低价", "日均价", "周最高价", "周最低价", "周均价",
             "月最高价", "月最低价", "月均价",
         ]
-        result_df = result_df[[c for c in column_order if c in result_df.columns]]
-        
-        return result_df, global_max_date
+        return result_df[[c for c in column_order if c in result_df.columns]]
     
     def _analyze_stock(self, df_daily: pd.DataFrame) -> Dict:
-        """分析单只股票"""
         df_daily = df_daily.copy()
-        
-        # 重采样周线和月线
         df_weekly = TechnicalIndicators.resample_ohlcv(df_daily, "W")
         try:
             df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "ME") 
-        except:
-            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "M")  # 使用 "M" 替代 "ME" 以兼容旧版本 pandas
-
-        
+        except Exception:
+            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "M")
+            
         result = {}
-        
-        # 日线分析
-        result.update(self._analyze_period(df_daily, "日"))
-        result.update(self._get_td_info(df_daily, "日"))
-        
-        # 周线分析
-        result.update(self._analyze_period(df_weekly, "周"))
-        result.update(self._get_td_info(df_weekly, "周"))
-        
-        # 月线分析
-        result.update(self._analyze_period(df_monthly, "月"))
-        result.update(self._get_td_info(df_monthly, "月"))
-        
-        # 计算共振
+        for df, prefix in [(df_daily, "日"), (df_weekly, "周"), (df_monthly, "月")]:
+            result.update(self._analyze_period(df, prefix))
+            result.update(self._get_td_info(df, prefix))
+            
         result.update(self._build_resonance(
-            result["日TD计数"],
-            result["周TD计数"],
-            result["月TD计数"]
+            result["日TD计数"], result["周TD计数"], result["月TD计数"]
         ))
-        
         return result
     
     def _analyze_period(self, df: pd.DataFrame, prefix: str) -> Dict:
-        """分析单个周期"""
         if df.empty:
             return {
-                f"{prefix}最新日期": "",
-                f"{prefix}最新价": None,
-                f"{prefix}最高价": None,
-                f"{prefix}最低价": None,
-                f"{prefix}均价": None,
+                f"{prefix}最新日期": "", f"{prefix}最新价": None,
+                f"{prefix}最高价": None, f"{prefix}最低价": None, f"{prefix}均价": None,
             }
-        
         last_row = df.iloc[-1]
         return {
             f"{prefix}最新日期": pd.Timestamp(last_row["date"]).strftime("%Y-%m-%d"),
@@ -237,155 +166,124 @@ class TDAnalyzer:
             f"{prefix}最低价": round(float(df["low"].min()), 2),
             f"{prefix}均价": round(float(df["close"].mean()), 2),
         }
-    
+
+    def _get_td_level(self, td_count: int) -> str:
+        # 10底以上进公司（分组），6-9底个体户（不分组）
+        if td_count >= 20: return f"{td_count}底(20+极限)"
+        if td_count >= 15: return f"{td_count}底(15-20极地)"
+        if td_count >= 10: return f"{td_count}底(10-15深底)"
+        if td_count >= 6: return f"{td_count}底"
+        return "无"
+
+    def _get_last_high_td(self, sequence: pd.Series, df: pd.DataFrame) -> Tuple[str, Optional[float]]:
+        for idx in range(len(sequence) - 1, -1, -1):
+            if sequence.iloc[idx] >= 6:
+                row = df.iloc[idx]
+                return pd.Timestamp(row["date"]).strftime("%Y-%m-%d"), round(float(row["close"]), 2)
+        return "", None
+
     def _get_td_info(self, df: pd.DataFrame, prefix: str) -> Dict:
-        """获取TD底部信息"""
         if df.empty or "close" not in df.columns:
             return {
-                f"{prefix}TD计数": 0,
-                f"{prefix}9底": False,
-                f"{prefix}8底": False,
-                f"{prefix}7底": False,
-                f"{prefix}6底": False,
-                f"{prefix}底部级别": "无",
-                f"{prefix}最近高底日期": "",
-                f"{prefix}最近高底价格": None,
+                f"{prefix}TD计数": 0, f"{prefix}9底": False, f"{prefix}8底": False,
+                f"{prefix}7底": False, f"{prefix}6底": False, f"{prefix}底部级别": "无",
+                f"{prefix}最近高底日期": "", f"{prefix}最近高底价格": None,
             }
 
         close_series = df["close"].reset_index(drop=True).astype(float)
         sequence = TechnicalIndicators.calculate_td_sequence(close_series)
         td_count = int(sequence.iloc[-1]) if not sequence.empty else 0
-
-        # 判断底部级别
-        is_9 = td_count >= 9
-        is_8 = td_count >= 8
-        is_7 = td_count >= 7
-        is_6 = td_count >= 6
-
-        if is_9:
-            level = "9底"
-        elif is_8:
-            level = "8底"
-        elif is_7:
-            level = "7底"
-        elif is_6:
-            level = "6底"
-        else:
-            level = "无"
-
-        # 查找最近高底位置（>=6）
-        last_high_date = ""
-        last_high_price = None
-        for idx in range(len(sequence) - 1, -1, -1):
-            if sequence.iloc[idx] >= 6:
-                row = df.iloc[idx]
-                last_high_date = pd.Timestamp(row["date"]).strftime("%Y-%m-%d")
-                last_high_price = round(float(row["close"]), 2)
-                break
-
+        
+        last_dt, last_price = self._get_last_high_td(sequence, df)
+        
         return {
             f"{prefix}TD计数": td_count,
-            f"{prefix}9底": is_9,
-            f"{prefix}8底": is_8,
-            f"{prefix}7底": is_7,
-            f"{prefix}6底": is_6,
-            f"{prefix}底部级别": level,
-            f"{prefix}最近高底日期": last_high_date,
-            f"{prefix}最近高底价格": last_high_price,
+            f"{prefix}9底": td_count >= 9,
+            f"{prefix}8底": td_count >= 8,
+            f"{prefix}7底": td_count >= 7,
+            f"{prefix}6底": td_count >= 6,
+            f"{prefix}底部级别": self._get_td_level(td_count),
+            f"{prefix}最近高底日期": last_dt,
+            f"{prefix}最近高底价格": last_price,
         }
-    
-    def _build_resonance(self, daily_td: int, weekly_td: int, monthly_td: int) -> Dict:
-        """
-        计算多周期共振，生成所有满足条件的组合并按降序排列
-        优先级: 周期数越多越靠前，同周期数时阈值越高越靠前
-        支持6底/7底/8底/9底
-        """
-        # 判断各周期是否达到各级别
-        d9, d8, d7, d6 = daily_td >= 9, daily_td >= 8, daily_td >= 7, daily_td >= 6
-        w9, w8, w7, w6 = weekly_td >= 9, weekly_td >= 8, weekly_td >= 7, weekly_td >= 6
-        m9, m8, m7, m6 = monthly_td >= 9, monthly_td >= 8, monthly_td >= 7, monthly_td >= 6
+        
+    def _comb(self, label: str, val: int, req_idx: List[int], counts: List[int]) -> Optional[Tuple[str, int]]:
+        if all(counts[i] >= val for i in req_idx):
+            return (label, val)
+        return None
 
-        # 收集所有满足条件的组合
-        combinations = []
+    def _build_combinations(self, c: List[int]) -> List[Tuple[str, int]]:
+        combos = []
+        # 寻找存在的最高共同值，从最高值递减到6，所有数值都支持组合
+        max_val = max(c) if c else 0
+        if max_val < 6:
+            return []
+            
+        for val in range(max_val, 5, -1):
+            # 所有数字都支持探测多周期共振
+            combos.append(self._comb("日周月", val, [0, 1, 2], c))
+            combos.append(self._comb("日周", val, [0, 1], c))
+            combos.append(self._comb("日月", val, [0, 2], c))
+            combos.append(self._comb("周月", val, [1, 2], c))
+            combos.append(self._comb("日", val, [0], c))
+            combos.append(self._comb("周", val, [1], c))
+            combos.append(self._comb("月", val, [2], c))
+        
+        valid_combos = [cb for cb in combos if cb]
+        return valid_combos
 
-        # ========== 单周期组合 ==========
-        if d9: combinations.append(("日", 9))
-        if w9: combinations.append(("周", 9))
-        if m9: combinations.append(("月", 9))
-        if d8: combinations.append(("日", 8))
-        if w8: combinations.append(("周", 8))
-        if m8: combinations.append(("月", 8))
-        if d7: combinations.append(("日", 7))
-        if w7: combinations.append(("周", 7))
-        if m7: combinations.append(("月", 7))
-        if d6: combinations.append(("日", 6))
-        if w6: combinations.append(("周", 6))
-        if m6: combinations.append(("月", 6))
+    def _build_resonance(self, daily: int, weekly: int, monthly: int) -> Dict:
+        combinations = self._build_combinations([daily, weekly, monthly])
+        
+        # 1. 组/阶优先级: 20+ > 15-20 > 10-15 > 9 > 8 > 7 > 6
+        def get_group_rank(val):
+            if val >= 20: return 6
+            if val >= 15: return 5
+            if val >= 10: return 4
+            return (val - 6) # (9->3, 8->2, 7->1, 6->0)
+        
+        # 2. 共振级别优先级: 3周期 > 2周期 > 1周期
+        def get_resonance_rank(label):
+            return len(label) # "日周月"->3, "日周"->2, "日"->1
 
-        # ========== 双周期组合 ==========
-        # 日周双周期
-        if d9 and w9: combinations.append(("日周", 9))
-        if d8 and w8: combinations.append(("日周", 8))
-        if d7 and w7: combinations.append(("日周", 7))
-        if d6 and w6: combinations.append(("日周", 6))
-        # 日月双周期
-        if d9 and m9: combinations.append(("日月", 9))
-        if d8 and m8: combinations.append(("日月", 8))
-        if d7 and m7: combinations.append(("日月", 7))
-        if d6 and m6: combinations.append(("日月", 6))
-        # 周月双周期
-        if w9 and m9: combinations.append(("周月", 9))
-        if w8 and m8: combinations.append(("周月", 8))
-        if w7 and m7: combinations.append(("周月", 7))
-        if w6 and m6: combinations.append(("周月", 6))
+        # 最终排序权重
+        def get_total_priority(x):
+            label, val = x
+            # group_rank(10,000) + resonance_rank(1,000) + val(1)
+            return get_group_rank(val) * 10000 + get_resonance_rank(label) * 1000 + val
 
-        # ========== 三周期组合 ==========
-        if d9 and w9 and m9: combinations.append(("日周月", 9))
-        if d8 and w8 and m8: combinations.append(("日周月", 8))
-        if d7 and w7 and m7: combinations.append(("日周月", 7))
-        if d6 and w6 and m6: combinations.append(("日周月", 6))
+        combinations.sort(key=get_total_priority, reverse=True)
+        
+        if not combinations:
+            return {
+                "共振级别": "无底部信号",
+                "底部详情": "无",
+                "底部权重": 0
+            }
 
-        # 按降序排列: 先按周期数(名称长度)，同周期数时按阈值降序
-        def sort_key(item):
-            name, threshold = item
-            cycle_count = len(name)  # 单周期=1, 双周期=2, 三周期=3
-            return (cycle_count, threshold)
-
-        combinations.sort(key=sort_key, reverse=True)
-
-        # 构建共振级别字符串
-        if combinations:
-            level = combinations[0][0] + str(combinations[0][1]) + "底"
-        else:
-            level = "无底部信号"
-
-        # 构建详细底部描述 (所有组合)
-        details = []
-        for name, threshold in combinations:
-            details.append(f"{name}{threshold}")
-        detail_str = "+".join(details) if details else "无"
-
-        # 计算各级别的周期数
-        cycles_9 = sum([d9, w9, m9])
-        cycles_8 = sum([d8, w8, m8])
-        cycles_7 = sum([d7, w7, m7])
-        cycles_6 = sum([d6, w6, m6])
-
+        top_label, top_val = combinations[0]
+        
+        # 分组名称
+        group_suffix = ""
+        if top_val >= 20: group_suffix = "(20+极限)"
+        elif top_val >= 15: group_suffix = "(15-20极地)"
+        elif top_val >= 10: group_suffix = "(10-15深底)"
+        # 6-9 不加后缀，保持个体户状态
+        
+        level = f"{top_label}{top_val}底{group_suffix}"
+        detail_str = " + ".join(f"{n}{v}" for n, v in combinations[:5]) # 核心信号详情
+        
         return {
-            "9底周期数": cycles_9,
-            "8底周期数": cycles_8,
-            "7底周期数": cycles_7,
-            "6底周期数": cycles_6,
+            "9底及以上周期数": sum(c >= 9 for c in [daily, weekly, monthly]),
             "共振级别": level,
             "底部详情": detail_str,
+            "底部权重": get_total_priority(combinations[0])
         }
 
     def save(self, df: pd.DataFrame, filename: Optional[str] = None, output_dir: Optional[Path] = None) -> Path:
-        """保存分析结果"""
         if filename is None:
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"td_analysis_{ts}.csv"
-
         save_dir = output_dir if output_dir else self.output_dir
         path = save_dir / filename
         df.to_csv(path, index=False, encoding="utf-8-sig")
