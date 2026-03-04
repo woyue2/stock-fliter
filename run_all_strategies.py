@@ -140,7 +140,7 @@ def build_steps(
         steps.append(
             Step(
                 name="更新A股日K数据 (get-data)",
-                command=[sys.executable, "main.py", "--all"],
+                command=[sys.executable, "main.py"],
                 workdir=PROJECT_ROOT / "get-data",
                 group="get-data",
             )
@@ -294,8 +294,45 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def interactive_prompt(args: argparse.Namespace) -> None:
+    """交互式终端：无参数时触发，动态调整 args 的 boolean flag"""
+    print("=" * 40)
+    print("🚀 股票分析综合调度系统启动")
+    print("=" * 40)
+
+    # 1. 数据配置问询
+    print("\n[步骤 1] 是否执行数据爬取与更新 (get-data/main.py)?")
+    print("[1] 是 (默认)")
+    print("[0] 跳过，使用已有数据")
+    ans_data = input("👉 请选择 [1/0, 默认1]: ").strip()
+    if ans_data == "0":
+        args.skip_get_data = True
+
+    # 2. 策略模块问询
+    print("\n[步骤 2] 分析环境配置完成。以下是可用的策略模块：")
+    print("[1] TD九底分析 (check-trend-bottom)")
+    print("[2] 稳步上升分析 (check-steady-uptrend)")
+    print("[3] 指标组合分析 (check-indicator-combo)")
+    print("[4] 量价确认分析 (check-volume-confirmation)")
+    print("\n有不需要执行的模组吗？(默认全跑，多线程并行)")
+    ans_skip = input("👉 请输入要【跳过】的序号组合（比如 '23' 跳过稳步和组合，直接回车代表全跑）: ").strip()
+    
+    if "1" in ans_skip: args.skip_trend_bottom = True
+    if "2" in ans_skip: args.skip_steady_uptrend = True
+    if "3" in ans_skip: args.skip_indicator_combo = True
+    if "4" in ans_skip: args.skip_volume_confirmation = True
+
+    # 交互模式下默认开启多线程
+    args.parallel = True
+    print("\n[开始执行...]")
+
+
 def main() -> int:
     args = parse_args()
+
+    # 如果没有任何参数，则触发交互式向导
+    if len(sys.argv) == 1 and sys.stdin.isatty():
+        interactive_prompt(args)
 
     steps = build_steps(
         skip_get_data=args.skip_get_data,
