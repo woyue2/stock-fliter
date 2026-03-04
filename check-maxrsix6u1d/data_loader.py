@@ -16,10 +16,12 @@ import pandas as pd
 from pandas.errors import ParserError
 
 
+import os
 BASE_DIR = Path(__file__).resolve().parent
 GET_DATA_DIR = BASE_DIR.parent / "get-data"
 DATA_DIR = GET_DATA_DIR / "data"
-RAW_DIR = DATA_DIR / "raw"
+# 新增环境变量支持，加速并行分析时的 I/O
+RAW_DIR = Path(os.environ.get("STOCK_RAW_DIR", str(DATA_DIR / "raw")))
 SELECTED_PATH = DATA_DIR / "selected_stocks_all.csv"
 
 

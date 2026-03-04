@@ -10,11 +10,13 @@ from typing import Optional
 
 import pandas as pd
 
+import os
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
 GET_DATA_DIR = PROJECT_ROOT / "get-data"
 DATA_DIR = GET_DATA_DIR / "data"
-RAW_DIR = DATA_DIR / "raw"
+# 新增环境变量支持，加速并行分析时的 I/O
+RAW_DIR = Path(os.environ.get("STOCK_RAW_DIR", str(DATA_DIR / "raw")))
 OUTPUT_DIR = BASE_DIR / "output"
 
 REQUIRED_COLUMNS = {"date", "open", "high", "low", "close", "volume"}
