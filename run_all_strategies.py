@@ -126,6 +126,7 @@ def build_steps(
     skip_indicator_combo: bool,
     skip_volume_confirmation: bool,
     skip_build_index: bool,
+    get_minutes: bool,
     end_date: Optional[str],
     limit: Optional[int],
 ) -> List[Step]:
@@ -141,6 +142,17 @@ def build_steps(
             Step(
                 name="更新A股日K数据 (get-data)",
                 command=[sys.executable, "main.py"],
+                workdir=PROJECT_ROOT / "get-data",
+                group="get-data",
+            )
+        )
+
+    # 1.5 更新分钟数据
+    if get_minutes:
+        steps.append(
+            Step(
+                name="更新A股分钟数据 (get-data/fetch_minute_data.py)",
+                command=[sys.executable, "fetch_minute_data.py", "--all"],
                 workdir=PROJECT_ROOT / "get-data",
                 group="get-data",
             )
@@ -242,7 +254,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-get-data",
         action="store_true",
-        help="跳过 get-data/main.py（假设数据已更新）",
+        help="跳过日线数据拉取 (get-data/main.py)",
+    )
+    parser.add_argument(
+        "--get-minutes",
+        action="store_true",
+        help="执行分钟数据拉取 (get-data/fetch_minute_data.py)，默认跳过",
     )
     parser.add_argument(
         "--skip-trend-bottom",
@@ -301,12 +318,20 @@ def interactive_prompt(args: argparse.Namespace) -> None:
     print("=" * 40)
 
     # 1. 数据配置问询
-    print("\n[步骤 1] 是否执行数据爬取与更新 (get-data/main.py)?")
+    print("\n[步骤 1] 是否执行日线数据爬取与更新 (get-data/main.py)?")
     print("[1] 是 (默认)")
     print("[0] 跳过，使用已有数据")
     ans_data = input("👉 请选择 [1/0, 默认1]: ").strip()
     if ans_data == "0":
         args.skip_get_data = True
+
+    # 1.5 分钟数据配置问询
+    print("\n[步骤 1.5] 是否执行分钟数据爬取 (get-data/fetch_minute_data.py)?")
+    print("[1] 是")
+    print("[0] 跳过 (默认)")
+    ans_min = input("👉 请选择 [1/0, 默认0]: ").strip()
+    if ans_min == "1":
+        args.get_minutes = True
 
     # 2. 策略模块问询
     print("\n[步骤 2] 分析环境配置完成。以下是可用的策略模块：")
@@ -341,6 +366,7 @@ def main() -> int:
         skip_indicator_combo=args.skip_indicator_combo,
         skip_volume_confirmation=args.skip_volume_confirmation,
         skip_build_index=args.skip_build_index,
+        get_minutes=args.get_minutes,
         end_date=args.end_date,
         limit=args.limit,
     )
