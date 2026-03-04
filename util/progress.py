@@ -1,6 +1,8 @@
+import os
+
 try:
     from tqdm import tqdm
-    _HAS_TQDM = True
+    _HAS_TQDM = os.environ.get("DISABLE_TQDM") != "1"
 except ImportError:
     _HAS_TQDM = False
     import time
@@ -16,8 +18,11 @@ class ProgressBar:
         self.current = 0
         self.success = 0
         self.failed = 0
+        self._silent = os.environ.get("DISABLE_TQDM") == "1"
         
-        if _HAS_TQDM:
+        if self._silent:
+            pass
+        elif _HAS_TQDM:
             self.pbar = tqdm(total=total, desc=desc, unit=unit, leave=True)
         else:
             self.start_time = time.time()
@@ -27,6 +32,8 @@ class ProgressBar:
         return self
         
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._silent:
+            return
         if _HAS_TQDM:
             self.pbar.close()
         else:
@@ -39,6 +46,8 @@ class ProgressBar:
         else:
             self.failed += n
             
+        if self._silent:
+            return
         if _HAS_TQDM:
             self.pbar.update(n)
             self.pbar.set_postfix(OK=self.success, Fail=self.failed)
@@ -49,6 +58,8 @@ class ProgressBar:
         
     def set_description(self, desc: str):
         self.desc = desc
+        if self._silent:
+            return
         if _HAS_TQDM:
             self.pbar.set_description(desc)
 
