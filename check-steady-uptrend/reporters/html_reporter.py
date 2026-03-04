@@ -250,7 +250,7 @@ class HtmlReporter:
         else:
             display_date = now.strftime('%Y-%m-%d')
         
-        html = f"""<!doctype html>
+        html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -259,7 +259,7 @@ class HtmlReporter:
   <style>
     :root {{ color-scheme: light dark; }}
     body {{
-      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
       margin: 0;
       padding: 0;
       height: 100vh;
@@ -683,7 +683,7 @@ class HtmlReporter:
                            stock_count: int, combo_name: str, summary_filename: str, 
                            industry_stats_html: str = "") -> str:
         """获取HTML模板（带localStorage和返回总览链接）"""
-        return f"""<!doctype html>
+        return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -694,7 +694,7 @@ class HtmlReporter:
       color-scheme: light dark;
     }}
     body {{
-      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
       margin: 0;
       padding: 0;
       height: 100vh;

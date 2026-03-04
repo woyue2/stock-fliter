@@ -221,6 +221,16 @@ class HTMLReporter:
             height: 100%;
             color: #999;
         }}
+        @media (prefers-color-scheme: dark) {{
+            body {{ background: #1a1a1a; color: #e0e0e0; }}
+            .sidebar {{ background: #242424; border-color: #333; }}
+            .logo {{ color: #e0e0e0; border-color: #333; }}
+            .nav-item {{ color: #ccc; border-color: #333; }}
+            .nav-item:hover {{ background: #2e2e2e; }}
+            .nav-item.active {{ background: #1e3a5f; color: #8ab4f8; border-color: #2d5a8e; }}
+            .nav-group {{ color: #999; }}
+            .content {{ background: #1a1a1a; }}
+        }}
     </style>
 </head>
 <body>
@@ -485,6 +495,25 @@ class HTMLReporter:
         }}
         .open-new:hover {{
             text-decoration: underline;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            body {{ background: #1a1a1a; color: #e0e0e0; }}
+            .left-panel {{ border-color: #333; }}
+            .right-panel {{ background: #242424; }}
+            .right-header {{ border-color: #333; color: #999; background: #1f1f1f; }}
+            .header {{ background: #1f1f1f; border-color: #333; }}
+            .title {{ color: #e0e0e0; }}
+            .count {{ color: #999; }}
+            .stock-list {{ background: #1a1a1a; }}
+            .stock-item {{ border-color: #333; }}
+            .stock-item:hover {{ background: #2a2a2a; }}
+            .stock-item.selected {{ background: #1e3a5f; border-color: #2d5a8e; }}
+            .code {{ color: #8ab4f8; }}
+            .name {{ color: #e0e0e0; }}
+            .board {{ color: #999; }}
+            .industry {{ color: #90caf9; }}
+            .tag {{ background: #2a2a2a; color: #ccc; }}
+            .open-new {{ color: #8ab4f8; }}
         }}
     </style>
 </head>
