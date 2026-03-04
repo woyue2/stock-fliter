@@ -181,8 +181,20 @@ class Pipeline:
             print(f"  📄 HTML: {html_path.parent.name}/")
             
             if self.config.auto_open_html:
+                import os
                 print("  🌐 自动打开浏览器...")
-                webbrowser.open(html_path.as_uri())
+                url = html_path.as_uri()
+                success = webbrowser.open(url)
+                if not success and os.name == 'posix':
+                    # 尝试 WSL 方案
+                    try:
+                        import subprocess
+                        subprocess.run(['wslview', url], check=False, capture_output=True)
+                    except:
+                        try:
+                            import subprocess
+                            subprocess.run(['powershell.exe', '-c', f'start "{url}"'], check=False, capture_output=True)
+                        except: pass
         
         # 完成
         print("\n" + "=" * 60)

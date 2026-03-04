@@ -43,6 +43,60 @@ class TDAnalyzerConfig:
     six_threshold: int = 6
 
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import os
+
+# 导入系统工具
+_ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+from util.system_utils import get_optimal_worker_count
+
+
+def _worker_process_stock_td(item: Any, config: TDAnalyzerConfig) -> Tuple[Optional[Dict], Optional[datetime]]:
+    """子进程执行单个股票 TD 分析"""
+    try:
+        df = load_daily_data(item.code, config.days)
+        if df.empty:
+            return None, None
+            
+        last_dt = None
+        if "date" in df.columns and not df.empty:
+            last_dt = pd.to_datetime(df["date"].iloc[-1])
+            
+        # 实例化临时分析器以确保方法可用
+        # 注意：这里我们避开了类成员 state 的问题，只调用纯计算方法
+        from indicators_lib import TechnicalIndicators
+        
+        # 模拟 _analyze_stock 逻辑
+        df_daily = df.copy()
+        df_weekly = TechnicalIndicators.resample_ohlcv(df_daily, "W")
+        try:
+            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "ME") 
+        except Exception:
+            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "M")
+            
+        result = {}
+        # 注意：这里需要调用类的方法。为了保持逻辑一致，我们直接访问原类的方法。
+        # 这里为了 picklable，我们可能需要将这些方法变为静态方法，或者在子进程中重新实例化。
+        analyzer = TDAnalyzer(config, Path("."))
+        
+        analysis = analyzer._analyze_stock(df)
+        if "error" in analysis:
+            return None, last_dt
+            
+        analysis.update({
+            "代码": item.code,
+            "名称": item.name,
+            "板块": get_board_type(item.code),
+            "行业": getattr(item, "industry", "未知") or "未知"
+        })
+        
+        return analysis, last_dt
+    except Exception:
+        return None, None
+
+
 class TDAnalyzer:
     def __init__(self, config: TDAnalyzerConfig, output_dir: Path):
         self.config = config
@@ -61,7 +115,70 @@ class TDAnalyzer:
             except Exception:
                 continue
 
+    def run(self, limit: Optional[int] = None, use_local_files: bool = False) -> tuple[pd.DataFrame, Optional[datetime]]:
+        stocks = list(iter_stock_items(limit=limit, from_raw=use_local_files))
+        print(f"  📈 开始分析 {len(stocks)} 只股票...")
+        self._pre_check_date(stocks)
+
+        results = []
+        global_max_date = None
+        fails = 0
+        
+        # 计算并行工作进程数
+        if os.environ.get("LOW_MEM_MODE") == "1":
+            workers = 1
+            print("  [INFO] 低内存模式：使用单进程扫描")
+        else:
+            workers = get_optimal_worker_count()
+            if workers > 1:
+                print(f"  [INFO] 开启服务器级优化：使用 {workers} 个进程并行扫描")
+            else:
+                print("  [INFO] 系统资源有限：使用单进程扫描")
+
+        if workers > 1:
+            with ProcessPoolExecutor(max_workers=workers) as executor:
+                # 提交任务
+                future_to_stock = {
+                    executor.submit(_worker_process_stock_td, item, self.config): item 
+                    for item in stocks
+                }
+                
+                with ProgressBar(len(stocks), desc="并行TD分析") as pbar:
+                    for future in as_completed(future_to_stock):
+                        try:
+                            res, dt = future.result()
+                            if dt and (global_max_date is None or dt > global_max_date):
+                                global_max_date = dt
+                            if res:
+                                results.append(res)
+                                pbar.update(1, success=True)
+                            else:
+                                fails += 1
+                                pbar.update(1, success=False)
+                        except Exception as e:
+                            pbar.update(1, success=False)
+                            fails += 1
+        else:
+            # 串行执行
+            with ProgressBar(len(stocks), desc="TD分析") as pbar:
+                for item in stocks:
+                    try:
+                        res, dt = self._process_single_stock(item, pbar)
+                        if dt and (global_max_date is None or dt > global_max_date):
+                            global_max_date = dt
+                        if res:
+                            results.append(res)
+                        else:
+                            fails += 1
+                    except Exception:
+                        pbar.update(1, success=False)
+                        fails += 1
+                        
+        print(f"[统计] 总计: {len(stocks)} | 成功: {len(results)} | 失败: {fails}")
+        return self._format_results(results), global_max_date
+
     def _process_single_stock(self, item: Any, pbar: Any) -> Tuple[Optional[Dict], Optional[datetime]]:
+        # 保持此方法用于串行模式
         df = load_daily_data(item.code, self.config.days)
         if df.empty:
             pbar.update(1, success=False)
@@ -85,34 +202,6 @@ class TDAnalyzer:
         
         pbar.update(1, success=True)
         return analysis, last_dt
-
-    def run(self, limit: Optional[int] = None, use_local_files: bool = False) -> tuple[pd.DataFrame, Optional[datetime]]:
-        stocks = list(iter_stock_items(limit=limit, from_raw=use_local_files))
-        print(f"  📈 开始分析 {len(stocks)} 只股票...")
-        self._pre_check_date(stocks)
-
-        results = []
-        global_max_date = None
-        fails = 0
-        
-        with ProgressBar(len(stocks), desc="TD分析") as pbar:
-            for item in stocks:
-                try:
-                    res, dt = self._process_single_stock(item, pbar)
-                    if dt and (global_max_date is None or dt > global_max_date):
-                        global_max_date = dt
-                    if res:
-                        results.append(res)
-                    else:
-                        fails += 1
-                except Exception as e:
-                    if fails == 0:
-                        print(f"\n❌ 首次错误 (code={item.code}): {e}")
-                    pbar.update(1, success=False)
-                    fails += 1
-                    
-        print(f"[统计] 总计: {len(stocks)} | 成功: {len(results)} | 失败: {fails}")
-        return self._format_results(results), global_max_date
 
     def _format_results(self, results: list) -> pd.DataFrame:
         if not results:

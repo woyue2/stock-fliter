@@ -17,6 +17,7 @@ from itertools import product
 from pathlib import Path
 from typing import Dict, List, Optional
 import os
+import sys
 
 import numpy as np
 import pandas as pd
@@ -25,7 +26,7 @@ from data_loader import iter_stock_items, load_daily_data
 
 try:
     from tqdm import tqdm
-    _HAS_TQDM = True
+    _HAS_TQDM = os.environ.get("DISABLE_TQDM") != "1"
 except ImportError:
     _HAS_TQDM = False
 
@@ -158,6 +159,13 @@ def process_stock_task(code: str, config: GridConfig, param_grid: List[Dict[str,
     return stock_returns
 
 
+# 导入系统工具
+_ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+from util.system_utils import get_optimal_worker_count
+
+
 class GridAnalyzer:
     """网格测试分析器"""
     
@@ -182,31 +190,59 @@ class GridAnalyzer:
 
         # 并行处理所有股票
         items = list(iter_stock_items(limit=self.limit))
-        iterator = tqdm(items, desc="网格测试") if _HAS_TQDM else items
 
         grid_returns = []
         global_max_date = None  # 存储所有股票数据中的最新日期
 
-        # 使用多进程并行处理
-        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
-            futures = {
-                executor.submit(
-                    process_stock_task,
-                    item.code,
-                    self.config,
-                    param_grid,
-                    self.end_date
-                ): item for item in iterator
-            }
+        # 计算并行工作进程数
+        if os.environ.get("LOW_MEM_MODE") == "1":
+            workers = 1
+            print("  [INFO] 低内存模式：使用单进程扫描")
+        else:
+            workers = get_optimal_worker_count()
+            if workers > 1:
+                print(f"  [INFO] 开启服务器级优化：使用 {workers} 个进程运行网格测试")
+            else:
+                print("  [INFO] 系统资源有限：使用单进程运行网格测试")
 
-            for future in as_completed(futures):
-                item = futures[future]
+        if workers > 1:
+            # 使用多进程并行处理
+            with ProcessPoolExecutor(max_workers=workers) as executor:
+                futures = {
+                    executor.submit(
+                        process_stock_task,
+                        item.code,
+                        self.config,
+                        param_grid,
+                        self.end_date
+                    ): item for item in items
+                }
+
+                iterator = tqdm(as_completed(futures), total=len(items), desc="并行网格测试") if _HAS_TQDM else as_completed(futures)
+                for future in iterator:
+                    item = futures[future]
+                    try:
+                        stock_returns = future.result()
+                        if stock_returns:
+                            grid_returns.append(stock_returns)
+
+                            # 记录数据最新日期（如果没有end_date）
+                            if not self.end_date:
+                                df = load_daily_data(item.code)
+                                if not df.empty:
+                                    df["date"] = pd.to_datetime(df["date"])
+                                    latest_date = df["date"].max()
+                                    if global_max_date is None or latest_date > global_max_date:
+                                        global_max_date = latest_date
+                    except Exception as e:
+                        print(f"  ⚠️ 股票 {item.code} 分析失败: {e}")
+        else:
+            iterator = tqdm(items, desc="网格测试") if _HAS_TQDM else items
+            for item in iterator:
                 try:
-                    stock_returns = future.result()
+                    stock_returns = process_stock_task(item.code, self.config, param_grid, self.end_date)
                     if stock_returns:
                         grid_returns.append(stock_returns)
-
-                        # 记录数据最新日期（如果没有end_date）
                         if not self.end_date:
                             df = load_daily_data(item.code)
                             if not df.empty:

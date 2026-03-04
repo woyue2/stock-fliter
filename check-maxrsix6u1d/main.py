@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument("--output-dir", type=str, default=None, help="输出目录")
     parser.add_argument("--grid-horizon", type=int, default=20, help="网格测试收益周期")
     parser.add_argument("--end-date", type=str, default=None, help="分析截止日期 (YYYY-MM-DD)")
+    parser.add_argument("--no-open", action="store_true", help="不自动打开浏览器")
     return parser.parse_args()
 
 
@@ -70,6 +71,7 @@ def main() -> int:
         limit=limit,
         output_dir=Path(args.output_dir) if args.output_dir else None,
         end_date=args.end_date,
+        auto_open=not args.no_open,
     )
     
     pipeline = Pipeline(config)

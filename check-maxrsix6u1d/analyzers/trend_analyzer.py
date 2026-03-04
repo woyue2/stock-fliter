@@ -17,12 +17,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Any
 
+import os
 import numpy as np
 import pandas as pd
 
-from data_loader import iter_stock_items, load_daily_data
+from data_loader import iter_stock_items, load_daily_data, StockItem
 from indicators_6u1d import compute_all_6u1d_indicators, PATTERN_6U1D_COLUMN_MAP
 from indicators_6u1d_fuzzy import (
     compute_all_6u1d_indicators_fuzzy,
@@ -32,7 +33,7 @@ from indicators_6u1d_fuzzy import (
 
 try:
     from tqdm import tqdm
-    _HAS_TQDM = True
+    _HAS_TQDM = os.environ.get("DISABLE_TQDM") != "1"
 except ImportError:
     _HAS_TQDM = False
 
@@ -138,9 +139,52 @@ def load_industry_map() -> Dict[str, str]:
     return {}
 
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import sys
+import os
+
+# 导入系统工具
+_ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+from util.system_utils import get_optimal_worker_count
+
+
+def _worker_trend_task(item: StockItem, config_dict: dict) -> Tuple[Optional[Dict], Optional[datetime]]:
+    """子进程执行单个股票趋势分析"""
+    try:
+        limit = config_dict.get("limit")
+        end_date = config_dict.get("end_date")
+        min_bars = config_dict.get("min_bars", 120)
+        include_mystic = config_dict.get("include_mystic", True)
+        lookback_days = config_dict.get("lookback_days", 120)
+        
+        df = load_daily_data(item.code)
+        if df.empty:
+            return None, None
+
+        # Filter by end_date if provided
+        df["date"] = pd.to_datetime(df["date"])
+        if end_date:
+            df = df[df["date"] <= end_date]
+        
+        latest_date = df["date"].max() if not df.empty else None
+
+        if len(df) < min_bars:
+            return None, latest_date
+
+        # 为了 picklable，我们需要在子进程中实例化 Analyzer 或直接调用其方法
+        # 这里我们实例化一个简化的 Analyzer
+        from analyzers.trend_analyzer import TrendAnalyzer
+        analyzer = TrendAnalyzer(include_mystic=include_mystic, lookback_days=lookback_days, min_bars=min_bars)
+        result = analyzer._analyze_stock(item.code, item.name, item.industry, df)
+        
+        return result, latest_date
+    except Exception:
+        return None, None
+
+
 class TrendAnalyzer:
-    """趋势分析器"""
-    
     def __init__(
         self,
         limit: Optional[int] = None,
@@ -165,31 +209,48 @@ class TrendAnalyzer:
         global_max_date = None  # 存储所有股票数据中的最新日期
 
         items = list(iter_stock_items(limit=self.limit))
-        iterator = tqdm(items, desc="趋势分析") if _HAS_TQDM else items
-
-        for item in iterator:
-            df = load_daily_data(item.code)
-
-            if df.empty:
-                continue
-
-            # Filter by end_date if provided
-            if self.end_date:
-                df["date"] = pd.to_datetime(df["date"])
-                df = df[df["date"] <= self.end_date]
+        
+        # 计算并行工作进程数
+        if os.environ.get("LOW_MEM_MODE") == "1":
+            workers = 1
+            print("  [INFO] 低内存模式：使用单进程扫描")
+        else:
+            workers = get_optimal_worker_count()
+            if workers > 1:
+                print(f"  [INFO] 开启服务器级优化：使用 {workers} 个进程并行扫描")
             else:
-                # 记录数据最新日期
-                df["date"] = pd.to_datetime(df["date"])
-                latest_date = df["date"].max()
-                if global_max_date is None or latest_date > global_max_date:
-                    global_max_date = latest_date
+                print("  [INFO] 系统资源有限：使用单进程扫描")
 
-            if len(df) < self.min_bars:
-                continue
+        config_dict = {
+            "limit": self.limit,
+            "end_date": self.end_date,
+            "min_bars": self.min_bars,
+            "include_mystic": self.include_mystic,
+            "lookback_days": self.lookback_days
+        }
 
-            result = self._analyze_stock(item.code, item.name, item.industry, df)
-            if result:
-                results.append(result)
+        if workers > 1:
+            with ProcessPoolExecutor(max_workers=workers) as executor:
+                futures = {
+                    executor.submit(_worker_trend_task, item, config_dict): item 
+                    for item in items
+                }
+                
+                iterator = tqdm(as_completed(futures), total=len(items), desc="并行趋势分析") if _HAS_TQDM else as_completed(futures)
+                for future in iterator:
+                    res, dt = future.result()
+                    if dt and (global_max_date is None or dt > global_max_date):
+                        global_max_date = dt
+                    if res:
+                        results.append(res)
+        else:
+            iterator = tqdm(items, desc="趋势分析") if _HAS_TQDM else items
+            for item in iterator:
+                res, dt = _worker_trend_task(item, config_dict)
+                if dt and (global_max_date is None or dt > global_max_date):
+                    global_max_date = dt
+                if res:
+                    results.append(res)
 
         result_df = pd.DataFrame(results)
 

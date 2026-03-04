@@ -33,6 +33,7 @@ class PipelineConfig:
     limit: Optional[int] = None
     output_dir: Optional[Path] = None
     end_date: Optional[str] = None
+    auto_open: bool = True
 
     def __post_init__(self):
         if self.output_dir is None:
@@ -329,6 +330,7 @@ class Pipeline:
             result=self.result,
             output_dir=self.result.batch_dir,
             end_date=self.config.end_date,
-            display_date=display_date
+            display_date=display_date,
+            auto_open=self.config.auto_open
         )
         html_reporter.generate()
