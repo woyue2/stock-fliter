@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import sys
 from datetime import datetime
 from html import escape
 from pathlib import Path
 
 import pandas as pd
+
+# 确保 util/ 可被导入
+_UTIL_DIR = Path(__file__).resolve().parent.parent.parent / "util"
+if str(_UTIL_DIR) not in sys.path:
+    sys.path.insert(0, str(_UTIL_DIR))
+from index_writer import write_to_stocks_index  # noqa: E402
 
 
 def generate_html_report(
@@ -607,33 +614,24 @@ def _export_to_index_csv(
     if df.empty:
         return
 
-    date_folder = f"{report_date[:4]}-{report_date[4:6]}-{report_date[6:8]}"
     project_root = Path(__file__).resolve().parent.parent.parent
-    index_dir = project_root / "get-data" / "data" / "stocks_index" / date_folder
-    index_dir.mkdir(parents=True, exist_ok=True)
-    index_file = index_dir / "stocks_index.csv"
-
     web_path = str(report_path.relative_to(project_root)).replace("\\", "/")
+    date_folder = f"{report_date[:4]}-{report_date[4:6]}-{report_date[6:8]}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    rows = []
-    for _, row in df.iterrows():
-        rows.append(
-            {
-                "代码": row["code"],
-                "名称": row["name"],
-                "日期": date_folder,
-                "模块": module_name,
-                "策略级别": strategy_name,
-                "报告路径": web_path,
-                "板块": row["board"],
-                "行业": row["industry"],
-                "生成时间": now_str,
-            }
-        )
+    rows = [
+        {
+            "代码": row["code"],
+            "名称": row["name"],
+            "日期": date_folder,
+            "模块": module_name,
+            "策略级别": strategy_name,
+            "报告路径": web_path,
+            "板块": row["board"],
+            "行业": row["industry"],
+            "生成时间": now_str,
+        }
+        for _, row in df.iterrows()
+    ]
 
-    append_df = pd.DataFrame(rows)
-    if index_file.exists():
-        append_df.to_csv(index_file, mode="a", header=False, index=False, encoding="utf-8-sig")
-    else:
-        append_df.to_csv(index_file, index=False, encoding="utf-8-sig")
+    write_to_stocks_index(rows, report_date, project_root)

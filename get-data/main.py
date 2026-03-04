@@ -1,44 +1,5 @@
 # # -*- coding: utf-8 -*-
 
-# 📁 脚本清单
-# | 脚本 | 功能 | 位置 |
-# |------|------|------|
-# | analyze_real_stocks.py | 单/多股票分析 | check-market-sentiment/ |
-# | batch_analyze.py | 批量形态统计 | check-market-sentiment/ |
-# | fetch_minute_akshare.py | 获取真实分钟数据 | get-data/ |
-# | minute_pattern_analyzer.py | 核心分析器 | check-market-sentiment/ |
-# ---
-# 📖 文档内容
-# minute_pattern_analyzer-usage.md
-# ├── 概述
-# │   ├── 核心思想（240维向量）
-# │   └── 优势
-# │
-# ├── 快速开始
-# │   ├── 安装依赖
-# │   └── 基本使用
-# │
-# ├── 脚本说明（4个主要脚本）
-# │   ├── analyze_real_stocks.py
-# │   ├── batch_analyze.py
-# │   ├── fetch_minute_akshare.py
-# │   └── minute_pattern_analyzer.py
-# │
-# ├── 数据流说明（流程图）
-# ├── 文件结构
-# ├── 最佳实践（每日复盘流程）
-# ├── 注意事项
-# ├── 故障排除
-# └── 更新日志
-# ---
-# 🚀 快速使用
-# # 分析单只股票
-# python analyze_real_stocks.py --code 600519
-# # 批量分析
-# python batch_analyze.py
-# # 获取分钟数据
-# python fetch_minute_akshare.py --code 600519 --realtime
-
 
 """
 获取A股日K数据（增量更新 + 随机10只样本/全市场扫描）

@@ -18,6 +18,7 @@ python fetch_fund_flow.py --all --sample 50
 """
 from __future__ import annotations
 import argparse
+import random
 import sys
 import time
 from pathlib import Path
@@ -30,6 +31,15 @@ try:
 except ImportError:
     print("请先安装: pip install akshare")
     sys.exit(1)
+
+# Monkey-patch AkShare 的请求头（更新 Chrome 版本，避免被识别为爬虫）
+import akshare.stock.stock_fund_em as stock_fund_em_module
+stock_fund_em_module.headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    "Referer": "https://data.eastmoney.com/zjlx/detail.html",
+}
 
 # 添加项目根目录到路径
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -91,21 +101,45 @@ def get_stock_list() -> List[str]:
     return []
 
 
-def fetch_fund_flow_data(code: str) -> Optional[pd.DataFrame]:
+def fetch_fund_flow_data(code: str, max_retries: int = 5) -> Optional[pd.DataFrame]:
     """
-    获取单只股票的资金流向数据，带重试机制
+    获取单只股票的资金流向数据，带指数退避重试机制
 
     Args:
         code: 股票代码 (如 600519)
+        max_retries: 最大重试次数
 
     Returns:
         DataFrame 或 None
     """
     market = get_market(code)
 
-    for attempt in range(3):
+    for attempt in range(max_retries):
         try:
-            df = ak.stock_individual_fund_flow(stock=code, market=market)
+            # 强制关闭并重新创建连接池，避免被服务端识别为同一连接
+            import requests
+            from urllib3.util.retry import Retry
+            from requests.adapters import HTTPAdapter
+
+            # 创建新 session，禁用连接复用
+            session = requests.Session()
+            adapter = HTTPAdapter(
+                max_retries=Retry(total=0),
+                pool_connections=1,
+                pool_maxsize=1
+            )
+            session.mount('https://', adapter)
+            session.mount('http://', adapter)
+
+            # 临时替换 akshare 的 requests 使用我们的 session
+            original_get = requests.get
+            requests.get = session.get
+
+            try:
+                df = ak.stock_individual_fund_flow(stock=code, market=market)
+            finally:
+                requests.get = original_get
+                session.close()
 
             if df is None or df.empty:
                 return None
@@ -134,9 +168,12 @@ def fetch_fund_flow_data(code: str) -> Optional[pd.DataFrame]:
 
             return df
 
-        except Exception:
-            if attempt < 2:
-                time.sleep(0.5 * (attempt + 1))  # 指数退避: 0.5s, 1s
+        except Exception as e:
+            if attempt < max_retries - 1:
+                # 指数退避 + 随机抖动: 1s, 2s, 4s, 8s + 0-1s 随机
+                sleep_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"\n  ⚠️ {code}: 第{attempt + 1}次失败，{sleep_time:.1f}s后重试...")
+                time.sleep(sleep_time)
             continue
 
     return None
@@ -227,7 +264,7 @@ def main():
     parser.add_argument("--test", action="store_true", help="测试模式（10只随机股票）")
     parser.add_argument("--sample", type=int, help="随机采样数量")
     parser.add_argument(
-        "--delay", type=float, default=0.1, help="请求间隔秒数（默认：0.1）"
+        "--delay", type=float, default=1.5, help="请求间隔秒数（默认：1.5，建议不低于1.0）"
     )
 
     args = parser.parse_args()
@@ -271,6 +308,7 @@ def main():
     success = 0
     fail = 0
     skipped = 0
+    failed_codes: List[str] = []  # 记录失败的代码
 
     with ProgressBar(total=len(codes), desc="获取进度") as pbar:
         for i, code in enumerate(codes):
@@ -305,6 +343,7 @@ def main():
                 success += 1
             else:
                 fail += 1
+                failed_codes.append(code)
                 print(f"\n  ✗ {code}: 获取失败")
 
             pbar.update(1, success=(new_df is not None))
@@ -316,6 +355,14 @@ def main():
     print("\n" + "=" * 60)
     print(f"完成！成功: {success}, 跳过: {skipped}, 失败: {fail}")
     print(f"数据保存至: {FUNDFLOW_DIR}")
+
+    # 保存失败列表，支持断点续跑
+    if failed_codes:
+        failed_file = FUNDFLOW_DIR / "failed_codes.txt"
+        with open(failed_file, "w") as f:
+            f.write("\n".join(failed_codes))
+        print(f"\n⚠️  {len(failed_codes)} 只股票获取失败，已保存至: {failed_file}")
+        print(f"   稍后重跑: python fetch_fund_flow.py --codes $(cat {failed_file} | tr '\n' ',')")
 
     # 显示样本数据
     if success > 0:

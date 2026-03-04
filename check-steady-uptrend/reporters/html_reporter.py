@@ -7,6 +7,7 @@ HTML报告生成器
 """
 from __future__ import annotations
 
+import sys
 from datetime import datetime
 from html import escape
 from pathlib import Path
@@ -17,7 +18,12 @@ import webbrowser
 
 import pandas as pd
 
-from utils import infer_market_prefix, get_eastmoney_url
+# 确保 util/ 可被导入
+_UTIL_DIR = Path(__file__).resolve().parent.parent.parent / "util"
+if str(_UTIL_DIR) not in sys.path:
+    sys.path.insert(0, str(_UTIL_DIR))
+from url_utils import infer_market_prefix, get_eastmoney_url  # noqa: E402
+from index_writer import write_to_stocks_index  # noqa: E402
 
 
 class HtmlReporter:
@@ -1031,66 +1037,40 @@ class HtmlReporter:
             f.write(html)
         return path
     
-    def _export_to_index_csv(self, df: pd.DataFrame, module_name: str, 
+    def _export_to_index_csv(self, df: pd.DataFrame, module_name: str,
                              combo_name: str, report_date: str, report_path: Path):
-        """将股票数据追加到索引CSV"""
-        # 使用带日期的 stocks_index.csv 路径
-        if len(report_date) == 8:
-            date_folder = f"{report_date[:4]}-{report_date[4:6]}-{report_date[6:8]}"
-        else:
-            date_folder = report_date
-        
-        index_dir = Path(__file__).parent.parent.parent / "get-data" / "data" / "stocks_index" / date_folder
-        index_dir.mkdir(parents=True, exist_ok=True)
-        index_file = index_dir / "stocks_index.csv"
-        
-        # 准备索引数据
-        index_data = []
+        """将股票数据追加到索引CSV（委托 util/index_writer）"""
+        project_root = Path(__file__).resolve().parent.parent.parent
+        web_path = str(report_path.relative_to(project_root)).replace("\\", "/")
+        date_str = (report_date[:4] + "-" + report_date[4:6] + "-" + report_date[6:8]
+                    if len(report_date) == 8 else report_date)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        rows = []
         for _, row in df.iterrows():
             code_raw = str(row.get("代码", ""))
             code_match = re.search(r"\d{6}", code_raw)
             if not code_match:
                 continue
-            
             code = code_match.group(0)
-            name = str(row.get("名称", "")).strip()
-            board = str(row.get("板块", "")).strip()
-            industry = str(row.get("行业", "")).strip()
-            
-            # 获取优先级
+
             priority = ""
             if row.get("回调买点", False) in [True, "True", "true", 1, "1"]:
                 priority = "[STAR]买入"
             elif row.get("等待买点", False) in [True, "True", "true", 1, "1"]:
                 priority = "[STAR]等待"
-            
-            # 计算相对于项目根目录的路径
-            project_root = Path(__file__).parent.parent.parent
-            relative_path = report_path.relative_to(project_root)
-            # 转换为正斜杠格式（适用于Web）
-            web_path = str(relative_path).replace("\\", "/")
-            
-            index_data.append({
+
+            rows.append({
                 "代码": code,
-                "名称": name,
-                "日期": report_date[:4] + "-" + report_date[4:6] + "-" + report_date[6:8] if len(report_date) == 8 else report_date,
+                "名称": str(row.get("名称", "")).strip(),
+                "日期": date_str,
                 "模块": module_name,
                 "策略级别": combo_name + (f" {priority}" if priority else ""),
                 "报告路径": web_path,
-                "板块": board,
-                "行业": industry,
-                "生成时间": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "板块": str(row.get("板块", "")).strip(),
+                "行业": str(row.get("行业", "")).strip(),
+                "生成时间": now_str,
             })
-        
-        if not index_data:
-            return
-        
-        # 追加到CSV
-        index_df = pd.DataFrame(index_data)
-        if index_file.exists():
-            index_df.to_csv(index_file, mode='a', header=False, 
-                           index=False, encoding='utf-8-sig')
-        else:
-            index_df.to_csv(index_file, index=False, encoding='utf-8-sig')
-        
-        print(f"  [OK] 已导出 {len(index_data)} 条记录到索引文件 ({combo_name})")
+
+        write_to_stocks_index(rows, report_date, project_root)
+

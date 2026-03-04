@@ -1,5 +1,0 @@
-[33mcommit f1c98ba4a110976131b5a19f9cdf50d7a440c32a[m[33m ([m[1;36mHEAD[m[33m)[m
-Author: hi <hi@hi.com>
-Date:   Fri Jan 30 02:34:29 2026 +0800
-
-    chore: stop tracking pyc and test files, add .gitignore

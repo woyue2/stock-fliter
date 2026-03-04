@@ -1,0 +1,642 @@
+# 重构计划 — stock-fliter
+> 生成时间：2026-03-04 | 最后更新：2026-03-04 00:17
+> 原则：HTML 输出结构完全不变
+
+## 已完成的决策（手动执行）
+
+| 操作 | 状态 | 说明 |
+|------|------|------|
+| `check-new-indicators` → `check-indicator-combo` | ✅ 已完成 | 命名更准确，反映「23种指标组合策略」的本质 |
+| `check-sell-decision` 删除 | ✅ 已完成 | 整个模块删除 |
+| `check-market-sentiment` 精华提取后删除 | ⏳ 待执行 | 见 Phase 0 详细说明 |
+
+---
+
+## 一、现状诊断（公正评判）
+
+### 1.0 模块全景（更新后）
+
+```
+check-*  模块现状（2026-03-04）：
+  check-trend-bottom/        ✅ 活跃 — TD九底分析
+  check-steady-uptrend/      ✅ 活跃 — 稳步上升
+  check-volume-confirmation/ ✅ 活跃 — 放量确认（结构欠发育）
+  check-indicator-combo/     ✅ 活跃 — 23种指标组合策略（原 check-new-indicators）
+  check-market-sentiment/    ⏳ 待处理 — 精华提取后整体删除
+  check-sell-decision/       ✅ 已删除
+```
+
+### 1.1 目录结构评分
+
+| 维度 | 当前状态 | 评分 |
+|------|---------|------|
+| 模块化程度 | ✅ 基本的 check-* 模块划分合理 | 7/10 |
+| 目录命名 | ⚠️ check-indicator-combo 已改正，仍有 `_old` 残留 | 6/10 |
+| 根目录整洁度 | ❌ 根目录有9个 .py 文件直接散落，职责混乱 | 3/10 |
+| 共享代码组织 | ⚠️ `util/` 只有3个文件，但各模块自己的 utils.py 重复 | 5/10 |
+| 测试组织 | ❌ test_*.py 既在根目录也散落在各模块，无统一结构 | 2/10 |
+| 废弃代码清理 | ❌ `_old/` 目录大量存在，共计1500+行废弃代码 | 1/10 |
+
+---
+
+### 1.2 文件行数违规（质量红线：≤800行/文件，≤20行/函数）
+
+#### 🔴 严重超标（>800行）
+
+| 文件 | 行数 | 超标比例 | 核心问题 |
+|------|------|---------|---------|
+| [check-steady-uptrend/reporters/html_reporter.py](file:///F:/QIANQIAN/stock-fliter/check-steady-uptrend/reporters/html_reporter.py) | **1097行** | +37% | [_generate_summary_html](file:///F:/QIANQIAN/stock-fliter/check-steady-uptrend/reporters/html_reporter.py#217-636) 单函数418行，[_get_html_template](file:///F:/QIANQIAN/stock-fliter/check-steady-uptrend/reporters/html_reporter.py#676-1033) 单函数357行 |
+| [check-market-sentiment/batch_analyze.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/batch_analyze.py) | **1021行** | +28% | 混合了 Reporter + 数据加载 + main 逻辑 |
+| [check-market-sentiment/pattern_html_reporter.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/pattern_html_reporter.py) | **972行** | +22% | [_generate_html](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/batch_analyze.py#62-342) 单函数286行，[_generate_detailed_table_section](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/batch_analyze.py#527-746) 258行 |
+| [get-data/main.py](file:///f:/QIANQIAN/stock-fliter/get-data/main.py) | **698行** | -13%（接近上限）| 9个职责混合 |
+| [check-market-sentiment/minute_pattern_analyzer.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/minute_pattern_analyzer.py) | **589行** | — | 分析器混合了IO和业务 |
+| `stream_run_daily.py` | **551行** | — | 流式调度+日志+错误处理混合 |
+| `sell_analyzer.py` | **531行** | — | 独立分析器无模块归属 |
+
+#### 🟡 中等问题（400-800行，含有超长函数）
+
+| 文件 | 行数 | 长函数 |
+|------|------|--------|
+| `check-steady-uptrend/analyzers/trend_rules_analyzer.py`（_old） | 1044行 | 多处200+行函数 |
+| [check-steady-uptrend/mystic_indicators_tolerant.py](file:///F:/QIANQIAN/stock-fliter/check-steady-uptrend/mystic_indicators_tolerant.py) | 400行 | 单函数150+行 |
+| [scripts/build_reports_index.py](file:///f:/QIANQIAN/stock-fliter/scripts/build_reports_index.py) | 680行 | 集中了HTML生成+索引逻辑+CSS |
+
+---
+
+### 1.3 目录结构问题（公正诊断）
+
+#### ❌ 问题1：根目录散落的孤立文件（最严重）
+```
+根目录直接存在：
+  api_server.py        → 应归入 server/ 或 api/
+  run_all_strategies.py → 合理，但内容混乱
+  stream_run_daily.py  → 应归入 scripts/ 或 runner/
+  sell_analyzer.py     → check-sell-decision 已删除，此文件是孤儿，考虑直接删除
+  diagnose.py          → 应归入 tools/
+  compare_modules.py   → 应归入 tools/
+  test_index_path.py   → 应归入 tests/
+  test_macd_strength.py → 应归入 tests/
+  "from openai import OpenAI.py"  → ❌ 完全不合法的文件名，立即删除
+```
+
+#### ❌ 问题2：`_old/` 废弃代码吃磁盘吃脑力
+```
+check-trend-bottom/_old/          → 1400+行废弃代码（有git可删）
+check-steady-uptrend/_old/        → 2500+行废弃代码（有git可删）
+check-trend-bottom/reporters/html_reporter_old.py → 703行直接放在生产目录
+```
+
+#### ❌ 问题3：`check-volume-confirmation` 模块极度欠发育
+```
+check-volume-confirmation/
+├── main.py            (64行)
+└── reporters/
+    ├── markdown_reporter.py (48行)
+    └── __init__.py    (6行)
+```
+**没有 pipeline.py、没有 data_loader.py、没有 analyzers/。**
+与其他三个模块架构完全不统一，是事实上的技术债务。
+
+#### ✅ 问题4已处理：`check-market-sentiment` 整体删除（精华已明确）
+该模块原本结构混乱（双 main.py、双 data_loader.py、1021行 batch_analyze.py 等），
+**决策：整体删除，将以下精华迁移至其他模块：**
+
+| 精华文件 | 迁移目标 | 价值评级 |
+|---------|---------|--------|
+| [sentiment_analyzer/sentiment_engine.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/sentiment_analyzer/sentiment_engine.py) | 新建 `check-market-pulse/` 或并入 `util/` | ⭐⭐⭐⭐ |
+| [sentiment_analyzer/tomorrow_predictor.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/sentiment_analyzer/tomorrow_predictor.py) | 同上 | ⭐⭐⭐⭐ |
+| [sentiment_analyzer/data_loader.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/sentiment_analyzer/data_loader.py) | 同上（分钟数据加载，有并行/logging）| ⭐⭐⭐ |
+| [minute_pattern_analyzer.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/minute_pattern_analyzer.py) | 同上（240维向量分析，最有算法价值）| ⭐⭐⭐⭐ |
+| [pattern_analyzer.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/pattern_analyzer.py) | 同上（日K经典形态分类）| ⭐⭐⭐ |
+
+**直接丢弃（无价值）**：[batch_analyze.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/batch_analyze.py)、[report_generator.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/sentiment_analyzer/report_generator.py)（根目录版）、
+[data_loader.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/data_loader.py)（根目录版）、[analyze_20250505.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/analyze_20250505.py) 等历史脚本、[experiment_patterns.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/experiment_patterns.py)
+
+#### ✅ 做得好的部分（公正承认）
+- `check-trend-bottom` 和 `check-steady-uptrend` 的 `analyzers/ reporters/` 分层结构合理
+- `get-data/` 作为数据中心 SSOT 的定位清晰
+- `util/` 共享工具库的方向正确
+- Pipeline 模式一致性较好（有 PipelineConfig + Pipeline）
+- 所有模块都有 [__init__.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/analyzers/__init__.py)
+
+---
+
+### 1.4 代码质量问题（不涉及 HTML 结构的部分）
+
+#### 函数过长（违反≤20行规则）
+- `HtmlReporter._generate_summary_html`: **418行** — 这是全项目最严重的违规
+- `HtmlReporter._get_html_template`: **357行** — 纯HTML字符串拼接，完全可以外置
+- `batch_analyze.py main()`: **165行** — 包含了太多职责
+
+#### 重复代码（冗余坏味道）
+- [_export_to_index_csv](file:///F:/QIANQIAN/stock-fliter/check-indicator-combo/reporters/html_reporter.py#1005-1062) 方法在至少2个模块中完全相同 → 应提升到 `util/`
+- `infer_market_prefix` / `get_eastmoney_url` 工具函数是否在多处重复？
+- 各模块都有自己的时间戳目录创建逻辑
+
+#### 日志问题
+- [batch_analyze.py](file:///F:/QIANQIAN/stock-fliter/check-market-sentiment/batch_analyze.py) 大量使用 `print()`（扫描确认）
+- 根目录 `stream_run_daily.py` 551行，日志管理策略不明
+
+---
+
+## 二、重构计划（HTML 输出不变原则）
+
+### 核心约束
+> **重构期间，[html_reporter.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/reporters/html_reporter.py) 等报告生成器输出的 HTML 字符串内容、CSS 类名、标签结构、JavaScript 代码，一个字节都不许变。**
+> 唯一允许的改动：**移动代码位置** 和 **提取函数**（不改内容）
+
+---
+
+### Phase 0：check-market-sentiment 精华迁移 + 整体删除（⚠️ 必须先于一切）
+
+> 这是本次重构新增的优先步骤。先救人再拆楼。
+
+**步骤**：
+```
+1. 新建迁移目标目录（建议方案）：
+   util/minute_analysis/         ← 放纯算法，无IO依赖
+     sentiment_engine.py         ← 从 sentiment_analyzer/ 迁入
+     tomorrow_predictor.py       ← 从 sentiment_analyzer/ 迁入
+     minute_pattern_analyzer.py  ← 从根目录迁入（240维向量，最有价值）
+     pattern_analyzer.py         ← 从根目录迁入（日K形态分类）
+
+   或（如果未来会继续做情绪分析，建议保留为独立模块）：
+   check-market-pulse/           ← 重命名重建（比 sentiment 更准确）
+     analyzers/
+       sentiment_engine.py
+       tomorrow_predictor.py
+       minute_pattern_analyzer.py
+       pattern_analyzer.py
+     data_loader.py              ← 用 sentiment_analyzer/ 版本（有logging）
+     main.py                     ← 用 sentiment_analyzer/ 版本
+
+2. 迁移完成后，整体删除 check-market-sentiment/
+
+3. 丢弃清单（不迁移）：
+   batch_analyze.py              (1021行，逻辑重复)
+   report_generator.py           (根目录版本，已被替代)
+   data_loader.py                (根目录版本，已被替代)
+   analyze_20250505/06/130.py    (历史调试脚本)
+   analyze_market.py             (临时脚本)
+   analyze_real_stocks.py        (临时脚本)
+   run_minute_analysis.py        (临时脚本)
+   experiment_patterns.py        (实验脚本)
+   pattern_html_reporter.py      (972行，报告格式未来按需重写)
+
+风险: ★★★☆☆（需要验证迁移后 import 路径正确）
+```
+
+---
+
+### Phase 1：清除废弃代码（0改动风险）
+
+**目标**: 删除 `_old/` 目录和废弃文件（已有 git，可安全删除）
+
+```
+删除:
+  check-trend-bottom/_old/                 (1400行)
+  check-steady-uptrend/_old/               (2500行)
+  check-trend-bottom/reporters/html_reporter_old.py (703行)
+  "from openai import OpenAI.py"           (非法文件名，立即删)
+
+预计减少: ~4600行废弃代码
+风险: ★☆☆☆☆（有git保底）
+```
+
+---
+
+### Phase 2：根目录瘦身（低风险）
+
+**目标**: 把散落的根目录文件归入合理位置
+
+```
+删除:
+  sell_analyzer.py      → check-sell-decision 已删，此文件成为孤儿，建议同步删除
+
+移动:
+  diagnose.py           → tools/diagnose.py
+  compare_modules.py    → tools/compare_modules.py
+  test_index_path.py    → tests/test_index_path.py
+  test_macd_strength.py → tests/test_macd_strength.py
+
+保留根目录（入口文件，合理）:
+  run_all_strategies.py
+  api_server.py
+  stream_run_daily.py   （调度入口，保留）
+
+涉及: 修改 import 路径（不改 HTML 输出）
+风险: ★★☆☆☆
+```
+
+---
+
+### Phase 3：check-indicator-combo 对齐架构（中低风险）
+
+> 原 `check-new-indicators`，已改名。现在需要让它的内部结构与其他模块一致。
+
+```
+current:
+  check-indicator-combo/
+  ├── analyzer.py        (223行) ← 23种策略逻辑
+  ├── data_loader.py
+  ├── main.py            (90行)
+  ├── reporter.py
+  ├── reporters/
+  │   ├── html_reporter.py    (1062行) ← 超标
+  │   └── markdown_reporter.py
+  ├── test_report.py
+  └── test_td9_macd_gold.py
+
+target（对齐标准架构）:
+  check-indicator-combo/
+  ├── main.py            ← 保持（已干净）
+  ├── pipeline.py        ← 新建（包装现有 main 流程）
+  ├── data_loader.py     ← 保持
+  ├── analyzers/
+  │   ├── __init__.py
+  │   └── combo_analyzer.py ← 从 analyzer.py 重命名/移入
+  ├── reporters/
+  │   ├── __init__.py
+  │   ├── html_reporter.py   ← 保持（但函数拆分，见 Phase 4）
+  │   └── markdown_reporter.py
+  └── tests/
+      ├── test_report.py
+      └── test_td9_macd_gold.py
+
+HTML输出: 完全不变
+风险: ★★☆☆☆
+```
+
+---
+
+### Phase 4a：三模块 HTML 样式统一化（先于函数拆分）
+
+> **基准**：`check-trend-bottom` 和 `check-indicator-combo` 的极简风格（两者高度一致）
+> **目标**：将 `check-steady-uptrend` 对齐到同一标准，吸收其独有优势
+
+#### 差异对比总表
+
+| 维度 | check-trend-bottom ✅基准 | check-indicator-combo ✅基准 | check-steady-uptrend ⚠️待对齐 |
+|------|------|------|------|
+| **Summary页布局** | `sidebar 200px` + nav-item点击切换 | `sidebar 200px` + nav-item点击切换 | `sidebar 450px` + [ul](file:///F:/QIANQIAN/stock-fliter/check-steady-uptrend/pipeline.py#89-102)列表链接风格，**完全不同** |
+| **导航组标题** | `color: #999` 灰色小字 | `color: #ff6b00` 橙色加粗 | 无nav-group概念，用 `h2` 标签 |
+| **已选股票区** | 详情页左带"已选0"简单统计 | sidebar底部有"⭐已选股票"汇总区 | summary页有复杂"已勾选股票"区，**支持单股备注、移除、24h过期清除** |
+| **备注功能** | 无 | sidebar有一个全局/报告备注框 | **每条股票都有单独备注输入框，功能最丰富** |
+| **东方财富链接** | 直接判断 `startswith('6')` | 直接判断 `startswith('6')` | 引用外部 [utils.py](file:///F:/QIANQIAN/stock-fliter/check-steady-uptrend/utils.py) 的 `get_eastmoney_url()`，**唯一使用工具函数的模块** |
+| **股票表格** | 代码/名称/板块/行业/日TD/周TD/月TD | 代码/名称/板块/行业/收盘/日期/稳步/放量/MACD/TD | **左侧列表 + 右侧iframe**，追加"优先级"列 |
+| **路由机制** | iframe src 即时替换 | iframe src 即时替换 | 详情页用 `<a target="quoteFrame">` 直接在iframe打开行情 |
+| **暗色模式** | 无 | 无 | **有 `@media (prefers-color-scheme: dark)` 完整支持** |
+| **CSS字体栈** | `-apple-system, "Microsoft YaHei"` | `-apple-system, "Microsoft YaHei"` | `"Segoe UI", "PingFang SC", "Microsoft YaHei"` |
+| **localStorage Key** | `td_{level}` 按级别隔离 | `selected_stocks` 全局key | `stock_checked_list` + **24小时过期清除机制** |
+| **HTML doctype** | `<!DOCTYPE html>` 大写 | `<!DOCTYPE html>` 大写 | `<!doctype html>` 小写 |
+| **行业/板块统计** | 标签云（inline span） | 标签云（inline span） | **独立统计表格**，带百分比和折叠按钮 |
+
+#### ⚠️ 关键发现：数据模型差异导致无法完全统一 Summary 布局
+
+**HTML 不是凭空生成的，它的骨架由喂入的数据结构决定：**
+
+```
+check-trend-bottom:
+  Pipeline → HTMLReporter.generate(df: DataFrame, title)
+  接口: 单个 DataFrame，列含「共振级别」
+  导航项来源: df["共振级别"].value_counts() → ≤12个级别
+  
+check-indicator-combo:
+  main.py → HTMLReporter.generate(df: DataFrame, title)
+  接口: 单个 DataFrame，列含21个布尔策略列
+  导航项来源: 21个策略名 → 按组分为 强/中/观察
+
+check-steady-uptrend:
+  Pipeline → HtmlReporter(result=PipelineResult).generate()
+  接口: PipelineResult 对象，含 result.combined: Dict[str, DataFrame]
+  导航项来源: 32个组合策略名（xuanxue_134_6 ... xuanxue_4_61t）
+  ↑↑↑ 根本不同！Reporter接口就不一样！
+```
+
+**结论：如果要改 Summary 布局，必须同时改 Reporter 的 Python 接口。**
+这不再是纯 CSS 改动，而是**结构性重构**，风险显著上升。
+
+---
+
+#### 统一方案（更正版：分为安全层/风险层）
+
+```
+[安全层 - 纯视觉规范，不触碰数据链] ✅ 执行
+
+  [1] CSS字体栈统一
+      steady-uptrend: "Segoe UI", "PingFang SC" → -apple-system, "Microsoft YaHei"
+      改动: 1行CSS
+      风险: ★☆☆☆☆
+
+  [2] HTML doctype 大小写
+      steady-uptrend: <!doctype html> → <!DOCTYPE html>
+      改动: 2处（summary + detail template）
+      风险: ★☆☆☆☆
+
+  [3] 暗色模式反向移植
+      把 steady-uptrend 的 @media (prefers-color-scheme: dark) 提取为共享CSS
+      添加到 trend-bottom 和 indicator-combo
+      改动: 追加CSS（不改现有CSS）
+      风险: ★☆☆☆☆
+
+  [4] 东方财富链接统一 → util/url_utils.py（Phase 5 执行）
+      trend-bottom 和 indicator-combo: 内联判断 startswith('6')
+      steady-uptrend: 引用 utils.py 的 get_eastmoney_url()
+      统一为: 所有模块 from util.url_utils import get_eastmoney_url
+      改动: 3个文件的 import + 删除内联判断
+      风险: ★★☆☆☆
+
+[风险层 - 涉及数据模型/Reporter接口差异，需谨慎] ⚠️ 推迟或降级
+
+  [5] Summary页布局（sidebar宽度/导航结构）
+      ❌ 原计划: 450px → 200px + nav-item
+      ❌ 问题: steady-uptrend 有32个导航项，200px sidebar 物理空间不够
+      ❌ 更深层: Reporter 接口不同（PipelineResult vs DataFrame）
+      ✅ 更正: 保持 steady-uptrend 的 450px + ul 结构不变
+                如果未来要统一，需要先统一 Pipeline→Reporter 接口（更大的重构）
+      改动: 无
+      风险: N/A
+
+  [6] localStorage Key 规范化
+      ⚠️ 注意: 改 localStorage key 会导致用户已保存的勾选状态丢失！
+      ✅ 方案: 改 key 的同时加一段迁移代码（读旧key→写新key→删旧key）
+      改动: 3个模块各加 ~10行迁移JS
+      风险: ★★☆☆☆
+
+  [7] 24h过期清除机制
+      ✅ 好设计，但属于功能增强，不属于"统一化"范畴
+      方案: 记录为后续优化项，不在本次重构中做
+      
+[不改 - 数据驱动的业务差异，三模块各自保留]
+  - 表格列定义（各模块显示不同指标字段）
+  - 导航分组/分类逻辑（9底/8底 vs 强/中/观察 vs 32种组合）
+  - 已勾选股票区的交互复杂度（单股备注 vs 全局备注 vs 简单计数）
+  - 行业/板块统计展示方式（标签云 vs 统计表格各有优劣）
+  - Reporter 构造函数签名（PipelineResult vs DataFrame）
+```
+
+**更正后风险评估**: ★★☆☆☆（安全层 ★☆，风险层中 [6] 需注意迁移）
+
+---
+
+### Phase 4：HTML Reporter 函数拆分（核心工作，中风险）
+
+**目标**: 把超长函数拆短，但 HTML 输出字节级不变
+
+```
+check-steady-uptrend/reporters/html_reporter.py (1097行):
+  _generate_summary_html (418行) → 拆为:
+    _build_css()              ← 提取 CSS 字符串常量
+    _build_js()               ← 提取 JS 字符串常量
+    _build_header_section()   ← 提取头部 HTML
+    _build_sidebar_section()  ← 提取侧边栏
+    _build_main_section()     ← 提取主体
+    _generate_summary_html()  ← 只做组合（≤20行）
+
+  _get_html_template (357行) → 拆为:
+    _get_base_css()
+    _get_base_js()
+    _get_html_template()      ← 只做组合（≤20行）
+
+关键原则: 所有提取操作=字符串拼接调整，f-string参数不变
+风险: ★★★☆☆（需要仔细测试输出完全一致）
+```
+
+---
+
+### Phase 5：公共工具提升到 util/（低风险）
+
+```
+提升到 util/:
+  _export_to_index_csv()  ← 在多模块重复，提取为 util/index_writer.py
+  infer_market_prefix()   ← 确认是否已在 util/，若无则提升
+  get_eastmoney_url()     ← 同上
+  时间戳目录创建逻辑      ← 统一为 util/output_dir.py
+
+风险: ★★☆☆☆
+```
+
+---
+
+### Phase 6：check-volume-confirmation 补全结构（低风险）
+
+```
+补全缺失的模块文件（新建，不改现有逻辑）:
+  + data_loader.py    ← 从 main.py 提取数据加载逻辑
+  + pipeline.py       ← 包装现有 main.py 流程
+  + analyzers/
+      __init__.py
+      volume_analyzer.py ← 从 main.py 提取分析逻辑
+  
+风险: ★★☆☆☆（只是重组，不改算法）
+```
+
+---
+
+## 三、执行顺序建议（更新版）
+
+```
+Phase 0 → Phase 1 → Phase 2 → Phase 5 → Phase 3 → Phase 6 → Phase 4
+
+优先级:
+  立即执行（今天）:
+    Phase 0 — check-market-sentiment 精华迁移+删除（趁记忆还新鲜）
+    Phase 1 — 删 _old/ 废弃代码（零风险，快速清爽）
+
+  本周内:
+    Phase 2 — 根目录瘦身（sell_analyzer.py 删除 + 工具文件归位）
+    Phase 5 — 公共工具提升到 util/
+
+  下周:
+    Phase 3 — check-indicator-combo 架构对齐
+    Phase 6 — check-volume-confirmation 补全结构
+
+  最后（需要充足测试时间）:
+    Phase 4 — HTML Reporter 函数拆分（每次拆完 diff 验证输出不变）
+```
+
+---
+
+## 四、HTML 输出不变的验证策略
+
+```bash
+# Phase 4 执行前：把每个模块的 HTML 输出存档
+python check-trend-bottom/main.py --skip-fetch --test > /dev/null
+cp check-trend-bottom/output/LATEST/summary.html /tmp/before_summary.html
+
+# Phase 4 执行后：对比输出
+python check-trend-bottom/main.py --skip-fetch --test > /dev/null
+diff /tmp/before_summary.html check-trend-bottom/output/LATEST/summary.html
+
+# 期望: diff 输出为空（字节级一致）
+```
+
+---
+
+## 五、不建议重构的部分
+
+| 项目 | 原因 |
+|------|------|
+| [check-trend-bottom/analyzers/td_analyzer.py](file:///f:/QIANQIAN/stock-fliter/check-trend-bottom/analyzers/td_analyzer.py) (366行) | 算法核心，触碰风险高，功能好 |
+| [get-data/main.py](file:///f:/QIANQIAN/stock-fliter/get-data/main.py) (698行) | 接近上限但职责清晰，拆分ROI低 |
+| [util/indicators_lib.py](file:///f:/QIANQIAN/stock-fliter/util/indicators_lib.py) | 稳定，被多模块依赖，不动 |
+| `check-steady-uptrend/mystic_indicators*.py` | 玄学指标是业务核心，不轻易动 |
+| `check-indicator-combo/analyzers/combo_analyzer.py` | 23种策略逻辑是业务核心，只重命名不动内容 |
+
+---
+
+## 六、总结评分（更新版）
+
+| 维度 | 重构前 | 当前（手动操作后）| 重构后预期 |
+|------|------|---------|------|
+| 根目录整洁度 | 3/10 | 3/10 | 8/10 |
+| 模块一致性 | 5/10 | 6/10（check-indicator-combo改名后提升）| 9/10 |
+| 文件行数合规 | 3/10 | 3/10 | 8/10 |
+| 废弃代码 | 1/10 | 2/10（check-sell-decision删除后提升）| 9/10 |
+| 共享代码复用 | 4/10 | 4/10 | 7/10 |
+| **综合** | **3.2/10** | **3.6/10** | **8.2/10** |
+
+## 七、模块命名规范（固化）
+
+| 模块 | 命名规则 | 示例 |
+|------|---------|------|
+| check-* | `check-[形容词]-[名词]` 或 `check-[名词]-[名词]` | `check-indicator-combo`, `check-trend-bottom` |
+| 分析器 | `[策略名]_analyzer.py` | `combo_analyzer.py`, [td_analyzer.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/analyzers/td_analyzer.py) |
+| 报告器 | [html_reporter.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/reporters/html_reporter.py), [markdown_reporter.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/reporters/markdown_reporter.py) | 固定命名，所有模块统一 |
+| 入口 | [main.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/main.py) | 所有模块统一 |
+| 流程 | [pipeline.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/pipeline.py) | 所有模块统一 |
+| 数据 | [data_loader.py](file:///F:/QIANQIAN/stock-fliter/check-trend-bottom/data_loader.py) | 所有模块统一 |
+
+---
+
+## 八、GEB 三层穿透 — 风险审计（哥，这是最重要的部分）
+
+> 现象层 → 本质层 → 哲学层，逐 Phase 扫描
+
+### Phase 0 风险点
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| import 断裂 | 本质 | 迁移 sentiment_engine.py 后，如果其他模块有 `from check-market-sentiment.xxx import` 会直接爆 | 迁移前全局 grep `check-market-sentiment` 和 `sentiment_analyzer`，确认无外部引用 |
+| FATAL-003 | GEB | 删目录不更新 L2 → CLAUDE.md 里如果列了 check-market-sentiment 会残留 | 删除后立即检查/更新 L1 CLAUDE.md |
+| FATAL-004 | GEB | 如果迁移到新建 `check-market-pulse/`，必须创建 L2 CLAUDE.md | 新建模块同步创建 L2 |
+
+### Phase 1 风险点
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| _old/ 中有被引用的代码 | 现象 | 某些模块可能从 _old/ import 了备用函数 | 删除前 grep `_old` 确认无引用 |
+| FATAL-003 | GEB | 删文件不更新 L2（如果 _old/ 下的文件出现在某个 CLAUDE.md 中） | 删除后检查对应模块的 L2 |
+
+### Phase 2 风险点
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| sell_analyzer.py 有外部调用者 | 本质 | run_all_strategies.py 或 api_server.py 可能 import sell_analyzer | 删除前 grep `sell_analyzer` 全项目 |
+| 移动 diagnose.py 后 import 断裂 | 现象 | 如果有脚本写死了 `python diagnose.py` 路径 | 移动后全局搜索 `diagnose` |
+| test_*.py 中的相对路径 | 现象 | 测试文件可能用 `sys.path.insert(0, '..')` 这类hack | 移动后执行测试确认 |
+
+### Phase 3 风险点
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| analyzer.py → analyzers/combo_analyzer.py 重命名 | 本质 | main.py 中 `from analyzer import xxx` 会断 | 同步修改 main.py 的 import 路径 |
+| reporter.py 和 reporters/ 并存 | 现象 | 根目录有 reporter.py，reporters/ 里有 html_reporter.py，两者什么关系？ | 先读 reporter.py 确认是旧遗留还是入口分发 |
+| FATAL-003/004 | GEB | 新建 analyzers/ 子目录、移入文件，L2 CLAUDE.md 必须同步更新 | 每步操作后立即更新 L2 |
+
+### Phase 4a 风险点
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| localStorage key 迁移丢数据 | 现象 | 改 key 后用户浏览器里的旧勾选全部丢失 | 加迁移JS：读旧key→写新key→删旧key |
+| CSS字体栈改后视觉回退 | 现象 | macOS 上 -apple-system 很好但 Windows 上回退不同 | 确保 sans-serif fallback 在末尾 |
+
+### Phase 4 风险点（最高风险）
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| f-string 变量作用域丢失 | **本质** | 把 f-string 从大函数提取到小函数后，变量 scope 变了 | 所有提取的函数必须接收完整参数，禁止依赖闭包 |
+| 字符串拼接中的空格/换行差异 | **本质** | Python f-string 中的缩进、换行符微妙不同，可能导致 HTML 输出看起来一样但 diff 不同 | **每次拆分后立即 diff 验证**，不能跳过 |
+| 双大括号 {{ }} 转义 | 现象 | f-string 中 CSS/JS 的 {{ }} 在提取时容易漏改 | 提取前后对比原始输出 |
+
+### Phase 5 风险点
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| _export_to_index_csv 各模块参数不同 | **本质** | steady-uptrend 传5个参数，trend-bottom 传4个参数，接口不完全一致 | 迁移前对齐参数签名，用 **kwargs 兼容 |
+| get_eastmoney_url 已存在于 check-steady-uptrend/utils.py | 现象 | 如果直接移到 util/ 但不删原文件，会有两份 | 迁移后删除 check-steady-uptrend/utils.py 中的对应函数 |
+| 循环依赖 | 哲学 | 如果 util/url_utils.py 引入了对 check-* 模块的依赖，会形成循环 | util/ 目录**只依赖标准库和 pandas**，绝不 import check-* |
+
+### Phase 6 风险点
+
+| 危险 | 层级 | 描述 | 防护 |
+|------|------|------|------|
+| main.py 只有64行，拆分后反而变复杂 | **哲学** | 不必要复杂（坏味道）：为了架构一致性而过度设计只有64行的模块 | 如果拆分后总代码量增加超过50%，**不拆** |
+
+---
+
+### GEB 文档合规清单（每个 Phase 执行完必须检查）
+
+```
+Phase 0 完成后:
+  □ L1 CLAUDE.md: 删除 check-market-sentiment 条目
+  □ L1 CLAUDE.md: 如新建 check-market-pulse/，添加条目
+  □ L2: 新模块（如果有）创建 CLAUDE.md
+  □ FATAL-003 检查: grep "market-sentiment" L1/L2 确认无残留
+
+Phase 1 完成后:
+  □ L2: check-trend-bottom/CLAUDE.md 删除 _old/ 引用
+  □ L2: check-steady-uptrend/CLAUDE.md 删除 _old/ 引用
+  □ SEVERE-002 检查: 确认 L2 清单无不存在的文件
+
+Phase 2 完成后:
+  □ L1 CLAUDE.md: 更新目录结构（tools/ tests/ 新目录）
+  □ L2: 如 tools/ tests/ 是新目录，创建 CLAUDE.md
+  □ FATAL-001 检查: import 路径全部验证通过
+
+Phase 3 完成后:
+  □ L2: check-indicator-combo/CLAUDE.md 更新文件清单
+  □ L3: combo_analyzer.py 文件头 INPUT/OUTPUT/POS 更新
+  □ FATAL-004 检查: analyzers/ 子目录有 CLAUDE.md
+
+Phase 4a/4 完成后:
+  □ SEVERE-001 检查: 文件头注释与实际代码一致
+  □ diff 验证: HTML 输出字节级一致（Phase 4）
+
+Phase 5 完成后:
+  □ L2: util/CLAUDE.md 更新新增文件
+  □ SEVERE-002: 确认所有模块的 utils.py 已清理或指向 util/
+
+Phase 6 完成后:
+  □ L2: check-volume-confirmation/CLAUDE.md 更新文件清单
+```
+
+---
+
+## 九、执行顺序（最终版）
+
+```
+Phase 0 → Phase 1 → Phase 2 → Phase 5 → Phase 3 → Phase 6 → Phase 4a → Phase 4
+
+执行时间线:
+  立即（今天）:
+    Phase 0 — check-market-sentiment 精华迁移+删除
+    Phase 1 — 删 _old/ 废弃代码
+
+  本周:
+    Phase 2 — 根目录瘦身
+    Phase 5 — 公共工具提升到 util/
+
+  下周:
+    Phase 3 — check-indicator-combo 架构对齐
+    Phase 6 — check-volume-confirmation 补全结构
+
+  最后（需要最充足的测试时间）:
+    Phase 4a — HTML 视觉规范统一（安全层）
+    Phase 4  — HTML Reporter 函数拆分（每拆完一个函数 diff 验证）
+
+每个 Phase 完成后的必做动作:
+  1. 执行该 Phase 对应的 GEB 文档合规清单（见第八章）
+  2. 运行受影响模块的 main.py 确认功能正常
+  3. git commit（原子提交，一个 Phase 一个 commit）
+```
