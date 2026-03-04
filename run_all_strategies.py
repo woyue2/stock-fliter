@@ -25,8 +25,14 @@ from pathlib import Path
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
+
+# 导入系统工具
+sys.path.append(str(PROJECT_ROOT))
+from util.system_utils import is_low_memory
+
+
+
 
 
 @dataclass
@@ -35,27 +41,45 @@ class Step:
     command: List[str]
     workdir: Path
     group: str = "analysis"  # get-data / analysis / index
+    low_mem_mode: bool = False
 
 
-def run_step(step: Step) -> int:
+def run_step(step: Step, capture: bool = False) -> int:
     """执行单个步骤并打印人类可读日志，并写入 summary 日志。"""
     start = datetime.now()
 
-    print("\n" + "=" * 60)
-    print(f"▶ 开始步骤: {step.name}")
-    print("-" * 60)
-    print(f"[CMD] {' '.join(step.command)}")
-    print(f"[CWD] {step.workdir}")
+    if not capture:
+        print("\n" + "=" * 60)
+        print(f"▶ 开始步骤: {step.name}")
+        print("-" * 60)
+        print(f"[CMD] {' '.join(step.command)}")
+        print(f"[CWD] {step.workdir}")
 
     env = os.environ.copy()
+    if capture:
+        env["DISABLE_TQDM"] = "1"
+    
+    # 传递低内存模式标记
+    if getattr(step, "low_mem_mode", False):
+        env["LOW_MEM_MODE"] = "1"
 
-    result = subprocess.run(step.command, cwd=str(step.workdir), env=env)
+    result = subprocess.run(step.command, cwd=str(step.workdir), env=env, capture_output=capture, text=capture)
 
     end = datetime.now()
     duration = (end - start).total_seconds()
 
+    if capture:
+        print("\n" + "=" * 60)
+        print(f"▶ 步骤完成: {step.name} (耗时: {duration:.1f}s)")
+        print("-" * 60)
+        if result.stdout:
+            print(result.stdout.strip())
+        if result.stderr:
+            print(result.stderr.strip())
+
     if result.returncode == 0:
-        print(f"\n✅ 步骤完成: {step.name}")
+        if not capture:
+            print(f"\n✅ 步骤完成: {step.name}")
     else:
         print(f"\n❌ 步骤失败: {step.name} (exit={result.returncode})")
 
@@ -103,7 +127,7 @@ def run_steps_parallel(steps: List[Step], ignore_errors: bool) -> int:
     exit_codes: List[int] = []
 
     def _run(s: Step) -> int:
-        return run_step(s)
+        return run_step(s, capture=True)
 
     with ThreadPoolExecutor(max_workers=len(steps)) as executor:
         future_map = {executor.submit(_run, s): s for s in steps}
@@ -129,6 +153,7 @@ def build_steps(
     get_minutes: bool,
     end_date: Optional[str],
     limit: Optional[int],
+    low_mem_mode: bool = False,
 ) -> List[Step]:
     """根据参数构建需要执行的步骤列表。"""
     steps: List[Step] = []
@@ -144,6 +169,7 @@ def build_steps(
                 command=[sys.executable, "main.py"],
                 workdir=PROJECT_ROOT / "get-data",
                 group="get-data",
+                low_mem_mode=low_mem_mode
             )
         )
 
@@ -151,10 +177,11 @@ def build_steps(
     if get_minutes:
         steps.append(
             Step(
-                name="更新A股分钟数据 (get-data/fetch_minute_data.py)",
+                name="更新A股分时数据 (get-data/fetch_minute_data.py)",
                 command=[sys.executable, "fetch_minute_data.py", "--all"],
                 workdir=PROJECT_ROOT / "get-data",
                 group="get-data",
+                low_mem_mode=low_mem_mode
             )
         )
 
@@ -176,6 +203,7 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-td",
                 group="analysis",
+                low_mem_mode=low_mem_mode
             )
         )
 
@@ -192,6 +220,7 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-maxrsix6u1d",
                 group="analysis",
+                low_mem_mode=low_mem_mode
             )
         )
 
@@ -206,6 +235,7 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-tdxmacdxvolume",
                 group="analysis",
+                low_mem_mode=low_mem_mode
             )
         )
 
@@ -223,6 +253,7 @@ def build_steps(
                 command=cmd,
                 workdir=PROJECT_ROOT / "check-volupxyangxshipan",
                 group="analysis",
+                low_mem_mode=low_mem_mode
             )
         )
 
@@ -234,6 +265,7 @@ def build_steps(
                 command=[sys.executable, "build_reports_index.py"],
                 workdir=PROJECT_ROOT / "scripts",
                 group="index",
+                low_mem_mode=low_mem_mode
             )
         )
 
@@ -308,6 +340,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="并行运行各分析模块（get-data 与索引仍顺序执行）",
     )
+    parser.add_argument(
+        "--no-server-optimization",
+        action="store_true",
+        help="不使用服务器级多进程扫描优化（适合 2G 及以下内存服务器）",
+    )
     return parser.parse_args()
 
 
@@ -334,6 +371,18 @@ def interactive_prompt(args: argparse.Namespace) -> None:
         args.get_minutes = True
 
     # 2. 策略模块问询
+    print("\n[配置] 是否开启服务器级优化 (多进程并发扫描)?")
+    if is_low_memory():
+        print("  ⚠️ 检测到当前系统内存不足 2.5G，建议跳过多进程以保证稳定性。")
+        ans_opt = input("👉 开启多进程? [1/0, 默认0]: ").strip()
+        if ans_opt != "1":
+            args.no_server_optimization = True
+    else:
+        print("  🚀 系统内存充足，默认开启多进程加速。")
+        ans_opt = input("👉 关闭多进程? [1/0, 默认0]: ").strip()
+        if ans_opt == "1":
+            args.no_server_optimization = True
+
     print("\n[步骤 2] 分析环境配置完成。以下是可用的策略模块：")
     print("[1] TD分析 (check-td)")
     print("[2] MAxRSIx6U1D 分析 (check-maxrsix6u1d)")
@@ -347,16 +396,30 @@ def interactive_prompt(args: argparse.Namespace) -> None:
     if "3" in ans_skip: args.skip_tdxmacdxvolume = True
     if "4" in ans_skip: args.skip_volupxyangxshipan = True
 
-    # 交互模式下默认开启多线程
-    args.parallel = True
+    # 3. 执行模式问询
+    print("\n[步骤 3] 执行模式：是否开启【模块间】并行运行?")
+    print("  (注：同时启动 TD、6U1D、组合、VolUp 等模块，节省总耗时)")
+    print("[1] 并行运行 (默认)")
+    print("[0] 顺序运行 (更稳定的日志流)")
+    ans_par = input("👉 请选择 [1/0, 默认1]: ").strip()
+    if ans_par == "0":
+        args.parallel = False
+    else:
+        args.parallel = True
+
     print("\n[开始执行...]")
 
 
 def main() -> int:
     args = parse_args()
 
-    # 如果没有任何参数，则触发交互式向导
-    if len(sys.argv) == 1 and sys.stdin.isatty():
+    # 如果没有指定任何跳过参数，且在交互式终端下，进入向导流程
+    is_explicit = any([
+        args.skip_get_data, args.skip_td, args.skip_maxrsix6u1d, 
+        args.skip_tdxmacdxvolume, args.skip_volupxyangxshipan,
+        args.get_minutes
+    ])
+    if not is_explicit and sys.stdin.isatty():
         interactive_prompt(args)
 
     steps = build_steps(
@@ -369,6 +432,7 @@ def main() -> int:
         get_minutes=args.get_minutes,
         end_date=args.end_date,
         limit=args.limit,
+        low_mem_mode=args.no_server_optimization or is_low_memory()
     )
 
     if not steps:
