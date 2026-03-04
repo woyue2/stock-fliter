@@ -98,6 +98,9 @@ check-<strategy>/
 - `diagnose.py` - 网络/环境诊断工具
 - `compare_modules.py` - 模块输出对比工具
 
+**docs/** - 项目文档与演进日志
+- `evolution.md` - 技术债 / TODO / 已完成重构的时序记录（由 /git_commit 维护）
+
 **get-data/** - Central data hub
 - Outputs to `data/raw/{code}.csv` with columns: date, open, high, low, close, volume, amount, pctChg
 - BaoStock primary source, Tencent fallback
@@ -109,8 +112,10 @@ check-<strategy>/
 |--------|----------|-------------|
 | check-trend-bottom | TD Sequential | TD9/TD8/TD7 multi-period resonance |
 | check-steady-uptrend | Trend following | MA alignment, volatility contraction |
-| check-volume-confirmation | Volume breakout | Yesterday volume > prior 3 days, today bullish |
+| check-indicator-combo | Indicator combos | 21-strategy combination: TD/MACD/volume/steady (Phase 3 架构对齐) |
+| check-volume-confirmation | Volume breakout | Yesterday volume > prior 3 days, today bullish (Phase 6 补全 analyzers/) |
 | util/minute_analysis | Intraday pattern algorithms | MinutePatternAnalyzer, SentimentEngine, TomorrowPredictor, PatternAnalyzer, DataLoader (migrated from check-market-sentiment, Phase 0) |
+
 
 ### Output Conventions
 
