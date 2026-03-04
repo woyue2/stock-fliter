@@ -222,6 +222,32 @@ class TechnicalIndicators:
         return pd.Series(sequence, index=close_prices.index)
 
     @staticmethod
+    def calculate_parkinson_volatility(high: pd.Series, low: pd.Series, window: int = 20) -> float:
+        """
+        计算 Parkinson 波动率 (基于高低价范围)
+        公式: V = sqrt(1 / (4 * n * ln(2)) * sum(ln(Hi/Li)^2))
+        """
+        if len(high) < window or len(low) < window:
+            return 0.0
+        
+        # 取最近 window 天的数据
+        h = high.tail(window).astype(float)
+        l = low.tail(window).astype(float)
+        
+        # 避免除以0
+        l = l.replace(0, np.nan)
+        
+        # 计算 ln(H/L)^2
+        log_range_sq = np.log(h / l) ** 2
+        
+        # 计算 Parkinson 波动率
+        sum_sq = log_range_sq.sum()
+        parkinson_daily = np.sqrt(sum_sq / (4 * window * np.log(2)))
+        
+        # 年化 (假设一年 250 个交易日)
+        return float(parkinson_daily * np.sqrt(250))
+
+    @staticmethod
     def resample_ohlcv(df: pd.DataFrame, rule: str) -> pd.DataFrame:
         """
         重采样 OHLCV 数据

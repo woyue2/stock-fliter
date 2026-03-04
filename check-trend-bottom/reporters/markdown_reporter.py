@@ -86,8 +86,8 @@ class MarkdownReporter:
                     continue
                 
                 lines.append(f"\n## {level} ({len(sub_df)}只)\n")
-                lines.append("\n| 代码 | 名称 | 板块 | 行业 | 日TD | 周TD | 月TD | 底部详情 |\n")
-                lines.append("|------|------|------|------|------|------|------|----------|\n")
+                lines.append("\n| 代码 | 名称 | 板块 | 行业 | 日TD | 周TD | 月TD | 波动率 | 底部详情 |\n")
+                lines.append("|------|------|------|------|------|------|------|--------|----------|\n")
                 
                 for _, row in sub_df.iterrows():
                     code = row.get("代码", "")
@@ -98,7 +98,9 @@ class MarkdownReporter:
                     weekly_td = row.get("周TD计数", 0)
                     monthly_td = row.get("月TD计数", 0)
                     detail = row.get("底部详情", "")
-                    lines.append(f"| {code} | {name} | {board} | {industry} | {daily_td} | {weekly_td} | {monthly_td} | {detail} |\n")
+                    vol = row.get("波动率", 0.0)
+                    vol_str = f"{vol:.2%}" if vol > 0 else "-"
+                    lines.append(f"| {code} | {name} | {board} | {industry} | {daily_td} | {weekly_td} | {monthly_td} | {vol_str} | {detail} |\n")
         
         # 写入文件
         path = self.output_dir / filename

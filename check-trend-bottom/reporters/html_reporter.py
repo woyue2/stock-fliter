@@ -79,13 +79,16 @@ class HTMLReporter:
                     level_data[level] = count
         
         # 生成各级别详情页
+        level_vols = {}
         for level in available_levels:
             sub_df = df[df["共振级别"] == level]
             self._generate_detail_page(sub_df, report_dir, level)
+            # 记录波动率数据供主页过滤使用
+            level_vols[level] = sub_df["波动率"].tolist()
         
         # 生成主页（带 iframe）
         summary_filename = f"summary_{date_str}_{ts}.html"
-        summary_path = self._generate_summary(df, report_dir, title, available_levels, level_data, summary_filename, date_str)
+        summary_path = self._generate_summary(df, report_dir, title, available_levels, level_data, level_vols, summary_filename, date_str)
         
         # 导出到索引CSV
         self._export_to_index_csv(df, "TD九底", date_str, summary_path)
@@ -93,7 +96,8 @@ class HTMLReporter:
         return summary_path
     
     def _generate_summary(self, df: pd.DataFrame, report_dir: Path, title: str,
-                          available_levels: list, level_data: dict, filename: str = "summary.html", date_str: str = None) -> Path:
+                          available_levels: list, level_data: dict, level_vols: dict, 
+                          filename: str = "summary.html", date_str: str = None) -> Path:
         """生成主页"""
 
         # 按底部级别分组
@@ -247,6 +251,33 @@ class HTMLReporter:
             height: 100%;
             color: #999;
         }}
+        
+        .filter-panel {{
+            padding: 10px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .filter-input {{
+            width: 60px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }}
+        .filter-btn {{
+            padding: 4px 10px;
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }}
+        .filter-btn:hover {{ background: #1565c0; }}
+        
         @media (prefers-color-scheme: dark) {{
             body {{ background: #1a1a1a; color: #e0e0e0; }}
             .sidebar {{ background: #242424; border-color: #333; }}
@@ -256,6 +287,8 @@ class HTMLReporter:
             .nav-item.active {{ background: #1e3a5f; color: #8ab4f8; border-color: #2d5a8e; }}
             .nav-group {{ color: #999; }}
             .content {{ background: #1a1a1a; }}
+            .filter-panel {{ background: #242424; border-color: #333; }}
+            .filter-input {{ background: #333; color: #fff; border-color: #444; }}
         }}
     </style>
 </head>
@@ -263,6 +296,11 @@ class HTMLReporter:
     <div class="layout">
         <div class="sidebar">
             <div class="logo">📊 {title}</div>
+            <div class="filter-panel" title="波动率过滤器">
+                <span style="font-size:12px">波动率<</span>
+                <input type="number" id="volFilter" class="filter-input" value="0.5" step="0.1" min="0">
+                <button class="filter-btn" onclick="applyVolFilter()">过滤</button>
+            </div>
             <div class="nav">
                 {nav_items}
             </div>
@@ -276,24 +314,74 @@ class HTMLReporter:
     
     <script>
         const availableLevels = {available_levels_js};
+        const levelVols = {str(level_vols)}; // 注入所有级别的波动率分布数据
+        let currentVolLimit = null;
         
         function showLevel(level) {{
+            const navItem = document.querySelector(`.nav-item[data-level="${{level}}"]`);
+            if (!navItem) return;
+
             // 更新导航状态
             document.querySelectorAll('.nav-item').forEach(item => {{
                 item.classList.remove('active');
-                if (item.dataset.level === level) {{
-                    item.classList.add('active');
-                }}
             }});
+            navItem.classList.add('active');
             
             // 更新 iframe
             if (availableLevels.includes(level)) {{
-                document.getElementById('content').innerHTML = 
-                    `<iframe src="${{level}}.html"></iframe>`;
-            }} else {{
-                alert('暂无 ' + level + ' 的数据');
+                const content = document.getElementById('content');
+                content.innerHTML = `<iframe id="detailFrame" src="${{level}}.html"></iframe>`;
+                
+                // 等待 iframe 加载完成发送过滤指令
+                const iframe = document.getElementById('detailFrame');
+                iframe.onload = () => {{
+                    if (currentVolLimit !== null) {{
+                        iframe.contentWindow.postMessage({{ type: 'filterVol', limit: currentVolLimit }}, '*');
+                    }}
+                }};
             }}
         }}
+
+        function applyVolFilter() {{
+            const val = document.getElementById('volFilter').value;
+            if (val === "") {{
+                currentVolLimit = 999;
+            }} else {{
+                currentVolLimit = parseFloat(val);
+            }}
+            
+            // 1. 立即计算并更新侧边栏所有标志位的数字
+            for (const level in levelVols) {{
+                const vols = levelVols[level];
+                const count = vols.filter(v => v <= currentVolLimit).length;
+                
+                const navItem = document.querySelector(`.nav-item[data-level="${{level}}"]`);
+                if (navItem) {{
+                    const countBadge = navItem.querySelector('.level-count');
+                    countBadge.textContent = count;
+                    // 如果数量为 0，则显著淡化显示
+                    navItem.style.opacity = count === 0 ? '0.2' : '1';
+                }}
+            }}
+
+            // 2. 通知当前正在显示的 iframe 过滤内容
+            const iframe = document.getElementById('detailFrame');
+            if (iframe && iframe.contentWindow) {{
+                iframe.contentWindow.postMessage({{ type: 'filterVol', limit: currentVolLimit }}, '*');
+            }}
+        }}
+
+        // 监听来自详情页的反馈（如手动点击后的自同步）
+        window.addEventListener('message', (event) => {{
+            if (event.data && event.data.type === 'updateCount') {{
+                const {{ level, count }} = event.data;
+                const navItem = document.querySelector(`.nav-item[data-level="${{level}}"]`);
+                if (navItem) {{
+                    navItem.querySelector('.level-count').textContent = count;
+                    navItem.style.opacity = count === 0 ? '0.2' : '1';
+                }}
+            }}
+        }});
     </script>
 </body>
 </html>
@@ -322,6 +410,9 @@ class HTMLReporter:
             monthly_td = row.get("月TD计数", 0)
             detail = row.get("底部详情", "")
             latest_price = row.get("日最新价", "")
+            vol = row.get("波动率", 0.0)
+            vol_str = f"{vol:.2%}" if vol > 0 else "-"
+            vol_color = self._get_vol_color(vol)
             
             # 构建东方财富链接
             if str(code).startswith("6"):
@@ -331,7 +422,7 @@ class HTMLReporter:
             em_url = f"https://quote.eastmoney.com/{em_code}.html"
             
             rows_html += f'''
-            <tr data-code="{code}">
+            <tr data-code="{code}" data-vol="{vol}">
                 <td><input type="checkbox" class="check" data-code="{code}" onchange="saveChecked()"></td>
                 <td><a href="javascript:void(0)" onclick="showStock('{em_url}')" class="code">{code}</a></td>
                 <td>{name}</td>
@@ -342,6 +433,7 @@ class HTMLReporter:
                 <td class="td td-{self._get_td_class(monthly_td)}">{monthly_td}</td>
                 <td class="detail">{detail}</td>
                 <td>{latest_price}</td>
+                <td class="vol-cell" style="color: {vol_color}; font-weight: 500;">{vol_str}</td>
             </tr>
             '''
         
@@ -587,6 +679,7 @@ class HTMLReporter:
                     <th>月TD</th>
                     <th>底部详情</th>
                     <th>最新价</th>
+                    <th>波动率(Park)</th>
                 </tr>
             </thead>
             <tbody id="tbody">
@@ -684,6 +777,37 @@ class HTMLReporter:
             frame.style.display = 'block';
             frame.src = url;
         }}
+
+        // 波动率过滤逻辑
+        window.addEventListener('message', (event) => {{
+            if (event.data && event.data.type === 'filterVol') {{
+                const limit = event.data.limit;
+                filterByVolatility(limit);
+            }}
+        }});
+
+        function filterByVolatility(limit) {{
+            let visibleCount = 0;
+            document.querySelectorAll('#tbody tr').forEach(tr => {{
+                const vol = parseFloat(tr.dataset.vol || 0);
+                if (vol > limit) {{
+                    tr.style.display = 'none';
+                }} else {{
+                    tr.style.display = '';
+                    visibleCount++;
+                }}
+            }});
+            
+            // 更新当前页面的副标题计数
+            document.querySelector('.count').textContent = '过滤后: ' + visibleCount + ' 只';
+            
+            // 通知父窗口更新侧边栏计数
+            window.parent.postMessage({{ 
+                type: 'updateCount', 
+                level: '{level}', 
+                count: visibleCount 
+            }}, '*');
+        }}
     </script>
 </body>
 </html>
@@ -701,6 +825,14 @@ class HTMLReporter:
         elif value >= 7:
             return "mid"
         return "low"
+    
+    def _get_vol_color(self, vol: float) -> str:
+        """根据波动率返回颜色"""
+        if vol <= 0: return "#999"
+        if vol < 0.2: return "#4caf50"  # 绿色：极稳
+        if vol < 0.4: return "#1976d2"  # 蓝色：正常
+        if vol < 0.7: return "#f57c00"  # 橙色：高波动
+        return "#d32f2f"  # 红色：妖/极高波动
     
     def _export_to_index_csv(self, df: pd.DataFrame, module_name: str,
                              report_date: str, report_path: Path):

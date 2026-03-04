@@ -122,7 +122,7 @@ class TDAnalyzer:
         column_order = [
             "代码", "名称", "板块", "行业",
             "日TD计数", "周TD计数", "月TD计数",
-            "共振级别", "底部详情", "底部权重", "9底及以上周期数",
+            "共振级别", "底部详情", "波动率", "底部权重", "9底及以上周期数",
             "日底部级别", "周底部级别", "月底部级别",
             "日9底", "日8底", "日7底", "日6底", "周9底", "周8底", "周7底", "周6底",
             "月9底", "月8底", "月7底", "月6底",
@@ -150,6 +150,14 @@ class TDAnalyzer:
         result.update(self._build_resonance(
             result["日TD计数"], result["周TD计数"], result["月TD计数"]
         ))
+        
+        # 计算历史波动率 (Parkinson)
+        if "high" in df_daily.columns and "low" in df_daily.columns:
+            vol = TechnicalIndicators.calculate_parkinson_volatility(df_daily["high"], df_daily["low"], window=20)
+            result["波动率"] = round(vol, 4)
+        else:
+            result["波动率"] = 0.0
+            
         return result
     
     def _analyze_period(self, df: pd.DataFrame, prefix: str) -> Dict:
