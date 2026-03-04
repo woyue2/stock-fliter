@@ -410,6 +410,20 @@ class HTMLReporter:
             height: 100%;
             color: #999;
         }}
+        @media (prefers-color-scheme: dark) {{
+            body {{ background: #1a1a1a; color: #e0e0e0; }}
+            .sidebar {{ background: #242424; border-color: #333; }}
+            .logo {{ color: #e0e0e0; border-color: #333; }}
+            .nav-item {{ color: #ccc; border-color: #333; }}
+            .nav-item:hover {{ background: #2e2e2e; }}
+            .nav-item.active {{ background: #1e3a5f; color: #8ab4f8; border-color: #2d5a8e; }}
+            .nav-group {{ color: #999; }}
+            .note-box {{ background: #242424; border-color: #444; color: #e0e0e0; }}
+            .note-box textarea {{ background: #1e1e1e; border-color: #555; color: #e0e0e0; }}
+            .content {{ background: #1a1a1a; }}
+            .btn {{ background: #2a2a2a; color: #ccc; border-color: #444; }}
+            .selected-section {{ background: #1b3320; border-color: #2e7d32; color: #81c784; }}
+        }}
     </style>
 </head>
 <body>
@@ -818,6 +832,27 @@ class HTMLReporter:
         }}
         .open-new:hover {{
             text-decoration: underline;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            body {{ background: #1a1a1a; color: #e0e0e0; }}
+            .left-panel {{ border-color: #333; }}
+            .right-panel {{ background: #242424; }}
+            .right-header {{ border-color: #333; color: #999; background: #1f1f1f; }}
+            .header {{ background: #1f1f1f; border-color: #333; }}
+            .toolbar {{ background: #1f1f1f; border-color: #333; }}
+            .title {{ color: #e0e0e0; }}
+            .count {{ color: #999; }}
+            .stock-list {{ background: #1a1a1a; }}
+            .stock-item {{ border-color: #333; }}
+            .stock-item:hover {{ background: #2a2a2a; }}
+            .stock-item.selected {{ background: #1e3a5f; border-color: #2d5a8e; }}
+            .code {{ color: #8ab4f8; }}
+            .name {{ color: #e0e0e0; }}
+            .board {{ color: #999; }}
+            .badge {{ background: #2a2a2a; color: #aaa; }}
+            .badge.hit {{ background: #1e3a5f; color: #8ab4f8; }}
+            .score {{ color: #81c784; }}
+            .open-new {{ color: #8ab4f8; }}
         }}
     </style>
 </head>

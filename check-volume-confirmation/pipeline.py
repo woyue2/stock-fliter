@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  limit/generate_html/generate_markdown/auto_open/show_progress/end_date 参数
+# OUTPUT: Dict — {scanned, matched, skipped, skip_reasons, files}
+# POS:    check-volume-confirmation/pipeline.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
@@ -21,86 +25,10 @@ from data_loader import (
     load_stock_df,
     load_stock_info_map,
 )
+from analyzers import evaluate_stock, empty_result_df  # Phase 6: 分离到 analyzers/
 from reporters import generate_html_report, generate_markdown_report
 from shipan_logic import analyze_shipan_behavior
 
-
-def _evaluate_stock(df: pd.DataFrame, end_date: Optional[str] = None) -> tuple[Optional[dict], Optional[str]]:
-    if df is None or df.empty:
-        return None, "无数据"
-
-    # 如果指定了结束日期，截断数据
-    if end_date:
-        try:
-            target_dt = pd.to_datetime(end_date)
-            df = df[df["date"] <= target_dt].copy()
-        except Exception:
-            return None, "结束日期格式错误"
-
-    if len(df) < 5:
-        return None, "样本不足5天"
-
-    last5 = df.tail(5).copy()
-    if last5[["open", "close", "volume"]].isna().any().any():
-        return None, "关键值缺失"
-    if (last5["volume"] <= 0).any():
-        return None, "成交量无效"
-
-    d0 = last5.iloc[-1]   # 今天
-    d1 = last5.iloc[-2]   # 昨天
-    d2 = last5.iloc[-3]
-    d3 = last5.iloc[-4]
-    d4 = last5.iloc[-5]
-
-    # 核心限制：量过前高 (昨放量)
-    yday_breakout = bool(d1["volume"] > d2["volume"] and d1["volume"] > d3["volume"] and d1["volume"] > d4["volume"])
-    today_up = bool(d0["close"] > d0["open"])
-
-    if not (yday_breakout and today_up):
-        reason = "非昨放量" if not yday_breakout else "今日非阳线"
-        return None, reason
-
-    # 计算试盘行为
-    shipan_count, shipan_detail = analyze_shipan_behavior(df)
-
-    return {
-        "code": str(d0["code"]).zfill(6),
-        "date_0": pd.Timestamp(d0["date"]).strftime("%Y-%m-%d"),
-        "open_0": float(d0["open"]),
-        "close_0": float(d0["close"]),
-        "volume_0": float(d0["volume"]),
-        "date_m1": pd.Timestamp(d1["date"]).strftime("%Y-%m-%d"),
-        "volume_m1": float(d1["volume"]),
-        "volume_m2": float(d2["volume"]),
-        "volume_m3": float(d3["volume"]),
-        "volume_m4": float(d4["volume"]),
-        "shipan_count": shipan_count,
-        "shipan_detail": shipan_detail,
-        "signal": "昨放量+今阳线",
-    }, None
-
-
-def _empty_result_df() -> pd.DataFrame:
-    return pd.DataFrame(
-        columns=[
-            "code",
-            "name",
-            "industry",
-            "board",
-            "date_0",
-            "open_0",
-            "close_0",
-            "volume_0",
-            "date_m1",
-            "volume_m1",
-            "volume_m2",
-            "volume_m3",
-            "volume_m4",
-            "shipan_count",
-            "shipan_detail",
-            "signal",
-        ]
-    )
 
 
 def run_pipeline(
@@ -130,7 +58,7 @@ def run_pipeline(
             skip_reasons[error] += 1
             continue
 
-        hit, reason = _evaluate_stock(df, end_date=end_date)
+        hit, reason = evaluate_stock(df, end_date=end_date)  # Phase 6: 用公开名
         if reason:
             skip_reasons[reason] += 1
             continue
@@ -145,7 +73,7 @@ def run_pipeline(
         hit["board"] = infer_board(code)
         rows.append(hit)
 
-    matched_df = _empty_result_df() if not rows else pd.DataFrame(rows)
+    matched_df = empty_result_df() if not rows else pd.DataFrame(rows)  # Phase 6
     if not matched_df.empty:
         # 首先按试盘次数倒序，然后按日期降序，最后按代码升序
         matched_df = matched_df.sort_values(
