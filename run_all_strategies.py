@@ -319,10 +319,10 @@ def interactive_prompt(args: argparse.Namespace) -> None:
 
     # 1. 数据配置问询
     print("\n[步骤 1] 是否执行日线数据爬取与更新 (get-data/main.py)?")
-    print("[1] 是 (默认)")
-    print("[0] 跳过，使用已有数据")
-    ans_data = input("👉 请选择 [1/0, 默认1]: ").strip()
-    if ans_data == "0":
+    print("[1] 是")
+    print("[0] 跳过，使用已有数据 (默认)")
+    ans_data = input("👉 请选择 [1/0, 默认0]: ").strip()
+    if ans_data != "1":
         args.skip_get_data = True
 
     # 1.5 分钟数据配置问询
