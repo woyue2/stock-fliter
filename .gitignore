@@ -60,6 +60,7 @@ check-td/output/*
 get-data/output/*
 check-market-sentiment/output/*
 check-volupxyangxshipan/output/*
+check-tdxmacdxvolume/output/*
 
 # 保留 output 目录结构
 !check-maxrsix6u1d/output/.gitkeep
@@ -68,6 +69,7 @@ check-volupxyangxshipan/output/*
 !get-data/output/.gitkeep
 !check-market-sentiment/output/.gitkeep
 !check-volupxyangxshipan/output/.gitkeep
+!check-tdxmacdxvolume/output/.gitkeep
 
 # OS
 .DS_Store
