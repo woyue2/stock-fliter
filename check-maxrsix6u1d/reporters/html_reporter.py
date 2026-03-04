@@ -33,11 +33,12 @@ from index_writer import write_to_stocks_index  # noqa: E402
 class HtmlReporter:
     """HTML报告生成器"""
 
-    def __init__(self, result: Any, output_dir: Path, end_date: Optional[str] = None, display_date: Optional[str] = None):
+    def __init__(self, result: Any, output_dir: Path, end_date: Optional[str] = None, display_date: Optional[str] = None, auto_open: bool = True):
         self.result = result
         self.output_dir = output_dir
         self.end_date = end_date
         self.display_date = display_date  # 用于在HTML title中显示的日期
+        self.auto_open = auto_open
         self.generated_files: Dict[str, str] = {}  # name -> filename
         self.asset_dir = output_dir / "assets"
         self.asset_dir.mkdir(parents=True, exist_ok=True)
@@ -108,11 +109,24 @@ class HtmlReporter:
                 self._export_to_index_csv(df, "MAxRSIx6U1D", name, date_str, summary_path)
         
         # 自动打开总览页面
-        try:
-            print(f"  [START] 正在打开浏览器...")
-            webbrowser.open(summary_path.as_uri())
-        except Exception as e:
-            print(f"  ⚠️ 自动打开浏览器失败: {e}")
+        if self.auto_open:
+            import os
+            try:
+                print(f"  🌐 自动打开浏览器...")
+                url = summary_path.as_uri()
+                success = webbrowser.open(url)
+                if not success and os.name == 'posix':
+                    # 尝试 WSL 方案
+                    try:
+                        import subprocess
+                        subprocess.run(['wslview', url], check=False, capture_output=True)
+                    except:
+                        try:
+                            import subprocess
+                            subprocess.run(['powershell.exe', '-c', f'start "{url}"'], check=False, capture_output=True)
+                        except: pass
+            except Exception as e:
+                print(f"  ⚠️ 自动打开浏览器失败: {e}")
     
     def _generate_combo_html(self, df: pd.DataFrame, title: str, output_path: Path, ts: str, summary_filename: str):
         """生成单个组合的HTML"""

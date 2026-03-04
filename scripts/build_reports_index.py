@@ -689,8 +689,39 @@ def main() -> None:
     # 自动打开 HTML 文件
     print(f"\n正在打开浏览器...")
     try:
-        webbrowser.open(index_path.as_uri())
-        print(f"✓ 已在浏览器中打开: {index_path}")
+        url = index_path.as_uri()
+        # 在某些 WSL 环境下，webbrowser 可能无法正确调用 Windows 浏览器
+        # 尝试使用更稳健的方式
+        success = webbrowser.open(url)
+        
+        # 如果常规方式失败且是 Linux (WSL)，尝试使用 wslview 或 powershell
+        if not success and os.name == 'posix':
+            # 检查是否在 WSL
+            is_wsl = False
+            try:
+                with open('/proc/version', 'r') as f:
+                    if 'microsoft' in f.read().lower():
+                        is_wsl = True
+            except: pass
+            
+            if is_wsl:
+                import subprocess
+                # 尝试 wslview (wslu 工具包集成的)
+                try:
+                    subprocess.run(['wslview', url], check=False, capture_output=True)
+                    success = True
+                except:
+                    # 尝试 powershell.exe 直接打开
+                    try:
+                        subprocess.run(['powershell.exe', '-c', f'start "{url}"'], check=False, capture_output=True)
+                        success = True
+                    except: pass
+        
+        if success:
+            print(f"✓ 已在浏览器中打开: {index_path}")
+        else:
+            print(f"⚠ 无法自动打开浏览器，请手动打开: {index_path}")
+            
     except Exception as e:
         print(f"⚠ 无法自动打开浏览器: {e}")
         print(f"请手动打开: {index_path}")
