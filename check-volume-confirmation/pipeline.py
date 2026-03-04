@@ -75,9 +75,9 @@ def run_pipeline(
 
     matched_df = empty_result_df() if not rows else pd.DataFrame(rows)  # Phase 6
     if not matched_df.empty:
-        # 首先按试盘次数倒序，然后按日期降序，最后按代码升序
+        # 首先按信心指数倒序，然后按日期降序，最后按代码升序
         matched_df = matched_df.sort_values(
-            ["shipan_count", "date_0", "code"], 
+            ["confidence", "date_0", "code"], 
             ascending=[False, False, True]
         ).reset_index(drop=True)
 

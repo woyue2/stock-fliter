@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  pd.DataFrame, title, dates
+# OUTPUT: Path (HTML summary)
+# POS:    check-volume-confirmation/reporters/html_reporter.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
@@ -58,25 +62,13 @@ def generate_html_report(
 
 def _build_groups(df: pd.DataFrame) -> list[tuple[str, pd.DataFrame]]:
     groups: list[tuple[str, pd.DataFrame]] = [("全部命中", df.copy())]
-    if df.empty or "board" not in df.columns:
+    if df.empty or "tag" not in df.columns:
         return groups
 
-    board_order = ["主板", "创业板", "科创板", "北交所", "其他"]
+    tag_order = ["多重试盘", "准突破", "纯量价"]
 
-    board_map = {
-        "上海主板": "主板",
-        "深圳主板": "主板",
-        "主板": "主板",
-        "创业板": "创业板",
-        "科创板": "科创板",
-        "北交所": "北交所",
-    }
-
-    tagged = df.copy()
-    tagged["group"] = tagged["board"].map(lambda x: board_map.get(str(x), "其他"))
-
-    for group_name in board_order:
-        sub_df = tagged[tagged["group"] == group_name].drop(columns=["group"], errors="ignore")
+    for group_name in tag_order:
+        sub_df = df[df["tag"] == group_name]
         if len(sub_df) > 0:
             groups.append((group_name, sub_df.reset_index(drop=True)))
     return groups
@@ -331,12 +323,15 @@ def _write_detail_page(
     tr:nth-child(even) {{ background: #fafafa; }}
     tr:hover {{ background: #f9f9f9; }}
     tr.checked {{ background: #e8f5e9; }}
+    .tag-strong {{ color: #d32f2f; font-weight: bold; }}
+    .tag-mod {{ color: #f57c00; font-weight: bold; }}
+    .tag-plain {{ color: #666; }}
+    .conf-high {{ color: #d32f2f; font-weight: bold; }}
     .code {{
         color: #1976d2;
         text-decoration: none;
         cursor: pointer;
     }}
-    .code:hover {{ text-decoration: underline; }}
     .checked-info {{
         font-size: 12px;
         color: #4caf50;
@@ -392,7 +387,6 @@ def _write_detail_page(
         </div>
         <div class="toolbar">
           <span class="checked-info" id="checkedInfo">已选 0</span>
-          <button id="shipanFilterBtn" class="btn" onclick="toggleShipanFilter()">试盘</button>
           <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
           <button class="btn" onclick="selectAll()">全选</button>
           <button class="btn" onclick="clearAll()">清除</button>
@@ -419,13 +413,13 @@ def _write_detail_page(
               <th>名称</th>
               <th>板块</th>
               <th>行业</th>
-              <th>试盘次数</th>
-              <th>今天开盘</th>
+              <th>信心分</th>
+              <th>标签</th>
+              <th>试盘</th>
+              <th>量比</th>
               <th>今天收盘</th>
               <th>昨天量</th>
-              <th>前2天量</th>
-              <th>前3天量</th>
-              <th>前4天量</th>
+              <th>前3日均量</th>
             </tr>
           </thead>
           <tbody id="tbody">
@@ -449,16 +443,11 @@ def _write_detail_page(
     const STORAGE_KEY = 'volume_confirmation_{escape(group_name.replace(" ", "_"))}';
     let currentUrl = '';
     let isPriceFilterActive = true; // 默认开启
-    let isShipanFilterActive = true; // 试盘筛选默认开启
     let currentSearchKeyword = '';
 
     // 初始化
     document.addEventListener('DOMContentLoaded', () => {{
       loadChecked();
-      const btn = document.getElementById('shipanFilterBtn');
-      if (isShipanFilterActive) {{
-        btn.classList.add('active');
-      }}
       applyFilters(); // 初始应用筛选
     }});
 
@@ -466,17 +455,6 @@ def _write_detail_page(
       isPriceFilterActive = !isPriceFilterActive;
       const btn = document.getElementById('priceFilterBtn');
       if (isPriceFilterActive) {{
-        btn.classList.add('active');
-      }} else {{
-        btn.classList.remove('active');
-      }}
-      applyFilters();
-    }}
-
-    function toggleShipanFilter() {{
-      isShipanFilterActive = !isShipanFilterActive;
-      const btn = document.getElementById('shipanFilterBtn');
-      if (isShipanFilterActive) {{
         btn.classList.add('active');
       }} else {{
         btn.classList.remove('active');
@@ -492,14 +470,12 @@ def _write_detail_page(
     function applyFilters() {{
       document.querySelectorAll('#tbody tr').forEach(tr => {{
         const price = parseFloat(tr.dataset.price || 0);
-        const shipanCount = parseInt(tr.dataset.shipan || 0);
         const text = tr.textContent.toLowerCase();
         
         const matchesSearch = text.includes(currentSearchKeyword);
         const matchesPrice = !isPriceFilterActive || price < 10;
-        const matchesShipan = !isShipanFilterActive || shipanCount >= 2;
         
-        tr.style.display = (matchesSearch && matchesPrice && matchesShipan) ? '' : 'none';
+        tr.style.display = (matchesSearch && matchesPrice) ? '' : 'none';
       }});
     }}
 
@@ -570,25 +546,39 @@ def _build_rows_html(df: pd.DataFrame) -> str:
         close_price = float(row['close_0'])
         shipan_count = int(row.get('shipan_count', 0))
         shipan_detail = str(row.get('shipan_detail', ''))
+        confidence = int(row.get('confidence', 0))
+        tag = escape(str(row.get('tag', '')))
+        volume_ratio = float(row.get('volume_ratio', 0.0))
+        avg_prev_vol = (float(row.get('volume_m2', 0)) + float(row.get('volume_m3', 0)) + float(row.get('volume_m4', 0))) / 3.0
+        
         em_code = f"sh{code}" if code.startswith("6") else f"sz{code}"
         em_url = f"https://quote.eastmoney.com/{em_code}.html"
         
         shipan_display = f'<span title="{escape(shipan_detail)}">{shipan_count}</span>' if shipan_count > 0 else "0"
         
+        if tag == "多重试盘":
+            tag_class = "tag-strong"
+        elif tag == "准突破":
+            tag_class = "tag-mod"
+        else:
+            tag_class = "tag-plain"
+            
+        conf_class = "conf-high" if confidence >= 60 else ""
+        
         chunks.append(
-            f"<tr data-code=\"{code}\" data-price=\"{close_price}\" data-shipan=\"{shipan_count}\">"
+            f"<tr data-code=\"{code}\" data-price=\"{close_price}\">"
             f"<td><input type=\"checkbox\" class=\"check\" data-code=\"{code}\" onchange=\"saveChecked()\"></td>"
             f"<td><a href=\"javascript:void(0)\" class=\"code\" onclick=\"showStock('{escape(em_url)}')\">{escape(code)}</a></td>"
             f"<td>{escape(str(row['name']))}</td>"
             f"<td>{escape(str(row['board']))}</td>"
             f"<td>{escape(str(row['industry']))}</td>"
+            f"<td class=\"{conf_class}\">{confidence}</td>"
+            f"<td class=\"{tag_class}\">{tag}</td>"
             f"<td>{shipan_display}</td>"
+            f"<td>{volume_ratio:.2f}</td>"
             f"<td>{close_price:.3f}</td>"
-            f"<td>{float(row['close_0']):.3f}</td>"
-            f"<td>{float(row['volume_m1']):.0f}</td>"
-            f"<td>{float(row['volume_m2']):.0f}</td>"
-            f"<td>{float(row['volume_m3']):.0f}</td>"
-            f"<td>{float(row['volume_m4']):.0f}</td>"
+            f"<td>{float(row.get('volume_m1', 0)):.0f}</td>"
+            f"<td>{avg_prev_vol:.0f}</td>"
             "</tr>"
         )
     return "\n".join(chunks)
