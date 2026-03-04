@@ -277,7 +277,7 @@ def fetch_tencent_daily(code: str, count: int = DEFAULT_DAYS) -> pd.DataFrame:
     prefix = "sh" if code.startswith("6") else "sz"
     symbol = f"{prefix}{code}"
     url = f"http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={symbol},day,,,{count},qfq"
-    resp = requests.get(url, timeout=10)
+    resp = requests.get(url, timeout=10, allow_redirects=True)
     resp.raise_for_status()
     payload = resp.json()
     day_rows = payload.get("data", {}).get(symbol, {}).get("day", [])

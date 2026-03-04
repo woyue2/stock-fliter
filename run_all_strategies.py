@@ -6,7 +6,7 @@
 1. get-data/main.py --all
 2. check-trend-bottom/main.py --skip-fetch
 3. check-steady-uptrend/main.py --skip-fetch
-4. check-new-indicators/main.py
+4. check-indicator-combo/main.py
 
 设计目标：
 - 便于在本地或云端用单个入口脚本挂到定时任务
@@ -122,9 +122,11 @@ def build_steps(
     skip_get_data: bool,
     skip_trend_bottom: bool,
     skip_steady_uptrend: bool,
-    skip_new_indicators: bool,
+    skip_indicator_combo: bool,
+    skip_volume_confirmation: bool,
     skip_build_index: bool,
     end_date: Optional[str],
+    limit: Optional[int],
 ) -> List[Step]:
     """根据参数构建需要执行的步骤列表。"""
     steps: List[Step] = []
@@ -153,6 +155,8 @@ def build_steps(
         if browser_silent:
             cmd.append("--no-open")
         cmd.extend(end_date_args)
+        if limit:
+            cmd.extend(["--limit", str(limit)])
         steps.append(
             Step(
                 name="TD九底分析 (check-trend-bottom)",
@@ -167,6 +171,8 @@ def build_steps(
         # 使用完整流程（读取 get-data/raw 数据并重新分析），不再复用旧结果，
         # 便于在自动化/定时任务中每次得到新的稳步上升扫描结果。
         cmd = [sys.executable, "main.py", *end_date_args]
+        if limit:
+            cmd.extend(["--limit", str(limit)])
         steps.append(
             Step(
                 name="稳步上升分析 (check-steady-uptrend)",
@@ -176,14 +182,33 @@ def build_steps(
             )
         )
 
-    # 4. 新指标分析
-    if not skip_new_indicators:
+    # 4. 指标组合分析
+    if not skip_indicator_combo:
         cmd = [sys.executable, "main.py", *end_date_args]
+        if limit:
+            cmd.extend(["--limit", str(limit)])
         steps.append(
             Step(
-                name="新指标分析 (check-new-indicators)",
+                name="指标组合分析 (check-indicator-combo)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-new-indicators",
+                workdir=PROJECT_ROOT / "check-indicator-combo",
+                group="analysis",
+            )
+        )
+
+
+    # 4.5 量价确认分析
+    if not skip_volume_confirmation:
+        cmd = [sys.executable, "main.py", *end_date_args]
+        if limit:
+            cmd.extend(["--limit", str(limit)])
+        if browser_silent:
+            cmd.append("--no-open")
+        steps.append(
+            Step(
+                name="量价确认分析 (check-volume-confirmation)",
+                command=cmd,
+                workdir=PROJECT_ROOT / "check-volume-confirmation",
                 group="analysis",
             )
         )
@@ -206,7 +231,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="统一运行 get-data + 各分析模块的调度脚本",
         epilog=(
-            "默认顺序: get-data → TD九底 → 稳步上升 → 新指标\n"
+            "默认顺序: get-data → TD九底 → 稳步上升 → 指标组合\n"
             "示例:\n"
             "  python run_all_strategies.py                 # 全量运行\n"
             "  python run_all_strategies.py --skip-get-data # 仅重新跑分析模块\n"
@@ -229,9 +254,14 @@ def parse_args() -> argparse.Namespace:
         help="跳过 稳步上升模块 (check-steady-uptrend)",
     )
     parser.add_argument(
-        "--skip-new-indicators",
+        "--skip-indicator-combo",
         action="store_true",
-        help="跳过 新指标模块 (check-new-indicators)",
+        help="跳过 指标组合模块 (check-indicator-combo)",
+    )
+    parser.add_argument(
+        "--skip-volume-confirmation",
+        action="store_true",
+        help="跳过 量价确认模块 (check-volume-confirmation)",
     )
     parser.add_argument(
         "--skip-build-index",
@@ -243,6 +273,12 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="分析截止日期 (YYYY-MM-DD)，会传递给支持该参数的模块",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="限制分析股票数量",
     )
     parser.add_argument(
         "--ignore-errors",
@@ -264,9 +300,11 @@ def main() -> int:
         skip_get_data=args.skip_get_data,
         skip_trend_bottom=args.skip_trend_bottom,
         skip_steady_uptrend=args.skip_steady_uptrend,
-        skip_new_indicators=args.skip_new_indicators,
+        skip_indicator_combo=args.skip_indicator_combo,
+        skip_volume_confirmation=args.skip_volume_confirmation,
         skip_build_index=args.skip_build_index,
         end_date=args.end_date,
+        limit=args.limit,
     )
 
     if not steps:

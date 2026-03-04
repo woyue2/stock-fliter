@@ -17,7 +17,7 @@ import webbrowser
 CONFIG = [
     ("稳步上升", "check-steady-uptrend/output"),
     ("TD九底", "check-trend-bottom/output"),
-    ("新指标", "check-new-indicators/output"),  # 新增
+    ("指标组合", "check-indicator-combo/output"),  # 新增
     ("量价确认", "check-volume-confirmation/output"),
 ]
 
