@@ -3,7 +3,7 @@
 统一调度脚本：一键运行数据更新 + 核心分析模块
 
 默认执行顺序：
-1. get-data/main.py --all
+1. get-data/services/fetch_daily_snap.py (极速快照)
 2. check-td/main.py --skip-fetch
 3. check-maxrsix6u1d/main.py
 4. check-tdxmacdxvolume/main.py
@@ -47,40 +47,10 @@ class Step:
 
 def setup_shared_disk_cache() -> Optional[str]:
     """
-    如果内存充足且在 Linux/WSL 环境下，利用 /dev/shm (共享内存) 创建数据缓存目录。
-    返回缓存目录路径，如果无法创建则返回 None。
+    [Legacy] 此功能已由 SQLite 取代。读取 SQLite 数据库在 Linux/MacOS 下性能极佳，
+    无需再手动将几千个 CSV 搬运到 /dev/shm。
     """
-    # 如果内存不足 3.5G，不开启此优化（避免 Swap 抖动）
-    from util.system_utils import get_total_memory_gb
-    if get_total_memory_gb() < 3.5:
-        return None
-    
-    shm_path = Path("/dev/shm")
-    if not shm_path.exists():
-        return None
-    
-    cache_dir = shm_path / "stock_filter_cache"
-    raw_src = PROJECT_ROOT / "get-data" / "data" / "raw"
-    
-    if not raw_src.exists():
-        return None
-        
-    print(f"\n🚀 [I/O 优化] 检测到内存充足，正在预载 K 线数据到内存磁盘 (/dev/shm)...")
-    try:
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        # 统计文件数量
-        files = list(raw_src.glob("*.csv"))
-        if not files:
-            return None
-            
-        print(f"  📂 正在将 {len(files)} 个 CSV 文件从硬盘同步到共享内存...")
-        # 调用 shell cp -u 只同步更新的文件，对于重复运行非常快
-        subprocess.run(f"cp -u -r {raw_src}/*.csv {cache_dir}/", shell=True, check=False, capture_output=True)
-        print(f"✅ 数据预载完成。后续阶段将从内存硬盘读取，消除重复磁盘 I/O。")
-        return str(cache_dir)
-    except Exception as e:
-        print(f"⚠️ 数据预载失败 (非致命错误): {e}")
-        return None
+    return None
 
 
 def cleanup_shared_disk_cache(cache_dir_str: Optional[str]):
@@ -221,12 +191,12 @@ def build_steps(
     # 是否处于“静默模式”：由 NO_BROWSER 环境变量控制
     browser_silent = os.getenv("NO_BROWSER", "").lower() in {"1", "true", "yes"}
 
-    # 1. 更新数据
+    # 1. 更新数据 (默认极速快照模式，基于 SQLite)
     if not skip_get_data:
         steps.append(
             Step(
-                name="更新A股日K数据 (get-data)",
-                command=[sys.executable, "main.py"],
+                name="[极速版] 更新A股最新快照 (Sina/SQLite)",
+                command=[sys.executable, "services/fetch_daily_snap.py"],
                 workdir=PROJECT_ROOT / "get-data",
                 group="get-data",
                 low_mem_mode=low_mem_mode
@@ -238,7 +208,7 @@ def build_steps(
         steps.append(
             Step(
                 name="更新A股分时数据 (get-data/fetch_minute_data.py)",
-                command=[sys.executable, "fetch_minute_data.py", "--all"],
+                command=[sys.executable, "fetchers/fetch_minute_data.py", "--all"],
                 workdir=PROJECT_ROOT / "get-data",
                 group="get-data",
                 low_mem_mode=low_mem_mode
@@ -349,7 +319,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-get-data",
         action="store_true",
-        help="跳过日线数据拉取 (get-data/main.py)",
+        help="跳过日线数据拉取 (get-data/services/fetch_daily_snap.py)",
+    )
+    parser.add_argument(
+        "--use-history",
+        action="store_true",
+        help="使用慢速历史同步模式 (services/fetch_daily_history.py)，不推荐每日使用",
     )
     parser.add_argument(
         "--get-minutes",
@@ -418,11 +393,18 @@ def interactive_prompt(args: argparse.Namespace) -> None:
     print("=" * 40)
 
     # 1. 数据配置问询
-    print("\n[步骤 1] 是否执行日线数据爬取与更新 (get-data/main.py)?")
-    print("[1] 是")
+    print("\n[步骤 1] 是否执行日线数据快照更新 (get-data/services/fetch_daily_snap.py)?")
+    print("[1] 是 (极速快照模式，推荐)")
+    print("[H] 补全历史 (fetch_daily_history.py)")
     print("[0] 跳过，使用已有数据 (默认)")
-    ans_data = input("👉 请选择 [1/0, 默认0]: ").strip()
-    if ans_data != "1":
+    ans_data = input("👉 请选择 [1/H/0, 默认0]: ").strip().upper()
+    if ans_data == "1":
+        args.skip_get_data = False
+        args.use_history = False
+    elif ans_data == "H":
+        args.skip_get_data = False
+        args.use_history = True
+    else:
         args.skip_get_data = True
 
     # 1.5 分钟数据配置问询
@@ -501,8 +483,14 @@ def main() -> int:
         end_date=args.end_date,
         limit=args.limit,
         low_mem_mode=args.no_server_optimization or is_low_memory(),
-        shared_raw_dir=shared_raw_dir
+        shared_raw_dir=None # 彻底废弃 CSV 预载模式
     )
+
+    if args.use_history and not args.skip_get_data:
+        for s in steps:
+            if s.group == "get-data" and "fetch_daily_snap.py" in str(s.command):
+                s.name = "[完整版] 补全A股历史日K (BaoStock/SQLite)"
+                s.command = [sys.executable, "services/fetch_daily_history.py", "--all"]
 
     if not steps:
         print("⚠️ 未选择任何要执行的步骤，请检查参数。")

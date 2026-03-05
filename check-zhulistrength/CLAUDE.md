@@ -12,6 +12,7 @@
 ## 成员清单
 - `main.py`: CLI 入口 [INPUT: Args -> Config / OUTPUT: Execution Trigger]
 - `pipeline.py`: 调度中枢 [INPUT: Config -> Trigger / OUTPUT: File I/O]
-- `data_loader.py`: 数据装载 [INPUT: SQLite/CSV -> DataFrame / OUTPUT: Standardized DF]
+- `data_loader.py`: 数据装载 [INPUT: SQLite (daily_fund_flow, daily_ohlcv) -> DataFrame / OUTPUT: Standardized DF]
+- `seed_mock_data.py`: 测试数据种子 [INPUT: Mock Data -> SQLite / OUTPUT: Database seeded]
 - `analyzers/strength_analyzer.py`: 核心分析 [INPUT: DataFrame -> Logic / OUTPUT: Analyzed Flags]
 - `reporters/markdown_reporter.py`: 报告生成 [INPUT: Result DF -> Markdown / OUTPUT: .md File]

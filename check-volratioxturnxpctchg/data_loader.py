@@ -6,22 +6,27 @@
 """
 数据加载模块
 
-复用 get-data/data/raw 的日线数据，额外保留 turn / amount / pctChg 列。
+日线数据通过 util/db.get_daily_data() 读取（SQLite 优先，fallback CSV）。
 """
 from __future__ import annotations
 
-import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
-from pandas.errors import ParserError
 
 BASE_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = BASE_DIR.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from util.db import get_daily_data as _db_get_daily  # noqa: E402
+from util.db import get_stock_info_map as _db_get_info_map # noqa: E402
+
 GET_DATA_DIR = BASE_DIR.parent / "get-data"
 DATA_DIR = GET_DATA_DIR / "data"
-RAW_DIR = Path(os.environ.get("STOCK_RAW_DIR", str(DATA_DIR / "raw")))
 SELECTED_PATH = DATA_DIR / "selected_stocks_all.csv"
 
 
@@ -72,7 +77,24 @@ def load_selected_stocks(path: Path = SELECTED_PATH) -> pd.DataFrame:
 
 
 def iter_stock_items(limit: int | None = None) -> Iterable[StockItem]:
-    """逐条迭代股票项"""
+    """遍历待分析股票项：优先 SQLite，fallback CSV。"""
+    # 1. 优先尝试从数据库加载
+    db_info = _db_get_info_map()
+    if db_info:
+        count = 0
+        for code, info in db_info.items():
+            if limit and count >= limit: break
+            yield StockItem(
+                code=code,
+                name=info.get("name", ""),
+                bs_code=info.get("bs_code", ""),
+                industry=info.get("industry", "未知") or "未知",
+                concepts=info.get("concepts", "")
+            )
+            count += 1
+        return
+
+    # 2. 如果数据库没有，则回退到 CSV
     df = load_selected_stocks()
     if limit:
         df = df.head(limit)
@@ -86,43 +108,6 @@ def iter_stock_items(limit: int | None = None) -> Iterable[StockItem]:
         )
 
 
-# ── 需要从 raw CSV 中保留的列 ──────────────────────
-_REQUIRED = {"date", "open", "high", "low", "close", "volume"}
-_EXTRA = {"amount", "pctchg", "turn"}
-_NUMERIC = ["open", "high", "low", "close", "volume", "amount", "pctchg", "turn"]
-
-
 def load_daily_data(code: str) -> pd.DataFrame:
-    """加载单只股票日线数据，包含 turn / amount / pctChg"""
-    path = RAW_DIR / f"{code}.csv"
-    if not path.exists():
-        return pd.DataFrame()
-
-    try:
-        df = pd.read_csv(path, encoding="utf-8-sig")
-    except ParserError:
-        try:
-            df = pd.read_csv(path)
-        except Exception:
-            return pd.DataFrame()
-
-    if df.empty:
-        return pd.DataFrame()
-
-    df.columns = [str(c).lower() for c in df.columns]
-
-    if not _REQUIRED.issubset(df.columns):
-        return pd.DataFrame()
-
-    keep = list(_REQUIRED | (_EXTRA & set(df.columns)))
-    df = df[keep].copy()
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df = df.dropna(subset=["date"])
-    df = df.sort_values("date").reset_index(drop=True)
-
-    for col in _NUMERIC:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    return df
+    """加载单只股票日线数据（SQLite 优先，fallback CSV）。"""
+    return _db_get_daily(code)

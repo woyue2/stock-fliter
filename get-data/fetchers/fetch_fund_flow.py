@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-获取个股资金流向数据 - 使用 AkShare
+[L3] fetch_fund_flow.py
+[ROLE]: 抓取 A 股主力资金流向数据 (AkShare)
+[INPUT]: AkShare API
+[OUTPUT]: data/fundflow/{code}.csv
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
 
+获取个股资金流向数据 - 使用 AkShare
 资金流向字段：
 - 超大单净流入：机构特大单
 - 大单净流入：主力大单
 - 中单净流入：散户中单
 - 小单净流入：散户小单
 - 主力净流入：超大单+大单合计
-
-使用方法：
-python fetch_fund_flow.py --code 600519
-python fetch_fund_flow.py --codes 600519,000001,300001
-python fetch_fund_flow.py --test
-python fetch_fund_flow.py --all --sample 50
 """
 from __future__ import annotations
 import argparse
@@ -42,13 +41,16 @@ stock_fund_em_module.headers = {
 }
 
 # 添加项目根目录到路径
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+# 兼容在 get-data 下执行的情况
+if not (PROJECT_ROOT / "util").exists():
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from util.progress import ProgressBar
 
 # 配置
-FUNDFLOW_DIR = Path(__file__).resolve().parent / "data" / "fundflow"
+FUNDFLOW_DIR = Path(__file__).resolve().parent.parent / "data" / "fundflow"
 
 # 列名映射（原始中文 -> 保存的列名）
 COLUMN_MAPPING = {
@@ -90,7 +92,7 @@ def get_stock_list() -> List[str]:
 
     # API失败，从本地数据目录获取
     print("  API获取失败，尝试从本地数据目录获取...")
-    raw_dir = Path(__file__).resolve().parent / "data" / "raw"
+    raw_dir = Path(__file__).resolve().parent.parent / "data" / "raw"
     if raw_dir.exists():
         codes = [f.stem for f in raw_dir.glob("*.csv") if f.stem.startswith(("0", "3", "6"))]
         if codes:

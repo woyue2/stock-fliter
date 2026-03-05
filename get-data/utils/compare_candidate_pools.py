@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+[L3] compare_candidate_pools.py
+[ROLE]: 比较最近两次选股候选池快照，追踪标的变化
+[INPUT]: data/candidates/candidates_*.csv
+[OUTPUT]: stdout 差异详情
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
+
 比较最近两次候选池快照，列出新进/退出的股票。
-
-用法（在仓库根目录或 get-data 目录下执行皆可）:
-    python get-data/compare_candidate_pools.py
-
-前提：
-- 已运行过至少两次 `python get-data/main.py`（推荐带 `--all`），
-  且在全量模式下生成了候选池快照。
 """
 from __future__ import annotations
 
@@ -17,7 +16,7 @@ from typing import List
 import pandas as pd
 
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 SNAPSHOT_DIR = BASE_DIR / "data" / "candidates"
 
 
@@ -87,7 +86,7 @@ def main() -> int:
     snapshots = list_snapshots()
     if len(snapshots) < 2:
         print("⚠️ 候选池快照文件少于 2 个，无法比较。")
-        print("   请至少在全量模式下运行两次 `python get-data/main.py --all` 以生成快照。")
+        print("   请至少在全量模式下运行两次 `python get-data/fetch_daily_history.py --all` 以生成快照。")
         return 1
 
     prev_path, curr_path = snapshots[-2], snapshots[-1]

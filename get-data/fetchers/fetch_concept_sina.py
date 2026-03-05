@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+[L3] fetch_concept_sina.py
+[ROLE]: 从新浪财经抓取股票概念映射
+[INPUT]: API from Sina
+[OUTPUT]: selected_stocks_all.csv
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
+"""
 import sys
 import os
 import json
@@ -8,7 +15,17 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-BASE_DIR = Path(__file__).resolve().parent
+# 添加项目根目录到路径
+BASE_DIR = Path(__file__).resolve().parent.parent  # get-data/
+PROJECT_ROOT = BASE_DIR.parent                     # stock-fliter/
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from util.db import upsert_stock_info
+except ImportError:
+    def upsert_stock_info(rows): pass
+
 DATA_DIR = BASE_DIR / "data"
 CSV_PATH = DATA_DIR / "selected_stocks_all.csv"
 CACHE_DIR = DATA_DIR / "cache"
@@ -103,8 +120,28 @@ def update_csv():
             concepts_col.append("")
     
     df['concepts'] = concepts_col
-    df.to_csv(CSV_PATH, index=False, encoding='utf-8-sig')
-    print(f"[OK] 同步完成，命中 {found_count}/{len(df)} 只股票")
+    try:
+        df.to_csv(CSV_PATH, index=False, encoding='utf-8-sig')
+    except PermissionError:
+        print(f"[WARN] 无法保存 CSV (文件可能被占用): {CSV_PATH}")
+    
+    # 同步到 SQLite
+    print("正在同步概念到 SQLite...")
+    try:
+        all_data_for_db = []
+        for _, r in df.iterrows():
+            all_data_for_db.append({
+                "code": str(r["code"]).zfill(6),
+                "name": r.get("name", ""),
+                "industry": r.get("industry", ""),
+                "concepts": r.get("concepts", "")
+            })
+        upsert_stock_info(all_data_for_db)
+        print(f"[OK] SQLite 概念同步完成")
+    except Exception as e:
+        print(f"Failed to sync SQLite: {e}")
+        
+    print(f"[OK] 全流程完成，更新 {found_count} 只股票概念")
 
 if __name__ == "__main__":
     update_csv()

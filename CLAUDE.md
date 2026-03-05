@@ -28,9 +28,9 @@ python run_all_strategies.py --end-date 2026-02-28
 **Data Center (SSOT)**
 ```bash
 cd get-data
-python main.py --all              # Full market data fetch
-python main.py --test             # Test mode (10 random stocks)
-python update_industry.py         # Update industry classification
+python fetch_daily_history.py --all  # Full market data fetch
+python fetch_daily_history.py --test # Test mode (10 random stocks)
+python fetch_industry_baostock.py    # Update industry classification
 python fetch_minute_akshare.py --all --realtime  # Real-time minute data
 ```
 

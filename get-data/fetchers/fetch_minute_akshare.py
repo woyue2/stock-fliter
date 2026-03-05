@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-获取分钟级股票数据 - 使用 AkShare
+[L3] fetch_minute_akshare.py
+[ROLE]: 获取 A 股实时及历史分时数据 (AkShare 版)
+[INPUT]: AkShare API
+[OUTPUT]: data/minute_akshare/{date}/{code}.csv
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
 
 使用方法：
 python fetch_minute_akshare.py --code 600519 --days 5
@@ -27,7 +31,11 @@ except ImportError:
 
 # 配置
 DEFAULT_DAYS = 5
-MINUTE_DIR = Path(__file__).resolve().parent / "data" / "minute_akshare"
+BASE_DIR = Path(__file__).resolve().parent.parent
+# 确保在 get-data/ 运行也能找到数据
+if not (BASE_DIR / "data").exists():
+    BASE_DIR = Path(__file__).resolve().parent
+MINUTE_DIR = BASE_DIR / "data" / "minute_akshare"
 
 
 def get_stock_list() -> List[str]:

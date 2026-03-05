@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 """
+[L3] add_sample_industry.py
+[ROLE]: 手动添加示例行业信息以便测试 HTML 报告显示
+[INPUT]: data/selected_stocks_all.csv
+[OUTPUT]: data/selected_stocks_all.csv (modified)
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
+
 手动添加示例行业信息
 用于测试HTML显示功能
 """
 import pandas as pd
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 CSV_PATH = DATA_DIR / "selected_stocks_all.csv"
 

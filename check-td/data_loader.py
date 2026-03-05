@@ -8,12 +8,13 @@
 
 提供统一的数据加载接口：
 - 股票列表
-- 日线数据
+- 日线数据（通过 util/db.get_daily_data）
 - 行业信息
 """
 from __future__ import annotations
 
 import importlib
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -24,6 +25,13 @@ import pandas as pd
 
 import os
 BASE_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = BASE_DIR.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from util.db import get_daily_data as _db_get_daily  # noqa: E402
+from util.db import get_stock_info_map as _db_get_info_map # noqa: E402
+
 # 使用 centralized get-data 目录
 GET_DATA_DIR = BASE_DIR.parent / "get-data"
 DATA_DIR = GET_DATA_DIR / "data"
@@ -72,34 +80,36 @@ def get_board_type(code: str) -> str:
 
 
 def load_stock_info_map() -> dict:
-    """加载股票信息映射 (code -> {name, industry})"""
+    """加载股票信息映射 (code -> {name, industry})：优先 SQLite，fallback CSV。"""
+    # 1. 优先尝试从数据库加载
+    db_info = _db_get_info_map()
+    if db_info:
+        # 统一格式转换，确保 industry 不是 None
+        for code in db_info:
+            if not db_info[code].get("industry"):
+                db_info[code]["industry"] = "未知"
+        return db_info
+
+    # 2. 如果数据库没有，则回退到 CSV
     info_map = {}
-    # 优先加载全量表
     paths = [DATA_DIR / "selected_stocks_all.csv", DATA_DIR / "selected_stocks.csv"]
-    
     for path in paths:
         if not path.exists():
             continue
-            
         try:
             df = pd.read_csv(path, dtype=str)
             for _, row in df.iterrows():
                 code = str(row.get("code", "")).strip()
                 if not code: continue
-                
                 name = str(row.get("name", "")).strip()
                 industry = str(row.get("industry", "")).strip()
                 if industry.lower() == "nan": industry = ""
-                
                 if code not in info_map:
                     info_map[code] = {"name": name, "industry": industry}
-                else:
-                    # 如果已有记录但行业为空，尝试补充
-                    if not info_map[code]["industry"] and industry:
-                        info_map[code]["industry"] = industry
+                elif not info_map[code]["industry"] and industry:
+                    info_map[code]["industry"] = industry
         except Exception:
             pass
-            
     return info_map
 
 
@@ -230,49 +240,16 @@ def iter_raw_stock_items(limit: Optional[int] = None) -> Iterator[StockItem]:
 
 def load_daily_data(code: str, days: int = 365) -> pd.DataFrame:
     """
-    加载股票日线数据
-    
+    加载股票日线数据（SQLite 优先，fallback CSV）。
+
     Args:
         code: 股票代码
-        days: 最近天数
-        
+        days: 取最近 N 天的数据
+
     Returns:
         包含 date, open, high, low, close, volume 的 DataFrame
     """
-    path = RAW_DIR / f"{code}.csv"
-    if not path.exists():
-        return pd.DataFrame()
-    
-    try:
-        df = pd.read_csv(path, encoding="utf-8-sig")
-    except Exception:
-        try:
-            df = pd.read_csv(path)
-        except Exception:
-            return pd.DataFrame()
-    
-    if df.empty:
-        return pd.DataFrame()
-    
-    # 标准化列名
-    df.columns = [str(c).strip().lower() for c in df.columns]
-    
-    required_cols = ["date", "open", "high", "low", "close", "volume"]
-    if not all(col in df.columns for col in required_cols):
-        return pd.DataFrame()
-    
-    df = df[required_cols].copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df = df.dropna(subset=["date"])
-    df = df.sort_values(by="date").reset_index(drop=True)
-    
-    # 过滤最近天数
-    if days > 0 and not df.empty:
-        last_date = df["date"].max()
-        cutoff = last_date - timedelta(days=days)
-        df = df[df["date"] >= cutoff].copy()
-    
-    return df
+    return _db_get_daily(code, days=days)
 
 
 # BaoStock 模块缓存

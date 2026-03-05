@@ -5,23 +5,27 @@
 # -*- coding: utf-8 -*-
 """
 数据加载模块（复用 just-stock-down 的完整数据）
+日线数据通过 util/db.get_daily_data() 读取（SQLite 优先，fallback CSV）。
 """
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Tuple
 
 import pandas as pd
-from pandas.errors import ParserError
 
-
-import os
 BASE_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = BASE_DIR.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from util.db import get_daily_data as _db_get_daily  # noqa: E402
+from util.db import get_stock_info_map as _db_get_info_map # noqa: E402
+
 GET_DATA_DIR = BASE_DIR.parent / "get-data"
 DATA_DIR = GET_DATA_DIR / "data"
-# 新增环境变量支持，加速并行分析时的 I/O
-RAW_DIR = Path(os.environ.get("STOCK_RAW_DIR", str(DATA_DIR / "raw")))
 SELECTED_PATH = DATA_DIR / "selected_stocks_all.csv"
 
 
@@ -45,6 +49,23 @@ def load_selected_stocks(path: Path = SELECTED_PATH) -> pd.DataFrame:
 
 
 def iter_stock_items(limit: int | None = None) -> Iterable[StockItem]:
+    """遍历待分析股票项：优先 SQLite，fallback CSV。"""
+    # 1. 尝试从数据库加载
+    db_info = _db_get_info_map()
+    if db_info:
+        count = 0
+        for code, info in db_info.items():
+            if limit and count >= limit: break
+            yield StockItem(
+                code=code,
+                name=info.get("name", ""),
+                bs_code=info.get("bs_code", ""),
+                industry=info.get("industry", "未知") or "未知"
+            )
+            count += 1
+        return
+
+    # 2. 如果数据库没有，则回退到 CSV
     df = load_selected_stocks()
     if limit:
         df = df.head(limit)
@@ -57,6 +78,27 @@ def iter_stock_items(limit: int | None = None) -> Iterable[StockItem]:
 
 
 def sample_stock_items(sample_size: int, seed: int = 42) -> List[StockItem]:
+    """随机采样股票：优先 SQLite，fallback CSV。"""
+    import random
+    db_info = _db_get_info_map()
+    if db_info:
+        codes = list(db_info.keys())
+        random.seed(seed)
+        sampled_codes = random.sample(codes, min(sample_size, len(codes)))
+        items: List[StockItem] = []
+        for code in sampled_codes:
+            info = db_info[code]
+            items.append(
+                StockItem(
+                    code=code,
+                    name=info.get("name", ""),
+                    bs_code=info.get("bs_code", ""),
+                    industry=info.get("industry", "未知") or "未知"
+                )
+            )
+        return items
+
+    # CSV fallback
     df = load_selected_stocks()
     sampled = df.sample(n=sample_size, random_state=seed)
     items: List[StockItem] = []
@@ -73,25 +115,5 @@ def sample_stock_items(sample_size: int, seed: int = 42) -> List[StockItem]:
 
 
 def load_daily_data(code: str) -> pd.DataFrame:
-    path = RAW_DIR / f"{code}.csv"
-    if not path.exists():
-        return pd.DataFrame()
-
-    try:
-        df = pd.read_csv(path)
-    except ParserError:
-        return pd.DataFrame()
-    if df.empty:
-        return pd.DataFrame()
-
-    df.columns = [str(c).lower() for c in df.columns]
-
-    required_cols = {"date", "open", "high", "low", "close", "volume"}
-    if not required_cols.issubset(df.columns):
-        return pd.DataFrame()
-
-    df = df[list(required_cols)].copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df = df.dropna(subset=["date"])
-    df = df.sort_values("date").reset_index(drop=True)
-    return df
+    """加载单只股票日线数据（SQLite 优先，fallback CSV）。"""
+    return _db_get_daily(code)

@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+[L3] get_industry_util.py
+[ROLE]: 获取行业映射信息的底层工具 (AkShare 版)
+[INPUT]: AkShare API
+[OUTPUT]: selected_stocks_all.csv
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
+
 获取股票行业信息工具
 使用 akshare 获取行业信息并保存到 selected_stocks_all.csv
 """
@@ -10,7 +16,7 @@ import akshare as ak
 from tqdm import tqdm
 import time
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 CSV_PATH = DATA_DIR / "selected_stocks_all.csv"
 

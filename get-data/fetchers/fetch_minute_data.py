@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-获取分钟级股票数据
+[L3] fetch_minute_data.py
+[ROLE]: 获取 A 股分钟级 (5/15/30/60) K 线数据 (BaoStock)
+[INPUT]: BaoStock API
+[OUTPUT]: data/minute_{freq}/{code}.csv
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
 
 支持频率：
 - 5分钟 (frequency='5')
 - 15分钟 (frequency='15')  
 - 30分钟 (frequency='30')
 - 60分钟 (frequency='60')
-
-使用方法：
-python fetch_minute_data.py --code 600519 --days 5 --freq 5
-python fetch_minute_data.py --all --freq 5  # 全市场
 """
 from __future__ import annotations
 import argparse
@@ -25,7 +25,11 @@ from typing import List, Optional, Tuple
 import pandas as pd
 
 # 添加 util 目录到路径
-util_dir = Path(__file__).resolve().parent.parent / "util"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+# 兼容在 get-data 下执行的情况
+if not (PROJECT_ROOT / "util").exists():
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+util_dir = PROJECT_ROOT / "util"
 if str(util_dir) not in sys.path:
     sys.path.append(str(util_dir))
 
@@ -43,7 +47,7 @@ except ImportError:
 DEFAULT_DAYS = 5  # 获取多少天的数据
 DEFAULT_FREQ = '5'  # 默认5分钟频率
 BATCH_SIZE = 50  # 批次大小
-MINUTE_DIR = Path(__file__).resolve().parent / "data" / "minute_5min"
+MINUTE_DIR = Path(__file__).resolve().parent.parent / "data" / "minute_5min"
 
 
 def get_baostock():
@@ -267,7 +271,7 @@ def main():
     
     # 设置输出目录
     freq_dir = {'5': 'minute_5min', '15': 'minute_15min', '30': 'minute_30min', '60': 'minute_60min'}
-    minute_dir = Path(__file__).resolve().parent / "data" / freq_dir[args.freq]
+    minute_dir = Path(__file__).resolve().parent.parent / "data" / freq_dir[args.freq]
     
     print("="*60)
     print("分钟级股票数据获取")

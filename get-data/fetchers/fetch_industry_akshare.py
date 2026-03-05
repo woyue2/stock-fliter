@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+[L3] fetch_industry_akshare.py
+[ROLE]: 获取 A 股行业分类信息 (AkShare 版)
+[INPUT]: AkShare API
+[OUTPUT]: selected_stocks_all.csv
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
+
 使用 akshare 获取股票行业信息并更新 selected_stocks_all.csv
 """
 import sys
@@ -8,8 +14,19 @@ import pandas as pd
 import akshare as ak
 from tqdm import tqdm
 import time
+from tqdm import tqdm
 
-BASE_DIR = Path(__file__).resolve().parent
+# 添加项目根目录到路径
+BASE_DIR = Path(__file__).resolve().parent.parent  # get-data/
+PROJECT_ROOT = BASE_DIR.parent                     # stock-fliter/
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from util.db import upsert_stock_info
+except ImportError:
+    def upsert_stock_info(rows): pass
+
 DATA_DIR = BASE_DIR / "data"
 CSV_PATH = DATA_DIR / "selected_stocks_all.csv"
 
@@ -113,6 +130,21 @@ def update_industry_info():
     if empty_count > 0:
         print(f"\n[WARN] {empty_count} 只股票未找到行业信息")
     
+    print("\n[INFO] 正在同步行业到 SQLite...")
+    try:
+        all_data_for_db = []
+        for _, r in df.iterrows():
+            all_data_for_db.append({
+                "code": str(r["code"]).zfill(6),
+                "name": r.get("name", ""),
+                "industry": r.get("industry", ""),
+                "concepts": r.get("concepts", "")
+            })
+        upsert_stock_info(all_data_for_db)
+        print(f"[OK] SQLite 行业同步完成 ({len(all_data_for_db)} 只)")
+    except Exception as e:
+        print(f"[ERROR] 同步 SQLite 失败: {e}")
+
     print("\n[OK] 完成！")
     return True
 

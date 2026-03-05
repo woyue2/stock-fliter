@@ -1,17 +1,12 @@
 # # -*- coding: utf-8 -*-
-
-
 """
+[L3] fetch_daily_history.py
+[ROLE]: 慢速获取/补全 A 股日 K 历史数据 (BaoStock/Tencent)
+[INPUT]: 命令行参数或 selected_stocks.csv
+[OUTPUT]: data/raw/{code}.csv, SQLite stocks.db
+[PROTOCOL]: 变更时更新此头部，然后检查 L2/CLAUDE.md
+
 获取A股日K数据（增量更新 + 随机10只样本/全市场扫描）
-
-数据源：
-- 主：BaoStock（免费）
-- 备：Tencent K线接口（免费，稳定性较低）
-
-输出：
-- data/raw/{code}.csv (累计历史数据，不覆盖旧数据)
-- data/selected_stocks.csv (本次选中的股票)
-- output/fetch_summary_YYYYMMDD_HHMMSS.csv (本次拉取摘要)
 """
 from __future__ import annotations
 
@@ -36,22 +31,15 @@ from typing import List, Optional, Tuple
 import pandas as pd
 import requests
 
-# 添加 util 目录到路径
-util_dir = Path(__file__).resolve().parent.parent / "util"
-if str(util_dir) not in sys.path:
-    sys.path.append(str(util_dir))
-
-from progress import print_progress, ProgressBar
-
-
-# ... (保留前文导入)
-# 添加 util 目录到路径
-util_dir = Path(__file__).resolve().parent.parent / "util"
-if str(util_dir) not in sys.path:
-    sys.path.append(str(util_dir))
+# 添加项目根目录到路径
+BASE_DIR = Path(__file__).resolve().parent.parent  # get-data/
+PROJECT_ROOT = BASE_DIR.parent                     # stock-fliter/
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
-    from progress import print_progress, ProgressBar
+    from util.progress import print_progress, ProgressBar
+    from util.db import upsert_daily_rows
 except ImportError:
     # 兼容性回退
     def print_progress(*args, **kwargs):
@@ -69,11 +57,12 @@ SUSPENDED_MAX_STALE_DAYS = 7
 BATCH_SIZE = 100  # 批次大小（进度条显示用）
 
 
-@dataclass
 class StockItem:
-    code: str
-    name: str
-    bs_code: str
+    def __init__(self, code: str, name: str, bs_code: str, metadata: dict = None):
+        self.code = code
+        self.name = name
+        self.bs_code = bs_code
+        self.metadata = metadata or {}
 
 
 _BAOSTOCK_MODULE = None
@@ -362,7 +351,25 @@ def merge_and_save(existing_df: Optional[pd.DataFrame], new_df: pd.DataFrame, pa
 
         dedup_df["date"] = dedup_df["date"].map(_format_date)
         combined_df = dedup_df
+
+    # 1. 保存为 CSV (备份)
     combined_df.to_csv(path, index=False, encoding="utf-8-sig")
+
+    # 2. 增量双写：只把这次新抓到的 new_df 写入 SQLite (秒级完成)
+    if "code" not in new_df.columns:
+        new_df = new_df.copy()
+        new_df["code"] = path.stem.zfill(6)
+        
+    if not new_df.empty:
+        new_df = new_df.copy()
+        if "date" in new_df.columns:
+            new_df["date"] = new_df["date"].map(_format_date)
+        try:
+            # upsert_daily_rows 支持字典列表，自动 INSERT OR REPLACE
+            upsert_daily_rows(new_df.to_dict(orient="records"))
+        except Exception as e:
+            logging.error(f"SQLite 写入失败 ({path.stem}): {e}")
+
     return combined_df
 
 
@@ -398,15 +405,18 @@ def select_stocks(
         if required_cols.issubset(selected_df.columns):
             if "code" in selected_df.columns:
                  selected_df["code"] = selected_df["code"].astype(str).str.zfill(6)
-            return [
-                StockItem(code=str(row.code).zfill(6), name=row.name, bs_code=row.bs_code)
-                for row in selected_df.itertuples(index=False)
-            ]
+            
+            items = []
+            for row in selected_df.itertuples(index=False):
+                # 记录所有 metadata (除了 code, name, bs_code 以外的列)
+                meta = {k: getattr(row, k) for k in selected_df.columns if k not in ["code", "name", "bs_code"]}
+                items.append(StockItem(code=str(row.code).zfill(6), name=row.name, bs_code=row.bs_code, metadata=meta))
+            return items
 
-    candidates = [
-        StockItem(code=row.symbol, name=row.name, bs_code=row.code)
-        for row in stock_df.itertuples(index=False)
-    ]
+    candidates = []
+    for row in stock_df.itertuples(index=False):
+        # 基础数据通常只有 symbol/name/code
+        candidates.append(StockItem(code=row.symbol, name=row.name, bs_code=row.code))
 
     rng = random.Random(seed)
     rng.shuffle(candidates)
@@ -518,7 +528,7 @@ def main() -> int:
     if args.random_test or args.test:
         resample = args.resample or (args.random_test and True)
 
-    base_dir = Path(__file__).resolve().parent
+    base_dir = Path(__file__).resolve().parent.parent
     data_dir, raw_dir, output_dir = ensure_dirs(base_dir)
     selected_path = data_dir / "selected_stocks.csv"
     selected_all_path = data_dir / "selected_stocks_all.csv"
@@ -704,10 +714,17 @@ def main() -> int:
         print(f"[X] 有效股票不足 {sample_size} 只（实际 {len(selected)} 只）")
         return 1
 
-    selected_df = pd.DataFrame([
-        {"code": item.code, "name": item.name, "bs_code": item.bs_code}
-        for item in selected
-    ])
+    final_rows = []
+    for item in selected:
+        row = {"code": item.code, "name": item.name, "bs_code": item.bs_code}
+        if item.metadata:
+            row.update(item.metadata)
+        final_rows.append(row)
+    
+    selected_df = pd.DataFrame(final_rows)
+    # 处理可能的 NaN 值，避免保存为 'nan' 字符串
+    selected_df = selected_df.fillna("")
+    
     output_selected_path = selected_all_path if use_all else selected_path
     selected_df.to_csv(output_selected_path, index=False, encoding="utf-8-sig")
 
@@ -721,7 +738,7 @@ def main() -> int:
 # 手动运行
 # import os
 # # 注意：使用 os.system 时，命令是作为一个字符串传递的
-# os.system("python /home/aa/Park/stock-fliter/get-data/update_industry.py")
+# os.system("python /home/aa/Park/stock-fliter/get-data/fetch_industry_baostock.py")
 
 if __name__ == "__main__":
     raise SystemExit(main())
