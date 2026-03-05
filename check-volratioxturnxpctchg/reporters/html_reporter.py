@@ -86,6 +86,7 @@ def _render_html(df: pd.DataFrame, now: datetime, end_date: str | None) -> str:
               <th>代码</th>
               <th>名称</th>
               <th>行业</th>
+              <th>概念</th>
               <th>收盘价</th>
               <th>涨跌幅%</th>
               <th>量比</th>
@@ -128,6 +129,7 @@ def _build_rows_html(df: pd.DataFrame) -> str:
         code = str(row.get("代码", ""))
         name = escape(str(row.get("名称", "")))
         industry = escape(str(row.get("行业", "")))
+        concepts = escape(str(row.get("概念", ""))).replace(";", " ")
         close_price = float(row.get("最新收盘", 0.0))
         pct_chg = float(row.get("涨跌幅%", 0.0))
         vr = float(row.get("量比", 0.0))
@@ -146,6 +148,7 @@ def _build_rows_html(df: pd.DataFrame) -> str:
             f'<td><a href="javascript:void(0)" class="code" onclick="showStock(\'{escape(em_url)}\')">{escape(code)}</a></td>'
             f'<td>{name}</td>'
             f'<td>{industry}</td>'
+            f'<td style="font-size:11px; color:#666; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{concepts}">{concepts}</td>'
             f'<td>{close_price:.2f}</td>'
             f'<td class="tag-strong">{pct_chg:.2f}%</td>'
             f'<td><strong>{vr:.2f}</strong></td>'

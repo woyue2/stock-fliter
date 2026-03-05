@@ -40,7 +40,12 @@ def _worker(item: Any, cfg: dict) -> Optional[dict]:
     """子进程：加载 + 分析单只股票"""
     try:
         df = load_daily_data(item.code)
-        info = {"code": item.code, "name": item.name, "industry": item.industry}
+        info = {
+            "code": item.code,
+            "name": item.name,
+            "industry": item.industry,
+            "concepts": item.concepts
+        }
         return StockAnalyzer.analyze(df, info, cfg)
     except Exception:
         return None

@@ -31,6 +31,7 @@ class StockItem:
     name: str
     bs_code: str
     industry: str = ""
+    concepts: str = ""
 
 
 def load_selected_stocks(path: Path = SELECTED_PATH) -> pd.DataFrame:
@@ -62,6 +63,10 @@ def load_selected_stocks(path: Path = SELECTED_PATH) -> pd.DataFrame:
             df["industry"] = "未知"
     elif "industry" not in df.columns:
         df["industry"] = "未知"
+    
+    # 同样尝试补全 concepts 字段
+    if "concepts" not in df.columns:
+        df["concepts"] = ""
         
     return df
 
@@ -77,6 +82,7 @@ def iter_stock_items(limit: int | None = None) -> Iterable[StockItem]:
             name=str(getattr(row, "name", "")),
             bs_code=str(getattr(row, "bs_code", "")),
             industry=str(getattr(row, "industry", "")),
+            concepts=str(getattr(row, "concepts", "")),
         )
 
 

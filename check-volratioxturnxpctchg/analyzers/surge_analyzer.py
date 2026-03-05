@@ -61,6 +61,7 @@ def _build_result(latest: pd.Series, info: dict, vr: float) -> dict:
         "代码":      info.get("code", ""),
         "名称":      info.get("name", ""),
         "行业":      info.get("industry", ""),
+        "概念":      info.get("concepts", ""),
         "最新收盘":  round(float(latest["close"]), 2),
         "涨跌幅%":   round(float(latest["pctchg"]), 2),
         "量比":      round(vr, 2),
