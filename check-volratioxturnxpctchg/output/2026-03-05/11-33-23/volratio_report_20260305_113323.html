@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>量比×换手率×涨跌幅 - 2026-03-05</title>
+  <link rel="stylesheet" href="assets/common_detail.css">
+</head>
+<body>
+  <div class="layout">
+    <div class="left-panel">
+      <div class="header">
+        <div>
+          <span class="title">量比×换手率×涨跌幅</span>
+          <span class="count" id="visibleCount">共 8 只</span>
+        </div>
+        <div class="toolbar">
+          <span class="checked-info" id="checkedInfo">已选 0</span>
+          <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
+          <button id="hideChuangKeBtn" class="btn active" onclick="toggleHideChuangKe()">隐藏创/科</button>
+          <button class="btn" onclick="selectAll()">全选</button>
+          <button class="btn" onclick="clearAll()">清除</button>
+          <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+          <div class="meta">数据日期: 2026-03-05</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stats-group">
+          <span class="stats-label">板块:</span>
+          <span id="boardStatsContainer"><span class="tag">C38电气机械和器材制造业 3</span>
+<span class="tag">C13农副食品加工业 1</span>
+<span class="tag">C27医药制造业 1</span>
+<span class="tag">E48土木工程建筑业 1</span>
+<span class="tag">C14食品制造业 1</span>
+<span class="tag">I65软件和信息技术服务业 1</span></span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>代码</th>
+              <th>名称</th>
+              <th>行业</th>
+              <th>收盘价</th>
+              <th>涨跌幅%</th>
+              <th>量比</th>
+              <th>换手率%</th>
+              <th>总金额(万)</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr data-code="605222" data-price="22.36" data-board="主板" data-industry="C38电气机械和器材制造业"><td><input type="checkbox" class="check" data-code="605222" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh605222.html')">605222</a></td><td>起帆电缆</td><td>C38电气机械和器材制造业</td><td>22.36</td><td class="tag-strong">7.04%</td><td><strong>4.89</strong></td><td>6.57%</td><td>61237</td></tr>
+<tr data-code="603896" data-price="21.75" data-board="主板" data-industry="C27医药制造业"><td><input type="checkbox" class="check" data-code="603896" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh603896.html')">603896</a></td><td>寿仙谷</td><td>C27医药制造业</td><td>21.75</td><td class="tag-strong">4.02%</td><td><strong>3.80</strong></td><td>7.14%</td><td>30973</td></tr>
+<tr data-code="300712" data-price="30.91" data-board="创业板" data-industry="E48土木工程建筑业"><td><input type="checkbox" class="check" data-code="300712" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300712.html')">300712</a></td><td>永福股份</td><td>E48土木工程建筑业</td><td>30.91</td><td class="tag-strong">8.84%</td><td><strong>3.40</strong></td><td>8.63%</td><td>48857</td></tr>
+<tr data-code="301179" data-price="19.48" data-board="创业板" data-industry="I65软件和信息技术服务业"><td><input type="checkbox" class="check" data-code="301179" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301179.html')">301179</a></td><td>泽宇智能</td><td>I65软件和信息技术服务业</td><td>19.48</td><td class="tag-strong">3.18%</td><td><strong>3.30</strong></td><td>11.74%</td><td>53688</td></tr>
+<tr data-code="300713" data-price="19.37" data-board="创业板" data-industry="C38电气机械和器材制造业"><td><input type="checkbox" class="check" data-code="300713" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300713.html')">300713</a></td><td>英可瑞</td><td>C38电气机械和器材制造业</td><td>19.37</td><td class="tag-strong">5.96%</td><td><strong>3.29</strong></td><td>17.09%</td><td>29604</td></tr>
+<tr data-code="300829" data-price="20.1" data-board="创业板" data-industry="C14食品制造业"><td><input type="checkbox" class="check" data-code="300829" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300829.html')">300829</a></td><td>金丹科技</td><td>C14食品制造业</td><td>20.10</td><td class="tag-strong">3.61%</td><td><strong>3.22</strong></td><td>15.28%</td><td>47709</td></tr>
+<tr data-code="600127" data-price="7.36" data-board="主板" data-industry="C13农副食品加工业"><td><input type="checkbox" class="check" data-code="600127" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600127.html')">600127</a></td><td>金健米业</td><td>C13农副食品加工业</td><td>7.36</td><td class="tag-strong">3.66%</td><td><strong>3.09</strong></td><td>17.08%</td><td>80638</td></tr>
+<tr data-code="300670" data-price="7.09" data-board="创业板" data-industry="C38电气机械和器材制造业"><td><input type="checkbox" class="check" data-code="300670" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300670.html')">300670</a></td><td>大烨智能</td><td>C38电气机械和器材制造业</td><td>7.09</td><td class="tag-strong">4.42%</td><td><strong>3.06</strong></td><td>11.02%</td><td>17337</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="right-header">
+        <span id="stockTitle">点击左侧股票代码查看详情</span>
+        <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+      </div>
+      <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+      <div class="iframe-wrapper" id="frameWrapper" style="display:none">
+        <iframe id="stockFrame" class="stock-frame"></iframe>
+      </div>
+    </div>
+  </div>
+  <script>
+    const STORAGE_KEY = 'volratio_2026-03-05';
+  </script>
+  <script src="assets/common_detail.js"></script>
+</body>
+</html>

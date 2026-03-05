@@ -255,7 +255,7 @@ def fetch_baostock_daily(bs_code: str, start_date: str, end_date: str) -> Tuple[
     bs = get_baostock()
     rs = bs.query_history_k_data_plus(
         code=bs_code,
-        fields="date,code,open,high,low,close,volume,amount,pctChg,tradestatus",
+        fields="date,code,open,high,low,close,volume,amount,pctChg,tradestatus,turn",
         start_date=start_date,
         end_date=end_date,
         frequency="d",
@@ -292,6 +292,52 @@ def fetch_tencent_daily(code: str, count: int = DEFAULT_DAYS) -> pd.DataFrame:
     df["pctChg"] = None
     df["tradestatus"] = None
     return df
+
+
+def fetch_turn_akshare(code: str, start_date: str, end_date: str) -> pd.DataFrame:
+    """用 AkShare 补查换手率（turn），仅在 BaoStock 失败时调用。
+
+    INPUT : code='000001', start_date/end_date='YYYY-MM-DD'
+    OUTPUT: DataFrame 含 date(datetime64) + turn(float) 两列，失败返回空 DataFrame
+    """
+    try:
+        import akshare as ak  # 延迟导入，不强制依赖
+    except ImportError:
+        return pd.DataFrame()
+
+    symbol = f"sh{code}" if code.startswith("6") else f"sz{code}"
+    start = start_date.replace("-", "")
+    end   = end_date.replace("-", "")
+    try:
+        df = ak.stock_zh_a_hist(symbol=symbol, period="daily",
+                                start_date=start, end_date=end, adjust="qfq")
+        if df is None or df.empty:
+            return pd.DataFrame()
+        df = df.rename(columns={"日期": "date", "换手率": "turn"})
+        df["date"] = pd.to_datetime(df["date"])
+        return df[["date", "turn"]].copy()
+    except Exception:
+        return pd.DataFrame()
+
+
+def enrich_turn_from_akshare(df: pd.DataFrame, code: str,
+                             start_date: str, end_date: str) -> pd.DataFrame:
+    """将 AkShare 查到的 turn 列合并进 df（按 date 对齐，left join）。"""
+    turn_df = fetch_turn_akshare(code, start_date, end_date)
+    if turn_df.empty:
+        return df
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    merged = df.merge(turn_df, on="date", how="left", suffixes=("", "_ak"))
+    # 若原本没有 turn 列，直接用 AkShare 的；若有则优先保留原值
+    if "turn" not in df.columns:
+        merged = merged.rename(columns={"turn_ak": "turn"}) if "turn_ak" in merged.columns else merged
+    else:
+        # 用 AkShare 填充原 turn 中的 NaN
+        if "turn_ak" in merged.columns:
+            merged["turn"] = merged["turn"].fillna(merged["turn_ak"])
+            merged = merged.drop(columns=["turn_ak"])
+    return merged
 
 
 def merge_and_save(existing_df: Optional[pd.DataFrame], new_df: pd.DataFrame, path: Path) -> pd.DataFrame:
@@ -582,6 +628,10 @@ def main() -> int:
                             error_msg = "腾讯接口也未返回数据"
                         else:
                             print(f"[重试] {item.code} {item.name}: 腾讯接口成功获取 {len(new_df)} 条数据")
+                            # 腾讯无 turn 字段，用 AkShare 兜底补填
+                            new_df = enrich_turn_from_akshare(
+                                new_df, item.code, start_date, end_date
+                            )
                     except Exception as exc:
                         error_msg = f"腾讯接口报错: {str(exc)}"
 
