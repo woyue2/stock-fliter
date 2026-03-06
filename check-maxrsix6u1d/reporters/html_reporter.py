@@ -91,9 +91,10 @@ class HtmlReporter:
                 continue
             
             # summary_end-date_生成时间
+            display_name = self._label_for_combo(name)
             html_filename = f"{name}_{len(df)}只_{date_str}_{ts}.html"
             html_path = self.output_dir / html_filename
-            self._generate_combo_html(df, name, html_path, ts, summary_filename)
+            self._generate_combo_html(df, display_name, html_path, ts, summary_filename)
             self.generated_files[name] = html_filename
             print(f"  [OK] HTML报告: {html_path.name}")
         
@@ -255,14 +256,15 @@ class HtmlReporter:
             filename = self.generated_files.get(name, "")
             if count > 0 and filename:
                 combo_files_json[name] = filename
+                pretty = self._label_for_combo(name)
                 combo_links.append(
                     f'<li><a href="javascript:void(0)" onclick="loadCombo(\'{escape(filename)}\')" class="combo-link">'
-                    f'<strong>{escape(name)}</strong></a>: {count} 只</li>'
+                    f'<strong>{escape(pretty)}</strong></a>: {count} 只</li>'
                 )
             elif count > 0:
-                combo_links.append(f'<li><strong>{escape(name)}</strong>: {count} 只</li>')
+                combo_links.append(f'<li><strong>{escape(self._label_for_combo(name))}</strong>: {count} 只</li>')
             else:
-                combo_links.append(f'<li class="empty-combo"><strong>{escape(name)}</strong>: 0 只</li>')
+                combo_links.append(f'<li class="empty-combo"><strong>{escape(self._label_for_combo(name))}</strong>: 0 只</li>')
 
         # 从 summary_filename 中提取日期（格式：summary_YYYYMMDD_HHMMSS.html）
         # summary_filename 已经使用了从数据中读取的 date_str
@@ -285,6 +287,9 @@ class HtmlReporter:
   <div class="sidebar">
     <h1>[CHART] 6U1D61指标+放量MACD上升筛选(很少用)</h1>
     <p class="timestamp">生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+    <p style="font-size:0.85em;color:#2e7d32;background:#e8f5e9;padding:5px 8px;border-radius:4px;margin:6px 0;">
+      备注：MA排列 = 稳步上升
+    </p>
     
     <h2>📋 组合筛选结果</h2>
     <ul>
@@ -320,6 +325,31 @@ class HtmlReporter:
         
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html)
+    
+    def _label_for_combo(self, name: str) -> str:
+        """根据组合内部名称生成显式中文命名"""
+        # 解析形如 momentum_134_6 / momentum_13_61t / momentum_4_6t 等
+        m = re.match(r"^(?:momentum_)?(?P<combo>134|13|34|14|1|3|4)_(?P<cond>6|61|6t|61t)$", name)
+        if not m:
+            return name
+        combo = m.group("combo")
+        cond = m.group("cond")
+        combo_map = {
+            "134": "组合134：MA排列 + 趋势分析 + 网格测试",
+            "13": "组合13：MA排列 + 趋势分析",
+            "34": "组合34：趋势分析 + 网格测试",
+            "14": "组合14：MA排列 + 网格测试",
+            "1": "组合1：仅 MA排列",
+            "3": "组合3：仅 趋势分析",
+            "4": "组合4：仅 网格测试",
+        }
+        cond_map = {
+            "6": "连续6天阳线",
+            "61": "近10天6涨1跌",
+            "6t": "连续6天有效涨（容忍小跌）",
+            "61t": "近10天6有效涨1真跌（容忍小跌）",
+        }
+        return f"{combo_map.get(combo, combo)} ｜ {cond_map.get(cond, cond)}"
     
     def _extract_stocks(self, df: pd.DataFrame) -> List[tuple]:
         """从DataFrame提取股票信息"""
@@ -377,6 +407,9 @@ class HtmlReporter:
     <div class="nav-links">
       <a href="{escape(summary_filename)}">[CHART] 总览</a>
     </div>
+    <p style="font-size:0.85em;color:#2e7d32;background:#e8f5e9;padding:5px 8px;border-radius:4px;margin:6px 0;">
+      备注：MA排列 = 稳步上升
+    </p>
     <h1>{escape(title)}</h1>
     <div class="count">{stock_count} 只股票</div>
     <div class="checked-info">已勾选: <span id="checkedCount">0</span> 只</div>
@@ -726,4 +759,3 @@ class HtmlReporter:
         (self.asset_dir / "common_summary.js").write_text(summary_js, encoding="utf-8")
         (self.asset_dir / "common_detail.css").write_text(detail_css, encoding="utf-8")
         (self.asset_dir / "common_detail.js").write_text(detail_js, encoding="utf-8")
-

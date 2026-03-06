@@ -71,7 +71,7 @@ class StockAnalyzer:
         is_steady_uptrend = bool(steady_df["steady_uptrend"].iloc[-1])
         
         # 放量突破
-        is_volume_breakout = TechnicalIndicators.check_volume_breakout(close, volume)
+        is_volume_breakout = TechnicalIndicators.check_volume_breakout(close, volume, df["high"])
         
         # MACD 零轴下金叉
         is_macd_gold = TechnicalIndicators.check_macd_golden_cross_below_zero(close)
@@ -80,8 +80,7 @@ class StockAnalyzer:
         macd_value = macd_line.iloc[-1]
         macd_strength = round(macd_value, 4)  # 直接显示MACD值，保留4位小数
         
-        # 检查MACD零轴下金叉
-        is_macd_gold = TechnicalIndicators.check_macd_golden_cross_below_zero(close)
+        # 检查MACD零轴下金叉（已计算一次，避免重复）
         
         # TD 序列 (寻找底部9)
         td_seq = TechnicalIndicators.calculate_td_sequence(close)

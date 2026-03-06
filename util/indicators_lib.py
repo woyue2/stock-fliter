@@ -63,28 +63,43 @@ class TechnicalIndicators:
 
     @staticmethod
     def check_macd_golden_cross_below_zero(close_prices: pd.Series, fast_period=12, slow_period=26, signal_period=9) -> bool:
-        """检测MACD零轴下金叉 (更可靠的买入信号)"""
+        """检测MACD零轴下金叉 (更可靠的买入信号)
+        
+        判断逻辑：金叉发生前一天（即快线刚越过慢线的前一天）MACD值在零轴下方，
+        确保金叉是在零轴下方发生的，而非零轴上方的普通金叉。
+        """
         if not TechnicalIndicators.check_macd_golden_cross(close_prices, fast_period, slow_period, signal_period):
             return False
 
         macd_line, _, _ = TechnicalIndicators.calculate_macd(close_prices, fast_period, slow_period, signal_period)
 
-        # 检查金叉时MACD线是否在零轴下方
-        return macd_line.iloc[-1] < 0
+        # 用金叉发生前一天（iloc[-2]）判断是否在零轴下方
+        # 避免用当天值：当天MACD可能已经穿越零轴变正，导致漏筛
+        return macd_line.iloc[-2] < 0
 
     @staticmethod
-    def check_volume_breakout(close_prices: pd.Series, volumes: pd.Series, lookback_period=20, volume_multiplier=1.5) -> bool:
+    def check_volume_breakout(
+        close_prices: pd.Series,
+        volumes: pd.Series,
+        high_prices: pd.Series = None,
+        lookback_period: int = 20,
+        volume_multiplier: float = 1.5
+    ) -> bool:
         """
         检测放量突破
-        条件: 
-        1. 价格突破过去N天的最高价
+        条件:
+        1. 收盘价突破过去N天的最高价（high）阻力位；若未提供high则退而使用收盘价
         2. 成交量大于过去N天平均成交量的M倍
         """
         if len(close_prices) < lookback_period + 1:
             return False
 
-        # 计算回看期间的最高价（阻力位）
-        resistance = close_prices.iloc[-lookback_period-1:-1].max()
+        # 用历史最高价（high）作阻力位，更贴近真实市场阻力
+        # 若未提供 high_prices，退而使用收盘价（保持兼容性，但精度较低）
+        if high_prices is not None and len(high_prices) >= lookback_period + 1:
+            resistance = high_prices.iloc[-lookback_period-1:-1].max()
+        else:
+            resistance = close_prices.iloc[-lookback_period-1:-1].max()
 
         # 获取最新数据
         latest_close = close_prices.iloc[-1]
@@ -97,7 +112,7 @@ class TechnicalIndicators:
             return False
 
         # 检查是否突破且放量
-        breakout = latest_close > resistance  # 突破
+        breakout = latest_close > resistance       # 收盘价突破历史最高阻力
         high_volume = latest_volume > avg_volume * volume_multiplier  # 放量
 
         return bool(breakout and high_volume)
@@ -158,8 +173,10 @@ class TechnicalIndicators:
         slope30 = ma30 - ma30.shift(slope_lookback_short)
         slope60 = ma60 - ma60.shift(slope_lookback_long)
 
-        # 1. 均线多头排列
+        # 1. 均线多头排列（完整多头：ma5 > ma10 > ma20 > ma30 > ma60）
         order_ok = (ma5 > ma10) & (ma10 > ma20) & (ma20 > ma30)
+        if not ma60.empty and not ma60.isna().all():
+            order_ok = order_ok & (ma30 > ma60)
         
         # 2. 均线斜率向上
         slope_ok = (slope20 > 0) & (slope30 > 0)

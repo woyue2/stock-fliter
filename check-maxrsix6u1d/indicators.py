@@ -50,9 +50,13 @@ def compute_ma_alignment_flags(df: pd.DataFrame, config: MAAlignmentConfig) -> p
     # 合并结果到原始 DataFrame
     for col in ["ma5", "ma10", "ma20", "ma30", "ma60", 
                 "slope20", "slope30", "slope60", 
-                "drawdown_60", "ma_alignment"]:
+                "drawdown_60", "steady_uptrend"]:
         if col in df_flags.columns:
             df[col] = df_flags[col]
+    
+    # 统一输出列名：ma_alignment 对齐 steady_uptrend
+    if "steady_uptrend" in df.columns:
+        df["ma_alignment"] = df["steady_uptrend"]
 
     return df
 
@@ -68,7 +72,7 @@ def ma_alignment_signal(df: pd.DataFrame, config: MAAlignmentConfig) -> Dict[str
     latest = df_flags.iloc[-1]
 
     return {
-        "ma_alignment": bool(latest.get("ma_alignment", False)),
+        "ma_alignment": bool(latest.get("steady_uptrend", False)),
         "latest_date": latest.get("date"),
         "latest_close": float(latest.get("close", np.nan)),
         "ma5": float(latest.get("ma5", np.nan)),
@@ -80,7 +84,14 @@ def ma_alignment_signal(df: pd.DataFrame, config: MAAlignmentConfig) -> Dict[str
         "slope30": float(latest.get("slope30", np.nan)),
         "slope60": float(latest.get("slope60", np.nan)) if not pd.isna(latest.get("slope60", np.nan)) else None,
         "drawdown_60": float(latest.get("drawdown_60", np.nan)),
-        "order_ok": bool(latest.get("ma5", 0) > latest.get("ma10", 0) > latest.get("ma20", 0) > latest.get("ma30", 0)),
-        "price_above": bool(latest.get("close", 0) > latest.get("ma20", 0) and latest.get("close", 0) > latest.get("ma30", 0)),
+        "order_ok": bool(
+            latest.get("ma5", 0) > latest.get("ma10", 0) > latest.get("ma20", 0) > latest.get("ma30", 0)
+            and (not pd.isna(latest.get("ma60", np.nan)) and latest.get("ma30", 0) > latest.get("ma60", 0))
+        ),
+        "price_above": bool(
+            latest.get("close", 0) > latest.get("ma20", 0)
+            and latest.get("close", 0) > latest.get("ma30", 0)
+            and (not pd.isna(latest.get("ma60", np.nan)) and latest.get("close", 0) > latest.get("ma60", 0))
+        ),
         "drawdown_ok": bool(latest.get("drawdown_60", 0) >= -config.max_drawdown),
     }
