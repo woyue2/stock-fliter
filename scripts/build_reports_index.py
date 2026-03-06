@@ -19,6 +19,7 @@ CONFIG = [
     ("TD分析", "check-td/output"),
     ("TDxMACDxVolume", "check-tdxmacdxvolume/output"),  # 新增
     ("VolUp x Yang x Shipan", "check-volupxyangxshipan/output"),
+    ("主力强度分析", "check-zhulistrength/output"),
 ]
 
 # 日期目录 YYYY-MM-DD

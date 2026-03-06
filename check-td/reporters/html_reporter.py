@@ -422,7 +422,7 @@ class HTMLReporter:
             em_url = f"https://quote.eastmoney.com/{em_code}.html"
             
             rows_html += f'''
-            <tr data-code="{code}" data-vol="{vol}">
+            <tr data-code="{code}" data-vol="{vol}" data-board="{board}" data-industry="{industry}">
                 <td><input type="checkbox" class="check" data-code="{code}" onchange="saveChecked()"></td>
                 <td><a href="javascript:void(0)" onclick="showStock('{em_url}')" class="code">{code}</a></td>
                 <td>{name}</td>
@@ -530,6 +530,12 @@ class HTMLReporter:
         }}
         .btn:hover {{
             background: #f5f5f5;
+        }}
+        .btn.active {{
+            background: #e3f2fd;
+            color: #1976d2;
+            border-color: #1976d2;
+            font-weight: bold;
         }}
         .search {{
             padding: 6px 10px;
@@ -644,9 +650,11 @@ class HTMLReporter:
         <div>
             <span class="title">{level}</span>
             <span class="count">共 {len(df)} 只</span>
+            <span id="visibleCount"></span>
         </div>
         <div class="toolbar">
             <span class="checked-info" id="checkedInfo">已选 0</span>
+            <button id="hideChuangKeBtn" class="btn active" onclick="toggleHideChuangKe()">隐藏创/科</button>
             <button class="btn" onclick="selectAll()">全选</button>
             <button class="btn" onclick="clearAll()">清除</button>
             <button class="btn" onclick="exportCSV()">导出</button>
@@ -657,11 +665,11 @@ class HTMLReporter:
     <div class="stats">
         <div class="stats-group">
             <span class="stats-label">板块:</span>
-            {board_stats}
+            <div id="boardStatsContainer"></div>
         </div>
         <div class="stats-group">
             <span class="stats-label">行业:</span>
-            {industry_stats}
+            <div id="industryStatsContainer"></div>
         </div>
     </div>
     
@@ -701,9 +709,13 @@ class HTMLReporter:
     <script>
         const STORAGE_KEY = 'td_{level.replace(" ", "_")}';
         let currentUrl = '';
+        let isHideChuangKeActive = true;
+        let currentSearchKeyword = '';
         
-        // 初始化
-        document.addEventListener('DOMContentLoaded', loadChecked);
+        document.addEventListener('DOMContentLoaded', () => {{
+            loadChecked();
+            applyFilters();
+        }});
         
         function loadChecked() {{
             const checked = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -760,11 +772,49 @@ class HTMLReporter:
             a.click();
         }}
         
+        function toggleHideChuangKe() {{
+            isHideChuangKeActive = !isHideChuangKeActive;
+            const btn = document.getElementById('hideChuangKeBtn');
+            if (isHideChuangKeActive) {{ btn.classList.add('active'); }} else {{ btn.classList.remove('active'); }}
+            applyFilters();
+        }}
+
         function filterTable(keyword) {{
-            keyword = keyword.toLowerCase();
+            currentSearchKeyword = keyword.toLowerCase();
+            applyFilters();
+        }}
+
+        function applyFilters() {{
+            let visibleCount = 0;
+            const boardCounts = {{}};
+            const industryCounts = {{}};
             document.querySelectorAll('#tbody tr').forEach(tr => {{
-                tr.style.display = tr.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+                const b = tr.dataset.board || '';
+                const i = tr.dataset.industry || '';
+                const text = tr.textContent.toLowerCase();
+                const matchesSearch = text.includes(currentSearchKeyword);
+                const isChuangKe = b === '创业板' || b === '科创板';
+                const matchesChuangKe = !isHideChuangKeActive || !isChuangKe;
+                if (matchesSearch && matchesChuangKe) {{
+                    tr.style.display = '';
+                    visibleCount++;
+                    if (b) boardCounts[b] = (boardCounts[b] || 0) + 1;
+                    if (i && i !== 'nan') industryCounts[i] = (industryCounts[i] || 0) + 1;
+                }} else {{
+                    tr.style.display = 'none';
+                }}
             }});
+            renderStats('boardStatsContainer', boardCounts);
+            renderStats('industryStatsContainer', industryCounts);
+            const countEl = document.getElementById('visibleCount');
+            if (countEl) countEl.textContent = '当前显示 ' + visibleCount + ' 只';
+        }}
+        
+        function renderStats(containerId, countsObj) {{
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const sorted = Object.entries(countsObj).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            container.innerHTML = sorted.map(item => `<span class="tag">${{item[0]}} ${{item[1]}}</span>`).join('\\n');
         }}
         
         function showStock(url) {{

@@ -178,6 +178,7 @@ def build_steps(
     skip_maxrsix6u1d: bool,
     skip_tdxmacdxvolume: bool,
     skip_volupxyangxshipan: bool,
+    skip_zhulistrength: bool,
     skip_build_index: bool,
     get_minutes: bool,
     end_date: Optional[str],
@@ -288,6 +289,19 @@ def build_steps(
                 shared_raw_dir=shared_raw_dir
             )
         )
+    
+    # 4.7 主力强度与散户博弈分析 (A*B*C)
+    if not skip_zhulistrength:
+        cmd = [sys.executable, "main.py"]
+        steps.append(
+            Step(
+                name="主力强度分析 (check-zhulistrength)",
+                command=cmd,
+                workdir=PROJECT_ROOT / "check-zhulistrength",
+                group="analysis",
+                low_mem_mode=low_mem_mode
+            )
+        )
 
     # 5. 生成报告索引（reports_list.html 等）
     if not skip_build_index:
@@ -350,6 +364,11 @@ def parse_args() -> argparse.Namespace:
         "--skip-volupxyangxshipan",
         action="store_true",
         help="跳过 VolUp x Yang x Shipan 模块 (check-volupxyangxshipan)",
+    )
+    parser.add_argument(
+        "--skip-zhulistrength",
+        action="store_true",
+        help="跳过主力强度分析模块 (check-zhulistrength)",
     )
     parser.add_argument(
         "--skip-build-index",
@@ -433,6 +452,7 @@ def interactive_prompt(args: argparse.Namespace) -> None:
     print("[2] MAxRSIx6U1D 分析 (check-maxrsix6u1d)")
     print("[3] TDxMACDxVolume 分析 (check-tdxmacdxvolume)")
     print("[4] VolUp x Yang x Shipan 分析 (check-volupxyangxshipan)")
+    print("[5] 主力强度 A*B*C 分析 (check-zhulistrength)")
     print("\n有不需要执行的模组吗？(默认全跑，多线程并行)")
     ans_skip = input("👉 请输入要【跳过】的序号组合（比如 '23' 跳过稳步和组合，直接回车代表全跑）: ").strip()
     
@@ -440,6 +460,7 @@ def interactive_prompt(args: argparse.Namespace) -> None:
     if "2" in ans_skip: args.skip_maxrsix6u1d = True
     if "3" in ans_skip: args.skip_tdxmacdxvolume = True
     if "4" in ans_skip: args.skip_volupxyangxshipan = True
+    if "5" in ans_skip: args.skip_zhulistrength = True
 
     # 3. 执行模式问询
     print("\n[步骤 3] 执行模式：是否开启【模块间】并行运行?")
@@ -462,6 +483,7 @@ def main() -> int:
     is_explicit = any([
         args.skip_get_data, args.skip_td, args.skip_maxrsix6u1d, 
         args.skip_tdxmacdxvolume, args.skip_volupxyangxshipan,
+        args.skip_zhulistrength,
         args.get_minutes
     ])
     if not is_explicit and sys.stdin.isatty():
@@ -478,6 +500,7 @@ def main() -> int:
         skip_maxrsix6u1d=args.skip_maxrsix6u1d,
         skip_tdxmacdxvolume=args.skip_tdxmacdxvolume,
         skip_volupxyangxshipan=args.skip_volupxyangxshipan,
+        skip_zhulistrength=args.skip_zhulistrength,
         skip_build_index=args.skip_build_index,
         get_minutes=args.get_minutes,
         end_date=args.end_date,

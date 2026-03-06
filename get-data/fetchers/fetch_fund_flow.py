@@ -214,10 +214,28 @@ def merge_data(existing_df: Optional[pd.DataFrame], new_df: pd.DataFrame) -> pd.
 
 
 def save_data(df: pd.DataFrame, code: str) -> Path:
-    """保存数据到 CSV"""
+    """保存数据到 CSV 并同步到 SQLite"""
     FUNDFLOW_DIR.mkdir(parents=True, exist_ok=True)
     file_path = FUNDFLOW_DIR / f"{code}.csv"
     df.to_csv(file_path, index=False, encoding="utf-8-sig")
+    
+    # 同步写入 SQLite
+    try:
+        from util.db import upsert_fund_flow_rows
+        db_rows = []
+        for _, row in df.iterrows():
+            # main_net 取主力净流入，retail_net 取中小单净流入之和
+            db_rows.append({
+                "code": code,
+                "date": row["date"],
+                "main_net": row.get("main_force_net", 0.0),
+                "retail_net": row.get("small_net", 0.0) + row.get("medium_net", 0.0)
+            })
+        if db_rows:
+            upsert_fund_flow_rows(db_rows)
+    except Exception as e:
+        print(f"\n  ⚠️ {code}: 写入 SQLite 失败 - {e}")
+        
     return file_path
 
 

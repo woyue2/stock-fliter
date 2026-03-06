@@ -11,6 +11,7 @@ from datetime import datetime
 from data_loader import load_data
 from analyzers.strength_analyzer import StrengthAnalyzer
 from reporters.markdown_reporter import MarkdownReporter
+from reporters.html_reporter import HTMLReporter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -42,7 +43,12 @@ def run_pipeline(args):
     analyzed_df = analyzer.analyze(df)
     
     # 3. Report
-    reporter = MarkdownReporter(output_dir)
-    report_file = reporter.generate(analyzed_df)
+    # Markdown
+    md_reporter = MarkdownReporter(output_dir)
+    md_file = md_reporter.generate(analyzed_df)
     
-    logger.info(f"Pipeline finished. Report saved to: {report_file}")
+    # HTML (Required for the Index building script)
+    html_reporter = HTMLReporter(output_dir)
+    html_file = html_reporter.generate(analyzed_df)
+    
+    logger.info(f"Pipeline finished. Reports saved to: {output_dir}")

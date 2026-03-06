@@ -94,8 +94,12 @@ def _connect() -> sqlite3.Connection:
     """打开连接并开启 WAL 模式（允许并发读取）。"""
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(_DB_PATH, timeout=30)
+    # 极致性能优化
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA mmap_size=2147483648") # 开启 2GB 内存映射，提升大数据量读取性能
+    conn.execute("PRAGMA cache_size=-1024000")  # 1GB 缓存
+    conn.execute("PRAGMA temp_store=MEMORY")    # 临时表放入内存
     return conn
 
 
@@ -107,6 +111,8 @@ def ensure_schema() -> None:
         conn.execute(_DDL_FUND_FLOW)
         conn.execute(_DDL_IDX_DATE)
         conn.execute(_DDL_IDX_FF_DATE)
+        # 针对 check-zhulistrength 优化的复合索引：代码 + 日期降序 + 核心净额字段
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_ff_strength_fast ON daily_fund_flow(code, date DESC, main_net, retail_net)")
 
 
 # ── 读取 ──────────────────────────────────────────────────────

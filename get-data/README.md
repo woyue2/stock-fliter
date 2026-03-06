@@ -42,7 +42,20 @@ python fetchers/fetch_industry_baostock.py
 
 ---
 
+## 📊 数据源特性 (Platform Data Characteristics)
+
+记录各平台获取的数据特点，以便分析时选择最优数据源：
+
+| 平台 | 获取脚本示例 | 数据特点 | 时效性 | 核心用途 |
+| :--- | :--- | :--- | :--- | :--- |
+| **Sina (新浪)** | `fetch_daily_snap.py` | 极速全市场快照、题材概念、分时数据 | **实时** (盘中动态更新) | 每日收盘极速入库、实时行情预警 |
+| **AkShare** | `fetch_minute_akshare.py` | 整合多方数据、K线、资金流、分钟级精度 | **实时** (部分接口秒级延迟) | 精细化分时分析、各种特色指标获取 |
+| **BaoStock** | `fetch_industry_baostock.py` | 申万行业分类、高精度除权历史数据 | **盘后** (通常 16:00 后更新) | 稳定的历史回测、行业基准分类 |
+| **Tencent (腾讯)** | `fetch_daily_history.py` | 增量历史K线补齐 | **近实时** (盘中亦可补齐) | 作为历史数据的第二备份源 |
+
+---
+
 ## 🧪 功能特性
-- **分布式数据源**: 整合 Sina、Tencent、BaoStock 等多个公开接口。
-- **SQLite 同步**: 所有的 fetchers 现在都具备双写能力，优先同步到 SQLite。
-- **断点续传**: history 脚本会自动检查每个 CSV 文件的最后日期。
+- **多源冗余**: 整合 Sina、Tencent、BaoStock 等，接口失效时可快速切换。
+- **SQLite 核心**: 所有的获取器优先同步到 `data/stocks.db`，实现毫秒级查询。
+- **断点续传**: `history` 脚本自动检查 CSV 日期，仅补齐缺失部分。
