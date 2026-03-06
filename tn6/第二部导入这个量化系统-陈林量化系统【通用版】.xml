@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="GB2312"?>
+<root>
+<pool backcolor="1644825">
+<cells>
+<cell id="1037" type="3" attr="0" pos="162,107,235,188" clr="255" clrtext="16777215" solid="1" text="决策先机">
+<func nset="1" ntjindexno="113" accode="决策先机简" nperiod="4" nfirst="0" cfirst="" noperate="0" nsecond="0" csecond="" fsecond="0.000000" nbeginday="0" nendday="0" bnost="1" bnotp="1" bnotq="0" nperiodnum="1000" />
+</cell>
+<cell id="1039" type="3" attr="0" pos="161,309,235,385" clr="255" clrtext="16777215" solid="1" text="飞龙在天">
+<func nset="1" ntjindexno="114" accode="飞龙在天简" nperiod="4" nfirst="0" cfirst="" noperate="0" nsecond="0" csecond="" fsecond="0.000000" nbeginday="0" nendday="0" bnost="1" bnotp="0" bnotq="0" nperiodnum="1000" />
+</cell>
+<cell id="1041" type="8" attr="0" pos="251,67,821,228" clr="65535" clrtext="0" solid="1" text="符合开盘价格3—6%之间的股票">
+<psatt bdel="1" ndelnum="1" ndeltype="0" baimpool="1" bsound="0" nsoundtype="0" soundfile="" btip="1" bsavetoblock="0" blockfile="" bclearblock="0" bsavehis="1"/>
+<stk setcode="0" code="000620" indate="20251105" intime="235540" inprice="3.30" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/></cell>
+<cell id="1043" type="8" attr="0" pos="252,265,821,430" clr="16711808" clrtext="16777215" solid="1" text="三连板后断板">
+<psatt bdel="1" ndelnum="7" ndeltype="0" baimpool="1" bsound="0" nsoundtype="0" soundfile="" btip="1" bsavetoblock="0" blockfile="" bclearblock="0" bsavehis="1"/>
+</cell>
+<cell id="1046" type="3" attr="0" pos="844,101,916,193" clr="255" clrtext="16777215" solid="1" text="决策先机">
+<func nset="1" ntjindexno="392" accode="决策先机" nperiod="4" nfirst="0" cfirst="" noperate="0" nsecond="0" csecond="" fsecond="0.000000" nbeginday="0" nendday="0" bnost="1" bnotp="0" bnotq="0" nperiodnum="1000" />
+</cell>
+<cell id="1048" type="3" attr="0" pos="844,306,914,389" clr="16711808" clrtext="16777215" solid="1" text="飞龙在天">
+<func nset="1" ntjindexno="390" accode="飞龙在天" nperiod="4" nfirst="0" cfirst="" noperate="0" nsecond="0" csecond="" fsecond="0.000000" nbeginday="0" nendday="0" bnost="0" bnotp="0" bnotq="0" nperiodnum="1000" />
+</cell>
+<cell id="1049" type="3" attr="0" pos="162,566,234,646" clr="255" clrtext="16777215" solid="1" text="蛟龙出海">
+<func nset="1" ntjindexno="112" accode="蛟龙出海简" nperiod="4" nfirst="0" cfirst="" noperate="0" nsecond="0" csecond="" fsecond="0.000000" nbeginday="0" nendday="0" bnost="1" bnotp="0" bnotq="0" nperiodnum="1000" />
+</cell>
+<cell id="1050" type="8" attr="0" pos="931,66,1477,228" clr="65535" clrtext="0" solid="1" text="票池：决策先机  包含7%涨幅限制">
+<psatt bdel="1" ndelnum="1" ndeltype="0" baimpool="1" bsound="0" nsoundtype="0" soundfile="" btip="1" bsavetoblock="0" blockfile="" bclearblock="0" bsavehis="1"/>
+</cell>
+<cell id="1052" type="8" attr="0" pos="931,267,1472,427" clr="16711808" clrtext="16777215" solid="1" text="票池：飞龙在天  三连板后断板涨停">
+<psatt bdel="1" ndelnum="2" ndeltype="0" baimpool="1" bsound="0" nsoundtype="0" soundfile="" btip="1" bsavetoblock="0" blockfile="" bclearblock="0" bsavehis="1"/>
+</cell>
+<cell id="1053" type="8" attr="0" pos="251,519,821,694" clr="31476" clrtext="16777215" solid="1" text="成交量、换手率、涨幅、筹码获利比例">
+<psatt bdel="1" ndelnum="1" ndeltype="0" baimpool="1" bsound="0" nsoundtype="0" soundfile="" btip="1" bsavetoblock="0" blockfile="" bclearblock="0" bsavehis="1"/>
+<stk setcode="0" code="000629" indate="20251105" intime="235748" inprice="3.25" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="0" code="002056" indate="20251105" intime="235748" inprice="21.90" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="0" code="002125" indate="20251105" intime="235748" inprice="15.63" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="0" code="300444" indate="20251105" intime="235748" inprice="9.89" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="0" code="300505" indate="20251105" intime="235748" inprice="22.55" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="1" code="601011" indate="20251105" intime="235748" inprice="4.32" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="1" code="603315" indate="20251105" intime="235748" inprice="14.28" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="1" code="688190" indate="20251105" intime="235748" inprice="118.01" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="1" code="688388" indate="20251105" intime="235748" inprice="43.31" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/></cell>
+<cell id="1059" type="2" attr="201" pos="160,285,307,313" clr="16711808" clrtext="0" solid="0" text="飞龙在天
+">
+</cell>
+<cell id="1062" type="2" attr="201" pos="252,43,806,66" clr="65535" clrtext="0" solid="0" text="股票池：决策先机  初步  不含7%条件
+">
+</cell>
+<cell id="1065" type="2" attr="201" pos="845,283,1118,307" clr="16711808" clrtext="0" solid="0" text="涨幅限制">
+</cell>
+<cell id="1067" type="2" attr="201" pos="843,77,951,103" clr="65535" clrtext="0" solid="0" text="涨幅限制">
+</cell>
+<cell id="1069" type="2" attr="201" pos="839,530,1005,552" clr="33023" clrtext="0" solid="0" text="创13日新高">
+</cell>
+<cell id="1070" type="2" attr="201" pos="162,543,326,566" clr="33023" clrtext="0" solid="0" text="蛟龙出海">
+</cell>
+<cell id="1071" type="2" attr="201" pos="932,45,1415,65" clr="65535" clrtext="0" solid="0" text="目标池：决策先机  包含7%涨幅限制">
+</cell>
+<cell id="1073" type="2" attr="201" pos="930,247,1380,266" clr="16711808" clrtext="0" solid="0" text="目标池：飞龙在天  三连板后断板   反包或者涨停">
+</cell>
+<cell id="1074" type="2" attr="201" pos="251,495,691,518" clr="33023" clrtext="0" solid="0" text="股票池：蛟龙出海  初步  成交量、换手率、涨幅符合
+">
+</cell>
+<cell id="1011" type="3" attr="0" pos="842,555,908,658" clr="255" clrtext="16777215" solid="1" text="蛟龙出海">
+<func nset="1" ntjindexno="442" accode="蛟龙出海" nperiod="4" nfirst="0" cfirst="" noperate="0" nsecond="0" csecond="" fsecond="0.000000" nbeginday="0" nendday="0" bnost="0" bnotp="0" bnotq="0" nperiodnum="1000" />
+</cell>
+<cell id="1013" type="8" attr="0" pos="931,520,1477,692" clr="33023" clrtext="16777215" solid="1" text="票池：蛟龙出海  创13天新高">
+<psatt bdel="1" ndelnum="1" ndeltype="0" baimpool="1" bsound="0" nsoundtype="0" soundfile="" btip="1" bsavetoblock="0" blockfile="" bclearblock="0" bsavehis="1"/>
+<stk setcode="0" code="000629" indate="20251105" intime="235748" inprice="3.25" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="0" code="002125" indate="20251105" intime="235748" inprice="15.63" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/><stk setcode="0" code="300444" indate="20251105" intime="235748" inprice="9.89" income="0.00" now="0.00" rise="0.00" volume="0" maxrate="0.00" maxperiod="0" maxtime="0" maxprice="0.00" idaynum="0"/></cell>
+<cell id="1014" type="2" attr="201" pos="251,240,626,264" clr="16711808" clrtext="0" solid="0" text="股票池：飞龙在天  初步  三连板后断板">
+</cell>
+<cell id="1015" type="7" attr="0" pos="49,63,128,631" clr="0" clrtext="16777215" solid="1" text="所有A股">
+<spinfo type="2" customblockname="" size="5453"/>
+</cell>
+<cell id="1016" type="2" attr="201" pos="161,85,271,103" clr="65535" clrtext="0" solid="0" text="决策先机
+">
+</cell>
+<cell id="1017" type="2" attr="201" pos="929,499,1400,517" clr="33023" clrtext="0" solid="0" text="目标池：蛟龙出海  创13日新高">
+</cell>
+</cells>
+<flows>
+<flow startid="1046" endid="1050" clr="255" size="1" tran="0" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="0"/>
+<flow startid="1039" endid="1043" clr="255" size="1" tran="0" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="0"/>
+<flow startid="1048" endid="1052" clr="255" size="1" tran="0" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="0"/>
+<flow startid="1049" endid="1053" clr="255" size="1" tran="0" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="0"/>
+<flow startid="1015" endid="1037" clr="255" size="1" tran="1" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="5"/>
+<flow startid="1037" endid="1041" clr="255" size="1" tran="0" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="0"/>
+<flow startid="1041" endid="1046" clr="255" size="1" tran="1" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="30"/>
+<flow startid="1011" endid="1013" clr="255" size="1" tran="0" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="0"/>
+<flow startid="1015" endid="1049" clr="255" size="1" tran="1" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="5"/>
+<flow startid="1053" endid="1011" clr="255" size="1" tran="1" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="5"/>
+<flow startid="1015" endid="1039" clr="255" size="1" tran="1" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="5"/>
+<flow startid="1043" endid="1048" clr="255" size="1" tran="1" emptyps="0" starttype="0" starttime="0" starttimetype="0" starttimehms="0" cxtype="0" cxtime="0" cxtimetype="0" jgtime="30"/>
+</flows>
+</pool>
+</root>
