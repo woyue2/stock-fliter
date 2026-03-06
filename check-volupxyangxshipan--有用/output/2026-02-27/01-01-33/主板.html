@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VolUp x Yang x Shipan报告 - 主板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, "Microsoft YaHei", sans-serif;
+        font-size: 13px;
+        color: #333;
+        background: #fff;
+        height: 100vh;
+        overflow: hidden;
+    }
+    .layout { display: flex; height: 100vh; }
+    .left-panel {
+        width: 60%;
+        min-width: 520px;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #e0e0e0;
+    }
+    .right-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #fafafa;
+    }
+    .header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .search {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 150px;
+        font-size: 12px;
+    }
+    .btn {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .btn:hover { background: #f5f5f5; }
+    .btn.active {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-color: #1976d2;
+        font-weight: bold;
+    }
+    .stats {
+        padding: 12px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .stats-group {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .stats-label {
+        font-size: 12px;
+        color: #999;
+        margin-right: 4px;
+    }
+    .tag {
+        font-size: 11px;
+        padding: 2px 6px;
+        background: #f0f0f0;
+        border-radius: 3px;
+    }
+    .title {
+        font-size: 16px;
+        font-weight: 600;
+    }
+    .count {
+        color: #666;
+        margin-left: 8px;
+    }
+    .meta {
+        color: #666;
+        font-size: 12px;
+    }
+    .table-wrap {
+        flex: 1;
+        overflow: auto;
+    }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid #eee; padding: 10px 12px; text-align: left; }
+    th { background: #fafafa; font-weight: 500; position: sticky; top: 0; z-index: 10; }
+    tr:nth-child(even) { background: #fafafa; }
+    tr:hover { background: #f9f9f9; }
+    tr.checked { background: #e8f5e9; }
+    .code {
+        color: #1976d2;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .code:hover { text-decoration: underline; }
+    .checked-info {
+        font-size: 12px;
+        color: #4caf50;
+    }
+    .right-header {
+        padding: 10px 16px;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 12px;
+        color: #666;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .open-new {
+        font-size: 11px;
+        color: #1976d2;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .open-new:hover { text-decoration: underline; }
+    .placeholder {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+    }
+    /* iframe 居中包装器 */
+    .iframe-wrapper {
+        flex: 1;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+        background: #fff;
+    }
+    .stock-frame {
+        width: 150%;
+        height: 100%;
+        border: none;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="left-panel">
+      <div class="header">
+        <div>
+          <span class="title">VolUp x Yang x Shipan报告 - 主板</span>
+          <span class="count">共 4 只</span>
+        </div>
+        <div class="toolbar">
+          <span class="checked-info" id="checkedInfo">已选 0</span>
+          <button id="shipanFilterBtn" class="btn" onclick="toggleShipanFilter()">试盘</button>
+          <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
+          <button class="btn" onclick="selectAll()">全选</button>
+          <button class="btn" onclick="clearAll()">清除</button>
+          <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+          <div class="meta">数据日期: 2026-02-27</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stats-group">
+          <span class="stats-label">板块:</span>
+          <span class="tag">深圳主板 4</span>
+        </div>
+        <div class="stats-group">
+          <span class="stats-label">行业:</span>
+          <span class="tag">K70房地产业 2</span>
+<span class="tag">E48土木工程建筑业 1</span>
+<span class="tag">C30非金属矿物制品业 1</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>代码</th>
+              <th>名称</th>
+              <th>板块</th>
+              <th>行业</th>
+              <th>试盘次数</th>
+              <th>今天开盘</th>
+              <th>今天收盘</th>
+              <th>昨天量</th>
+              <th>前2天量</th>
+              <th>前3天量</th>
+              <th>前4天量</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr data-code="000002" data-price="4.84" data-shipan="0"><td><input type="checkbox" class="check" data-code="000002" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000002.html')">000002</a></td><td>万科A</td><td>深圳主板</td><td>K70房地产业</td><td>0</td><td>4.840</td><td>4.840</td><td>278738664</td><td>246730946</td><td>155701885</td><td>224573180</td></tr>
+<tr data-code="000007" data-price="13.62" data-shipan="0"><td><input type="checkbox" class="check" data-code="000007" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000007.html')">000007</a></td><td>全新好</td><td>深圳主板</td><td>K70房地产业</td><td>0</td><td>13.620</td><td>13.620</td><td>10981266</td><td>8413252</td><td>8231903</td><td>7796103</td></tr>
+<tr data-code="000010" data-price="4.28" data-shipan="0"><td><input type="checkbox" class="check" data-code="000010" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000010.html')">000010</a></td><td>美丽生态</td><td>深圳主板</td><td>E48土木工程建筑业</td><td>0</td><td>4.280</td><td>4.280</td><td>73581800</td><td>50994000</td><td>19869100</td><td>15358500</td></tr>
+<tr data-code="000012" data-price="5.03" data-shipan="0"><td><input type="checkbox" class="check" data-code="000012" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000012.html')">000012</a></td><td>南玻A</td><td>深圳主板</td><td>C30非金属矿物制品业</td><td>0</td><td>5.030</td><td>5.030</td><td>142060245</td><td>107231933</td><td>33629827</td><td>33929653</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="right-header">
+        <span id="stockTitle">点击左侧股票代码查看详情</span>
+        <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+      </div>
+      <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+      <div class="iframe-wrapper" id="frameWrapper" style="display:none">
+        <iframe id="stockFrame" class="stock-frame"></iframe>
+      </div>
+    </div>
+  </div>
+  <script>
+    const STORAGE_KEY = 'volupxyangxshipan_主板';
+    let currentUrl = '';
+    let isPriceFilterActive = true; // 默认开启
+    let isShipanFilterActive = false; // 试盘筛选默认关闭
+    let currentSearchKeyword = '';
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      loadChecked();
+      applyFilters(); // 初始应用筛选
+    });
+
+    function togglePriceFilter() {
+      isPriceFilterActive = !isPriceFilterActive;
+      const btn = document.getElementById('priceFilterBtn');
+      if (isPriceFilterActive) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+      applyFilters();
+    }
+
+    function toggleShipanFilter() {
+      isShipanFilterActive = !isShipanFilterActive;
+      const btn = document.getElementById('shipanFilterBtn');
+      if (isShipanFilterActive) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+      applyFilters();
+    }
+
+    function filterTable(keyword) {
+      currentSearchKeyword = keyword.toLowerCase();
+      applyFilters();
+    }
+
+    function applyFilters() {
+      document.querySelectorAll('#tbody tr').forEach(tr => {
+        const price = parseFloat(tr.dataset.price || 0);
+        const shipanCount = parseInt(tr.dataset.shipan || 0);
+        const text = tr.textContent.toLowerCase();
+        
+        const matchesSearch = text.includes(currentSearchKeyword);
+        const matchesPrice = !isPriceFilterActive || price < 10;
+        const matchesShipan = !isShipanFilterActive || shipanCount >= 2;
+        
+        tr.style.display = (matchesSearch && matchesPrice && matchesShipan) ? '' : 'none';
+      });
+    }
+
+    function loadChecked() {
+      const checked = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      checked.forEach(code => {
+        const cb = document.querySelector(`input[data-code="${code}"]`);
+        if (cb) {
+          cb.checked = true;
+          cb.closest('tr').classList.add('checked');
+        }
+      });
+      updateInfo();
+    }
+
+    function saveChecked() {
+      const checked = [];
+      document.querySelectorAll('.check:checked').forEach(cb => {
+        checked.push(cb.dataset.code);
+        cb.closest('tr').classList.add('checked');
+      });
+      document.querySelectorAll('.check:not(:checked)').forEach(cb => {
+        cb.closest('tr').classList.remove('checked');
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+      updateInfo();
+    }
+
+    function updateInfo() {
+      const count = document.querySelectorAll('.check:checked').length;
+      document.getElementById('checkedInfo').textContent = '已选 ' + count;
+    }
+
+    function selectAll() {
+      document.querySelectorAll('.check').forEach(cb => cb.checked = true);
+      saveChecked();
+    }
+
+    function clearAll() {
+      document.querySelectorAll('.check').forEach(cb => cb.checked = false);
+      saveChecked();
+    }
+
+    function showStock(url) {
+      currentUrl = url;
+      const code = url.match(/([a-z]+\d+)\.html/)[1];
+      document.getElementById('stockTitle').textContent = code.toUpperCase();
+      document.getElementById('openNew').style.display = 'inline';
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('frameWrapper').style.display = 'block';
+      const frame = document.getElementById('stockFrame');
+      frame.src = url;
+    }
+  </script>
+</body>
+</html>

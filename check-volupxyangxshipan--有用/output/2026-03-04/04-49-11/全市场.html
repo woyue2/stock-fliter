@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VolUp x Yang x Shipan报告 - 全市场</title>
+  <link rel="stylesheet" href="assets/common_detail.css">
+</head>
+<body>
+  <div class="layout">
+    <div class="left-panel">
+      <div class="header">
+        <div>
+          <span class="title">VolUp x Yang x Shipan报告 - 全市场</span>
+          <span class="count" id="visibleCount">共 10 只</span>
+        </div>
+        <div class="toolbar">
+          <span class="checked-info" id="checkedInfo">已选 0</span>
+          <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
+          <button id="hideChuangKeBtn" class="btn active" onclick="toggleHideChuangKe()">隐藏创/科</button>
+          <button class="btn" onclick="selectAll()">全选</button>
+          <button class="btn" onclick="clearAll()">清除</button>
+          <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+          <div class="meta">数据日期: 2026-03-04</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stats-group">
+          <span class="stats-label">板块:</span>
+          <span id="boardStatsContainer"><span class="tag">深圳主板 10</span></span>
+        </div>
+        <div class="stats-group">
+          <span class="stats-label">行业:</span>
+          <span id="industryStatsContainer"><span class="tag">K70房地产业 5</span>
+<span class="tag">J69其他金融业 1</span>
+<span class="tag">E48土木工程建筑业 1</span>
+<span class="tag">C37铁路、船舶、航空航天和其他运输设备制造业 1</span>
+<span class="tag">J66货币金融服务 1</span>
+<span class="tag">C30非金属矿物制品业 1</span></span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>代码</th>
+              <th>名称</th>
+              <th>板块</th>
+              <th>行业</th>
+              <th>信心分</th>
+              <th>标签</th>
+              <th>试盘</th>
+              <th>量比</th>
+              <th>今天收盘</th>
+              <th>昨天量</th>
+              <th>前3日均量</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr data-code="000009" data-price="8.84" data-board="深圳主板" data-industry="J69其他金融业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000009" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000009.html')">000009</a></td><td>中国宝安<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>J69其他金融业</td><td class="conf-high">61</td><td class="tag-mod">准突破</td><td><span title="01-14(上影)">1</span></td><td>1.66</td><td>8.840</td><td>44182134</td><td>26637138</td></tr>
+<tr data-code="000010" data-price="4.42" data-board="深圳主板" data-industry="E48土木工程建筑业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000010" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000010.html')">000010</a></td><td>美丽生态<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>E48土木工程建筑业</td><td class="conf-high">60</td><td class="tag-strong">多重试盘</td><td><span title="01-12(上影),02-09(上影),02-10(下影),02-26(涨停)">4</span></td><td>0.78</td><td>4.420</td><td>86572000</td><td>111308973</td></tr>
+<tr data-code="000006" data-price="8.56" data-board="深圳主板" data-industry="K70房地产业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000006" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000006.html')">000006</a></td><td>深振业A<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>K70房地产业</td><td class="">55</td><td class="tag-strong">多重试盘</td><td><span title="01-05(下影),01-14(下影),01-22(下影),02-13(上影)">4</span></td><td>0.94</td><td>8.560</td><td>29832702</td><td>31905000</td></tr>
+<tr data-code="000014" data-price="12.5" data-board="深圳主板" data-industry="K70房地产业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000014" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000014.html')">000014</a></td><td>沙河股份<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>K70房地产业</td><td class="">55</td><td class="tag-strong">多重试盘</td><td><span title="01-13(上影),01-29(下影),02-11(上影),02-13(上影)">4</span></td><td>0.98</td><td>12.500</td><td>9695383</td><td>9942121</td></tr>
+<tr data-code="000002" data-price="4.62" data-board="深圳主板" data-industry="K70房地产业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000002" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000002.html')">000002</a></td><td>万科A<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>K70房地产业</td><td class="">40</td><td class="tag-mod">准突破</td><td><span title="01-23(下影),01-28(下影)">2</span></td><td>0.89</td><td>4.620</td><td>159681704</td><td>180388710</td></tr>
+<tr data-code="000008" data-price="2.83" data-board="深圳主板" data-industry="C37铁路、船舶、航空航天和其他运输设备制造业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000008" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000008.html')">000008</a></td><td>神州高铁<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>C37铁路、船舶、航空航天和其他运输设备制造业</td><td class="">40</td><td class="tag-plain">纯量价</td><td>0</td><td>1.52</td><td>2.830</td><td>76863654</td><td>50479646</td></tr>
+<tr data-code="000001" data-price="10.71" data-board="深圳主板" data-industry="J66货币金融服务" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000001" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000001.html')">000001</a></td><td>平安银行<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>J66货币金融服务</td><td class="">37</td><td class="tag-plain">纯量价</td><td>0</td><td>1.43</td><td>10.710</td><td>102869483</td><td>72127723</td></tr>
+<tr data-code="000007" data-price="13.17" data-board="深圳主板" data-industry="K70房地产业" ><td><input type="checkbox" class="check" data-code="000007" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000007.html')">000007</a></td><td>全新好</td><td>深圳主板</td><td>K70房地产业</td><td class="">35</td><td class="tag-plain">纯量价</td><td>0</td><td>1.39</td><td>13.170</td><td>13082451</td><td>9435089</td></tr>
+<tr data-code="000011" data-price="8.33" data-board="深圳主板" data-industry="K70房地产业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000011" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000011.html')">000011</a></td><td>深物业A<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>K70房地产业</td><td class="">30</td><td class="tag-mod">准突破</td><td><span title="01-15(下影)">1</span></td><td>0.95</td><td>8.330</td><td>6929651</td><td>7296075</td></tr>
+<tr data-code="000012" data-price="4.78" data-board="深圳主板" data-industry="C30非金属矿物制品业" style="opacity: 0.6; filter: grayscale(0.8);"><td><input type="checkbox" class="check" data-code="000012" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000012.html')">000012</a></td><td>南玻A<span style="color:#999;font-size:11px"> (未命中)</span></td><td>深圳主板</td><td>C30非金属矿物制品业</td><td class="">20</td><td class="tag-plain">纯量价</td><td>0</td><td>0.61</td><td>4.780</td><td>55816576</td><td>91932693</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="right-header">
+        <span id="stockTitle">点击左侧股票代码查看详情</span>
+        <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+      </div>
+      <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+      <div class="iframe-wrapper" id="frameWrapper" style="display:none">
+        <iframe id="stockFrame" class="stock-frame"></iframe>
+      </div>
+    </div>
+  </div>
+  <script>
+    const STORAGE_KEY = 'volupxyangxshipan_全市场';
+  </script>
+  <script src="assets/common_detail.js"></script>
+</body>
+</html>

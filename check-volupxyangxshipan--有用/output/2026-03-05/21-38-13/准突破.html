@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VolUp x Yang x Shipan报告 - 准突破</title>
+  <link rel="stylesheet" href="assets/common_detail.css">
+</head>
+<body>
+  <div class="layout">
+    <div class="left-panel">
+      <div class="header">
+        <div>
+          <span class="title">VolUp x Yang x Shipan报告 - 准突破</span>
+          <span class="count" id="visibleCount">共 35 只</span>
+        </div>
+        <div class="toolbar">
+          <span class="checked-info" id="checkedInfo">已选 0</span>
+          <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
+          <button id="hideChuangKeBtn" class="btn active" onclick="toggleHideChuangKe()">隐藏创/科</button>
+          <button class="btn" onclick="selectAll()">全选</button>
+          <button class="btn" onclick="clearAll()">清除</button>
+          <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+          <div class="meta">数据日期: 2026-03-05</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stats-group">
+          <span class="stats-label">板块:</span>
+          <span id="boardStatsContainer"><span class="tag">上海主板 12</span>
+<span class="tag">深圳主板 9</span>
+<span class="tag">创业板 7</span>
+<span class="tag">科创板 5</span>
+<span class="tag">其他 2</span></span>
+        </div>
+        <div class="stats-group">
+          <span class="stats-label">行业:</span>
+          <span id="industryStatsContainer"><span class="tag">C38电气机械和器材制造业 6</span>
+<span class="tag">C39计算机、通信和其他电子设备制造业 4</span>
+<span class="tag">C27医药制造业 2</span>
+<span class="tag">J66货币金融服务 2</span>
+<span class="tag">C37铁路、船舶、航空航天和其他运输设备制造业 2</span>
+<span class="tag">D44电力、热力生产和供应业 2</span>
+<span class="tag">F52零售业 2</span>
+<span class="tag">G54道路运输业 2</span>
+<span class="tag">C18纺织服装、服饰业 1</span>
+<span class="tag">G58多式联运和运输代理业 1</span></span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>代码</th>
+              <th>名称</th>
+              <th>板块</th>
+              <th>行业</th>
+              <th>信心分</th>
+              <th>标签</th>
+              <th>试盘</th>
+              <th>量比</th>
+              <th>今天收盘</th>
+              <th>昨天量</th>
+              <th>前3日均量</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr data-code="002003" data-price="10.16" data-board="深圳主板" data-industry="C18纺织服装、服饰业" ><td><input type="checkbox" class="check" data-code="002003" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz002003.html')">002003</a></td><td>伟星股份</td><td>深圳主板</td><td>C18纺织服装、服饰业</td><td class="conf-high">80</td><td class="tag-mod">准突破</td><td><span title="01-26(下影),03-04(下影)">2</span></td><td>2.72</td><td>10.160</td><td>26592059</td><td>9781904</td></tr>
+<tr data-code="002952" data-price="26.5" data-board="深圳主板" data-industry="C39计算机、通信和其他电子设备制造业" ><td><input type="checkbox" class="check" data-code="002952" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz002952.html')">002952</a></td><td>亚世光电</td><td>深圳主板</td><td>C39计算机、通信和其他电子设备制造业</td><td class="conf-high">80</td><td class="tag-mod">准突破</td><td><span title="01-09(下影),01-14(下影)">2</span></td><td>2.57</td><td>26.500</td><td>15405600</td><td>5996251</td></tr>
+<tr data-code="301179" data-price="20.32" data-board="创业板" data-industry="I65软件和信息技术服务业" ><td><input type="checkbox" class="check" data-code="301179" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301179.html')">301179</a></td><td>泽宇智能</td><td>创业板</td><td>I65软件和信息技术服务业</td><td class="conf-high">80</td><td class="tag-mod">准突破</td><td><span title="01-06(下影),01-09(下影)">2</span></td><td>2.40</td><td>20.320</td><td>27878900</td><td>11635018</td></tr>
+<tr data-code="300240" data-price="7.88" data-board="创业板" data-industry="G58多式联运和运输代理业" ><td><input type="checkbox" class="check" data-code="300240" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300240.html')">300240</a></td><td>飞力达</td><td>创业板</td><td>G58多式联运和运输代理业</td><td class="conf-high">75</td><td class="tag-mod">准突破</td><td><span title="02-02(上影),03-05(上影)">2</span></td><td>1.77</td><td>7.880</td><td>35582105</td><td>20060402</td></tr>
+<tr data-code="688217" data-price="28.48" data-board="科创板" data-industry="C27医药制造业" ><td><input type="checkbox" class="check" data-code="688217" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh688217.html')">688217</a></td><td>睿昂基因</td><td>科创板</td><td>C27医药制造业</td><td class="conf-high">70</td><td class="tag-mod">准突破</td><td><span title="01-05(涨停),03-04(上影)">2</span></td><td>1.51</td><td>28.480</td><td>1211331</td><td>799658</td></tr>
+<tr data-code="000703" data-price="13.09" data-board="深圳主板" data-industry="C28化学纤维制造业" ><td><input type="checkbox" class="check" data-code="000703" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000703.html')">000703</a></td><td>恒逸石化</td><td>深圳主板</td><td>C28化学纤维制造业</td><td class="conf-high">64</td><td class="tag-mod">准突破</td><td><span title="12-24(涨停),12-30(涨停)">2</span></td><td>1.36</td><td>13.090</td><td>75699653</td><td>55792548</td></tr>
+<tr data-code="603031" data-price="52.88" data-board="上海主板" data-industry="C38电气机械和器材制造业" ><td><input type="checkbox" class="check" data-code="603031" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh603031.html')">603031</a></td><td>安孚科技</td><td>上海主板</td><td>C38电气机械和器材制造业</td><td class="conf-high">64</td><td class="tag-mod">准突破</td><td><span title="12-24(涨停)">1</span></td><td>1.61</td><td>52.880</td><td>14797577</td><td>9189747</td></tr>
+<tr data-code="002692" data-price="5.83" data-board="深圳主板" data-industry="C38电气机械和器材制造业" ><td><input type="checkbox" class="check" data-code="002692" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz002692.html')">002692</a></td><td>远程股份</td><td>深圳主板</td><td>C38电气机械和器材制造业</td><td class="conf-high">63</td><td class="tag-mod">准突破</td><td><span title="01-07(上影),01-09(下影)">2</span></td><td>1.45</td><td>5.830</td><td>21636470</td><td>14892033</td></tr>
+<tr data-code="600000" data-price="9.78" data-board="上海主板" data-industry="J66货币金融服务" ><td><input type="checkbox" class="check" data-code="600000" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600000.html')">600000</a></td><td>浦发银行</td><td>上海主板</td><td>J66货币金融服务</td><td class="conf-high">62</td><td class="tag-mod">准突破</td><td><span title="03-04(下影)">1</span></td><td>1.82</td><td>9.780</td><td>161755557</td><td>88874018</td></tr>
+<tr data-code="601126" data-price="52.19" data-board="上海主板" data-industry="C38电气机械和器材制造业" ><td><input type="checkbox" class="check" data-code="601126" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh601126.html')">601126</a></td><td>四方股份</td><td>上海主板</td><td>C38电气机械和器材制造业</td><td class="conf-high">62</td><td class="tag-mod">准突破</td><td><span title="01-19(涨停),01-20(下影)">2</span></td><td>1.32</td><td>52.190</td><td>33800478</td><td>25688470</td></tr>
+<tr data-code="002358" data-price="9.12" data-board="深圳主板" data-industry="C38电气机械和器材制造业" ><td><input type="checkbox" class="check" data-code="002358" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz002358.html')">002358</a></td><td>森源电气</td><td>深圳主板</td><td>C38电气机械和器材制造业</td><td class="conf-high">61</td><td class="tag-mod">准突破</td><td><span title="01-13(上影),01-28(下影)">2</span></td><td>1.42</td><td>9.120</td><td>145125642</td><td>102415943</td></tr>
+<tr data-code="600495" data-price="4.72" data-board="上海主板" data-industry="C37铁路、船舶、航空航天和其他运输设备制造业" ><td><input type="checkbox" class="check" data-code="600495" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600495.html')">600495</a></td><td>晋西车轴</td><td>上海主板</td><td>C37铁路、船舶、航空航天和其他运输设备制造业</td><td class="conf-high">61</td><td class="tag-mod">准突破</td><td><span title="01-09(下影),03-02(下影)">2</span></td><td>1.54</td><td>4.720</td><td>26111228</td><td>17005643</td></tr>
+<tr data-code="300765" data-price="30.41" data-board="创业板" data-industry="C14食品制造业" ><td><input type="checkbox" class="check" data-code="300765" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300765.html')">300765</a></td><td>新诺威</td><td>创业板</td><td>C14食品制造业</td><td class="conf-high">60</td><td class="tag-mod">准突破</td><td><span title="12-23(涨停),01-28(涨停)">2</span></td><td>1.25</td><td>30.410</td><td>10546075</td><td>8417752</td></tr>
+<tr data-code="603301" data-price="92.55" data-board="上海主板" data-industry="C27医药制造业" ><td><input type="checkbox" class="check" data-code="603301" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh603301.html')">603301</a></td><td>振德医疗</td><td>上海主板</td><td>C27医药制造业</td><td class="">57</td><td class="tag-mod">准突破</td><td><span title="01-26(下影),02-09(涨停)">2</span></td><td>1.18</td><td>92.550</td><td>4099673</td><td>3488683</td></tr>
+<tr data-code="001965" data-price="9.61" data-board="其他" data-industry="G54道路运输业" ><td><input type="checkbox" class="check" data-code="001965" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz001965.html')">001965</a></td><td>招商公路</td><td>其他</td><td>G54道路运输业</td><td class="">56</td><td class="tag-mod">准突破</td><td><span title="01-26(下影)">1</span></td><td>1.66</td><td>9.610</td><td>28846257</td><td>17404565</td></tr>
+<tr data-code="600377" data-price="12.03" data-board="上海主板" data-industry="G54道路运输业" ><td><input type="checkbox" class="check" data-code="600377" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600377.html')">600377</a></td><td>宁沪高速</td><td>上海主板</td><td>G54道路运输业</td><td class="">56</td><td class="tag-mod">准突破</td><td><span title="01-28(上影),02-02(下影)">2</span></td><td>1.28</td><td>12.030</td><td>13566664</td><td>10607857</td></tr>
+<tr data-code="000591" data-price="6.07" data-board="深圳主板" data-industry="D44电力、热力生产和供应业" ><td><input type="checkbox" class="check" data-code="000591" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000591.html')">000591</a></td><td>太阳能</td><td>深圳主板</td><td>D44电力、热力生产和供应业</td><td class="">55</td><td class="tag-mod">准突破</td><td><span title="01-14(涨停),01-20(下影)">2</span></td><td>1.15</td><td>6.070</td><td>184510464</td><td>160184288</td></tr>
+<tr data-code="301578" data-price="35.6" data-board="创业板" data-industry="C39计算机、通信和其他电子设备制造业" ><td><input type="checkbox" class="check" data-code="301578" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301578.html')">301578</a></td><td>辰奕智能</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td class="">55</td><td class="tag-mod">准突破</td><td><span title="03-04(上影)">1</span></td><td>1.52</td><td>35.600</td><td>1701833</td><td>1119724</td></tr>
+<tr data-code="600180" data-price="3.64" data-board="上海主板" data-industry="F51批发业" ><td><input type="checkbox" class="check" data-code="600180" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600180.html')">600180</a></td><td>瑞茂通</td><td>上海主板</td><td>F51批发业</td><td class="">53</td><td class="tag-mod">准突破</td><td><span title="12-25(下影),01-30(上影)">2</span></td><td>1.20</td><td>3.640</td><td>18963642</td><td>15810158</td></tr>
+<tr data-code="300215" data-price="10.72" data-board="创业板" data-industry="M74专业技术服务业" ><td><input type="checkbox" class="check" data-code="300215" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300215.html')">300215</a></td><td>电科院</td><td>创业板</td><td>M74专业技术服务业</td><td class="">52</td><td class="tag-mod">准突破</td><td><span title="01-16(涨停)">1</span></td><td>1.31</td><td>10.720</td><td>76319925</td><td>58471349</td></tr>
+<tr data-code="301082" data-price="19.76" data-board="创业板" data-industry="C38电气机械和器材制造业" ><td><input type="checkbox" class="check" data-code="301082" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301082.html')">301082</a></td><td>久盛电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td class="">52</td><td class="tag-mod">准突破</td><td><span title="12-23(上影),12-24(下影)">2</span></td><td>1.19</td><td>19.760</td><td>8146130</td><td>6853625</td></tr>
+<tr data-code="688543" data-price="81.57" data-board="科创板" data-industry="C37铁路、船舶、航空航天和其他运输设备制造业" ><td><input type="checkbox" class="check" data-code="688543" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh688543.html')">688543</a></td><td>国科军工</td><td>科创板</td><td>C37铁路、船舶、航空航天和其他运输设备制造业</td><td class="">52</td><td class="tag-mod">准突破</td><td><span title="01-05(下影)">1</span></td><td>1.56</td><td>81.570</td><td>22369273</td><td>14353166</td></tr>
+<tr data-code="000933" data-price="36.28" data-board="深圳主板" data-industry="C32有色金属冶炼和压延加工业" ><td><input type="checkbox" class="check" data-code="000933" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000933.html')">000933</a></td><td>神火股份</td><td>深圳主板</td><td>C32有色金属冶炼和压延加工业</td><td class="">49</td><td class="tag-mod">准突破</td><td><span title="01-05(上影)">1</span></td><td>1.37</td><td>36.280</td><td>67498503</td><td>49283142</td></tr>
+<tr data-code="688603" data-price="90.12" data-board="科创板" data-industry="C39计算机、通信和其他电子设备制造业" ><td><input type="checkbox" class="check" data-code="688603" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh688603.html')">688603</a></td><td>天承科技</td><td>科创板</td><td>C39计算机、通信和其他电子设备制造业</td><td class="">48</td><td class="tag-mod">准突破</td><td><span title="01-08(下影),03-03(上影)">2</span></td><td>1.09</td><td>90.120</td><td>4968915</td><td>4539795</td></tr>
+<tr data-code="601169" data-price="5.4" data-board="上海主板" data-industry="J66货币金融服务" ><td><input type="checkbox" class="check" data-code="601169" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh601169.html')">601169</a></td><td>北京银行</td><td>上海主板</td><td>J66货币金融服务</td><td class="">47</td><td class="tag-mod">准突破</td><td><span title="01-28(上影)">1</span></td><td>1.30</td><td>5.400</td><td>187279461</td><td>144092202</td></tr>
+<tr data-code="688611" data-price="60.2" data-board="科创板" data-industry="C38电气机械和器材制造业" ><td><input type="checkbox" class="check" data-code="688611" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh688611.html')">688611</a></td><td>杭州柯林</td><td>科创板</td><td>C38电气机械和器材制造业</td><td class="">43</td><td class="tag-mod">准突破</td><td><span title="12-23(下影)">1</span></td><td>1.34</td><td>60.200</td><td>1649409</td><td>1230875</td></tr>
+<tr data-code="605577" data-price="12.7" data-board="上海主板" data-industry="R86新闻和出版业" ><td><input type="checkbox" class="check" data-code="605577" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh605577.html')">605577</a></td><td>龙版传媒</td><td>上海主板</td><td>R86新闻和出版业</td><td class="">39</td><td class="tag-mod">准突破</td><td><span title="12-30(下影)">1</span></td><td>1.24</td><td>12.700</td><td>4517400</td><td>3651867</td></tr>
+<tr data-code="000679" data-price="7.03" data-board="深圳主板" data-industry="F52零售业" ><td><input type="checkbox" class="check" data-code="000679" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000679.html')">000679</a></td><td>大连友谊</td><td>深圳主板</td><td>F52零售业</td><td class="">38</td><td class="tag-mod">准突破</td><td><span title="02-06(下影)">1</span></td><td>1.20</td><td>7.030</td><td>6233900</td><td>5181821</td></tr>
+<tr data-code="600692" data-price="7.87" data-board="上海主板" data-industry="K70房地产业" ><td><input type="checkbox" class="check" data-code="600692" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600692.html')">600692</a></td><td>亚通股份</td><td>上海主板</td><td>K70房地产业</td><td class="">38</td><td class="tag-mod">准突破</td><td><span title="12-30(下影)">1</span></td><td>1.22</td><td>7.870</td><td>9258588</td><td>7600552</td></tr>
+<tr data-code="688121" data-price="11.72" data-board="科创板" data-industry="C35专用设备制造业" ><td><input type="checkbox" class="check" data-code="688121" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh688121.html')">688121</a></td><td>卓然股份</td><td>科创板</td><td>C35专用设备制造业</td><td class="">38</td><td class="tag-mod">准突破</td><td><span title="03-02(下影)">1</span></td><td>1.21</td><td>11.720</td><td>5451848</td><td>4487120</td></tr>
+<tr data-code="600346" data-price="25.38" data-board="上海主板" data-industry="C26化学原料和化学制品制造业" ><td><input type="checkbox" class="check" data-code="600346" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600346.html')">600346</a></td><td>恒力石化</td><td>上海主板</td><td>C26化学原料和化学制品制造业</td><td class="">37</td><td class="tag-mod">准突破</td><td><span title="12-23(下影)">1</span></td><td>1.19</td><td>25.380</td><td>81022388</td><td>68224438</td></tr>
+<tr data-code="001258" data-price="8.17" data-board="其他" data-industry="D44电力、热力生产和供应业" ><td><input type="checkbox" class="check" data-code="001258" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz001258.html')">001258</a></td><td>立新能源</td><td>其他</td><td>D44电力、热力生产和供应业</td><td class="">36</td><td class="tag-mod">准突破</td><td><span title="01-07(下影)">1</span></td><td>1.17</td><td>8.170</td><td>23188900</td><td>19852937</td></tr>
+<tr data-code="301321" data-price="23.03" data-board="创业板" data-industry="C39计算机、通信和其他电子设备制造业" ><td><input type="checkbox" class="check" data-code="301321" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301321.html')">301321</a></td><td>翰博高新</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td class="">34</td><td class="tag-mod">准突破</td><td><span title="01-08(下影)">1</span></td><td>1.12</td><td>23.030</td><td>6231107</td><td>5558202</td></tr>
+<tr data-code="600865" data-price="12.29" data-board="上海主板" data-industry="F52零售业" ><td><input type="checkbox" class="check" data-code="600865" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sh600865.html')">600865</a></td><td>百大集团</td><td>上海主板</td><td>F52零售业</td><td class="">34</td><td class="tag-mod">准突破</td><td><span title="02-09(下影)">1</span></td><td>1.11</td><td>12.290</td><td>10017400</td><td>9021787</td></tr>
+<tr data-code="002403" data-price="11.14" data-board="深圳主板" data-industry="C33金属制品业" ><td><input type="checkbox" class="check" data-code="002403" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz002403.html')">002403</a></td><td>爱仕达</td><td>深圳主板</td><td>C33金属制品业</td><td class="">33</td><td class="tag-mod">准突破</td><td><span title="01-14(下影)">1</span></td><td>1.08</td><td>11.140</td><td>4701228</td><td>4340193</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="right-header">
+        <span id="stockTitle">点击左侧股票代码查看详情</span>
+        <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+      </div>
+      <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+      <div class="iframe-wrapper" id="frameWrapper" style="display:none">
+        <iframe id="stockFrame" class="stock-frame"></iframe>
+      </div>
+    </div>
+  </div>
+  <script>
+    const STORAGE_KEY = 'volupxyangxshipan_准突破';
+  </script>
+  <script src="assets/common_detail.js"></script>
+</body>
+</html>

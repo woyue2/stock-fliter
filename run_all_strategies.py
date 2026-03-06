@@ -185,11 +185,12 @@ def build_steps(
     limit: Optional[int],
     low_mem_mode: bool = False,
     shared_raw_dir: Optional[str] = None,
+    test: bool = False,
 ) -> List[Step]:
     """根据参数构建需要执行的步骤列表。"""
     steps: List[Step] = []
 
-    # 是否处于“静默模式”：由 NO_BROWSER 环境变量控制
+    effective_limit = 10 if test and not limit else limit
     browser_silent = os.getenv("NO_BROWSER", "").lower() in {"1", "true", "yes"}
 
     # 1. 更新数据 (默认极速快照模式，基于 SQLite)
@@ -226,13 +227,13 @@ def build_steps(
         if browser_silent:
             cmd.append("--no-open")
         cmd.extend(end_date_args)
-        if limit:
-            cmd.extend(["--limit", str(limit)])
+        if effective_limit:
+            cmd.extend(["--limit", str(effective_limit)])
         steps.append(
             Step(
-                name="TD分析 (check-td)",
+                name="TD分析 (check-td--有一点点用)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-td",
+                workdir=PROJECT_ROOT / "check-td--有一点点用",
                 group="analysis",
                 low_mem_mode=low_mem_mode,
                 shared_raw_dir=shared_raw_dir
@@ -242,8 +243,8 @@ def build_steps(
     # 3. MA x RSI x 6U1D 动量分析
     if not skip_maxrsix6u1d:
         cmd = [sys.executable, "main.py", *end_date_args]
-        if limit:
-            cmd.extend(["--limit", str(limit)])
+        if effective_limit:
+            cmd.extend(["--limit", str(effective_limit)])
         steps.append(
             Step(
                 name="MAxRSIx6U1D分析 (check-maxrsix6u1d)",
@@ -258,8 +259,8 @@ def build_steps(
     # 4. TD x MACD x Volume 指标组合分析
     if not skip_tdxmacdxvolume:
         cmd = [sys.executable, "main.py", *end_date_args]
-        if limit:
-            cmd.extend(["--limit", str(limit)])
+        if effective_limit:
+            cmd.extend(["--limit", str(effective_limit)])
         steps.append(
             Step(
                 name="TDxMACDxVolume分析 (check-tdxmacdxvolume)",
@@ -275,15 +276,15 @@ def build_steps(
     # 4.5 VolUp x Yang x Shipan 动量分析
     if not skip_volupxyangxshipan:
         cmd = [sys.executable, "main.py", *end_date_args]
-        if limit:
-            cmd.extend(["--limit", str(limit)])
+        if effective_limit:
+            cmd.extend(["--limit", str(effective_limit)])
         if browser_silent:
             cmd.append("--no-open")
         steps.append(
             Step(
-                name="VolUp x Yang x Shipan 分析 (check-volupxyangxshipan)",
+                name="VolUp x Yang x Shipan 分析 (check-volupxyangxshipan--有用)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-volupxyangxshipan",
+                workdir=PROJECT_ROOT / "check-volupxyangxshipan--有用",
                 group="analysis",
                 low_mem_mode=low_mem_mode,
                 shared_raw_dir=shared_raw_dir
@@ -382,6 +383,11 @@ def parse_args() -> argparse.Namespace:
         help="分析截止日期 (YYYY-MM-DD)，会传递给支持该参数的模块",
     )
     parser.add_argument(
+        "--test",
+        action="store_true",
+        help="测试模式：每个模块只处理少量股票",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -448,10 +454,10 @@ def interactive_prompt(args: argparse.Namespace) -> None:
             args.no_server_optimization = True
 
     print("\n[步骤 2] 分析环境配置完成。以下是可用的策略模块：")
-    print("[1] TD分析 (check-td)")
+    print("[1] TD分析 (check-td--有一点点用)")
     print("[2] MAxRSIx6U1D 分析 (check-maxrsix6u1d)")
     print("[3] TDxMACDxVolume 分析 (check-tdxmacdxvolume)")
-    print("[4] VolUp x Yang x Shipan 分析 (check-volupxyangxshipan)")
+    print("[4] VolUp x Yang x Shipan 分析 (check-volupxyangxshipan--有用)")
     print("[5] 主力强度 A*B*C 分析 (check-zhulistrength)")
     print("\n有不需要执行的模组吗？(默认全跑，多线程并行)")
     ans_skip = input("👉 请输入要【跳过】的序号组合（比如 '23' 跳过稳步和组合，直接回车代表全跑）: ").strip()
@@ -484,7 +490,7 @@ def main() -> int:
         args.skip_get_data, args.skip_td, args.skip_maxrsix6u1d, 
         args.skip_tdxmacdxvolume, args.skip_volupxyangxshipan,
         args.skip_zhulistrength,
-        args.get_minutes
+        args.get_minutes, args.test
     ])
     if not is_explicit and sys.stdin.isatty():
         interactive_prompt(args)
@@ -506,7 +512,8 @@ def main() -> int:
         end_date=args.end_date,
         limit=args.limit,
         low_mem_mode=args.no_server_optimization or is_low_memory(),
-        shared_raw_dir=None # 彻底废弃 CSV 预载模式
+        shared_raw_dir=None, # 彻底废弃 CSV 预载模式
+        test=args.test
     )
 
     if args.use_history and not args.skip_get_data:

@@ -2,17 +2,16 @@
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
 
-## 概述
-主力强度与资金效率分析模块 (A*B*C Logic)。
-基于三层博弈：
-- A (主力强度)：资金进攻意愿
-- B (散户净额)：市场背离验证（真实验证）
-- C (资金效率/成交容量)：预期效果过滤
+该模块用于解析通达信、同花顺等导出的数据，计算真实的主力强度（A）、散户行为（B）、资金效率（C），并进行策略验证（回测、对比）。
 
 ## 成员清单
-- `main.py`: CLI 入口 [INPUT: Args -> Config / OUTPUT: Execution Trigger]
-- `pipeline.py`: 调度中枢 [INPUT: Config -> Trigger / OUTPUT: File I/O]
-- `data_loader.py`: 数据装载 [INPUT: SQLite (daily_fund_flow, daily_ohlcv) -> DataFrame / OUTPUT: Standardized DF]
-- `seed_mock_data.py`: 测试数据种子 [INPUT: Mock Data -> SQLite / OUTPUT: Database seeded]
-- `analyzers/strength_analyzer.py`: 核心分析 [INPUT: DataFrame -> Logic / OUTPUT: Analyzed Flags]
-- `reporters/markdown_reporter.py`: 报告生成 [INPUT: Result DF -> Markdown / OUTPUT: .md File]
+
+- `calc_accuracy.py` - 计算新老策略预期命中率
+- `check_columns.py` - 检查数据表字段分布
+- `compare.py` - 对比原预期与新预期的差异
+- `convert_and_compare.py` - 批量转换并提取表头
+- `convert_ths.py` - 转换同花顺导出的特殊数据
+- `run_strategy.py` - 核心逻辑，运行 A*B*C 判定规则
+- `verify_data.py` - 验证公式数值正确性
+- `calculator.html` - 网页版简易策略评估器
+- `calculator.js` - 网页版简易策略评估器的计算逻辑

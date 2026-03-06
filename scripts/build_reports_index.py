@@ -16,9 +16,9 @@ import webbrowser
 # 模块显示名 -> output 相对路径（相对项目根）
 CONFIG = [
     ("MAxRSIx6U1D", "check-maxrsix6u1d/output"),
-    ("TD分析", "check-td/output"),
+    ("TD分析", "check-td--有一点点用/output"),
     ("TDxMACDxVolume", "check-tdxmacdxvolume/output"),  # 新增
-    ("VolUp x Yang x Shipan", "check-volupxyangxshipan/output"),
+    ("VolUp x Yang x Shipan", "check-volupxyangxshipan--有用/output"),
     ("主力强度分析", "check-zhulistrength/output"),
 ]
 

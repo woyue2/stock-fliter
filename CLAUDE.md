@@ -36,8 +36,8 @@ python fetch_minute_akshare.py --all --realtime  # Real-time minute data
 
 **Analysis Modules** (read from `get-data/data/raw/`)
 ```bash
-# TD Bottom Analysis (TD Sequential (check-td) 9/8/7 bottom signals)
-cd check-td
+# TD Bottom Analysis (TD Sequential (check-td--有一点点用) 9/8/7 bottom signals)
+cd check-td--有一点点用
 python main.py --skip-fetch       # Use local data
 python main.py --test --skip-fetch
 
@@ -47,7 +47,7 @@ python main.py
 python main.py --analyzers 134    # Specific analyzer combo
 
 # Volume Confirmation (yesterday breakout + today bullish)
-cd check-volupxyangxshipan
+cd check-volupxyangxshipan--有用
 python main.py --test --no-open
 ```
 
@@ -120,14 +120,15 @@ check-<strategy>/
 
 | Module | Strategy | Key Metrics |
 |--------|----------|-------------|
-| check-td | TD Sequential | TD9/TD8/TD7 multi-period resonance |
+| check-td--有一点点用 | TD Sequential | TD9/TD8/TD7 multi-period resonance |
 | check-maxrsix6u1d | MAxRSIx6U1D | MA alignment, RSI filtering, 6U1D momentum |
 | check-tdxmacdxvolume | TDxMACDxVolume | 21-strategy combination: TD/MACD/volume/steady |
-| check-volupxyangxshipan | VolUp x Yang x Shipan | Yesterday volume > 3d avg, today bullish |
+| check-volupxyangxshipan--有用 | VolUp x Yang x Shipan | Yesterday volume > 3d avg, today bullish |
 | check-volratioxturnxpctchg | VolRatio x Turn x PctChg | 量比/换手率/涨跌幅 6条件筛选 |
 | check-zhulistrength | Zhuli Strength | 主力强度/散户背离/资金效率（主力与散户博弈） |
 | analyze-sector-rotation | Sector Rotation | 板块强度/资金流/分时合成（SQLite驱动） |
 | util/minute_analysis | Intraday pattern algorithms | MinutePatternAnalyzer, SentimentEngine |
+| to-buy--有用 | Trade Records | 实盘记录与买入建议 |
 
 ### Database
 

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VolUp x Yang x Shipan报告 - 全部命中</title>
+  <link rel="stylesheet" href="assets/common_detail.css">
+</head>
+<body>
+  <div class="layout">
+    <div class="left-panel">
+      <div class="header">
+        <div>
+          <span class="title">VolUp x Yang x Shipan报告 - 全部命中</span>
+          <span class="count" id="visibleCount">共 8 只</span>
+        </div>
+        <div class="toolbar">
+          <span class="checked-info" id="checkedInfo">已选 0</span>
+          <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
+          <button id="hideChuangKeBtn" class="btn active" onclick="toggleHideChuangKe()">隐藏创/科</button>
+          <button class="btn" onclick="selectAll()">全选</button>
+          <button class="btn" onclick="clearAll()">清除</button>
+          <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+          <div class="meta">数据日期: 2026-03-04</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stats-group">
+          <span class="stats-label">板块:</span>
+          <span id="boardStatsContainer"><span class="tag">深圳主板 8</span></span>
+        </div>
+        <div class="stats-group">
+          <span class="stats-label">行业:</span>
+          <span id="industryStatsContainer"><span class="tag">C39计算机、通信和其他电子设备制造业 3</span>
+<span class="tag">F51批发业 2</span>
+<span class="tag">N77生态保护和环境治理业 1</span>
+<span class="tag">K70房地产业 1</span>
+<span class="tag">C38电气机械和器材制造业 1</span></span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>代码</th>
+              <th>名称</th>
+              <th>板块</th>
+              <th>行业</th>
+              <th>信心分</th>
+              <th>标签</th>
+              <th>试盘</th>
+              <th>量比</th>
+              <th>今天收盘</th>
+              <th>昨天量</th>
+              <th>前3日均量</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr data-code="000035" data-price="7.57" data-board="深圳主板" data-industry="N77生态保护和环境治理业" ><td><input type="checkbox" class="check" data-code="000035" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000035.html')">000035</a></td><td>中国天楹</td><td>深圳主板</td><td>N77生态保护和环境治理业</td><td class="conf-high">90</td><td class="tag-strong">多重试盘</td><td><span title="01-21(下影),01-26(下影),02-26(下影)">3</span></td><td>4.06</td><td>7.570</td><td>341316347</td><td>83973973</td></tr>
+<tr data-code="000070" data-price="19.21" data-board="深圳主板" data-industry="C39计算机、通信和其他电子设备制造业" ><td><input type="checkbox" class="check" data-code="000070" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000070.html')">000070</a></td><td>特发信息</td><td>深圳主板</td><td>C39计算机、通信和其他电子设备制造业</td><td class="conf-high">60</td><td class="tag-mod">准突破</td><td><span title="02-05(下影),02-09(下影)">2</span></td><td>1.52</td><td>19.210</td><td>166037909</td><td>109308198</td></tr>
+<tr data-code="000019" data-price="7.46" data-board="深圳主板" data-industry="F51批发业" ><td><input type="checkbox" class="check" data-code="000019" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000019.html')">000019</a></td><td>深粮控股</td><td>深圳主板</td><td>F51批发业</td><td class="">54</td><td class="tag-plain">纯量价</td><td>0</td><td>1.85</td><td>7.460</td><td>24013298</td><td>12996709</td></tr>
+<tr data-code="000063" data-price="36.97" data-board="深圳主板" data-industry="C39计算机、通信和其他电子设备制造业" ><td><input type="checkbox" class="check" data-code="000063" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000063.html')">000063</a></td><td>中兴通讯</td><td>深圳主板</td><td>C39计算机、通信和其他电子设备制造业</td><td class="">52</td><td class="tag-mod">准突破</td><td><span title="01-14(下影)">1</span></td><td>1.56</td><td>36.970</td><td>144149266</td><td>92502467</td></tr>
+<tr data-code="000066" data-price="15.18" data-board="深圳主板" data-industry="C39计算机、通信和其他电子设备制造业" ><td><input type="checkbox" class="check" data-code="000066" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000066.html')">000066</a></td><td>中国长城</td><td>深圳主板</td><td>C39计算机、通信和其他电子设备制造业</td><td class="">47</td><td class="tag-mod">准突破</td><td><span title="01-09(上影)">1</span></td><td>1.31</td><td>15.180</td><td>146729064</td><td>112190705</td></tr>
+<tr data-code="000065" data-price="13.46" data-board="深圳主板" data-industry="F51批发业" ><td><input type="checkbox" class="check" data-code="000065" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000065.html')">000065</a></td><td>北方国际</td><td>深圳主板</td><td>F51批发业</td><td class="">39</td><td class="tag-plain">纯量价</td><td>0</td><td>1.48</td><td>13.460</td><td>42839451</td><td>28961386</td></tr>
+<tr data-code="000007" data-price="13.17" data-board="深圳主板" data-industry="K70房地产业" ><td><input type="checkbox" class="check" data-code="000007" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000007.html')">000007</a></td><td>全新好</td><td>深圳主板</td><td>K70房地产业</td><td class="">35</td><td class="tag-plain">纯量价</td><td>0</td><td>1.39</td><td>13.170</td><td>13082451</td><td>9435089</td></tr>
+<tr data-code="000049" data-price="25.13" data-board="深圳主板" data-industry="C38电气机械和器材制造业" ><td><input type="checkbox" class="check" data-code="000049" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz000049.html')">000049</a></td><td>德赛电池</td><td>深圳主板</td><td>C38电气机械和器材制造业</td><td class="">31</td><td class="tag-plain">纯量价</td><td>0</td><td>1.28</td><td>25.130</td><td>7073617</td><td>5547649</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="right-header">
+        <span id="stockTitle">点击左侧股票代码查看详情</span>
+        <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+      </div>
+      <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+      <div class="iframe-wrapper" id="frameWrapper" style="display:none">
+        <iframe id="stockFrame" class="stock-frame"></iframe>
+      </div>
+    </div>
+  </div>
+  <script>
+    const STORAGE_KEY = 'volupxyangxshipan_全部命中';
+  </script>
+  <script src="assets/common_detail.js"></script>
+</body>
+</html>

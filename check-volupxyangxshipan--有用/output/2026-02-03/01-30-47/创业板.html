@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VolUp x Yang x Shipan报告 - 创业板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, "Microsoft YaHei", sans-serif;
+        font-size: 13px;
+        color: #333;
+        background: #fff;
+        height: 100vh;
+        overflow: hidden;
+    }
+    .layout { display: flex; height: 100vh; }
+    .left-panel {
+        width: 60%;
+        min-width: 520px;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #e0e0e0;
+    }
+    .right-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #fafafa;
+    }
+    .header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .search {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 150px;
+        font-size: 12px;
+    }
+    .btn {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .btn:hover { background: #f5f5f5; }
+    .btn.active {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-color: #1976d2;
+        font-weight: bold;
+    }
+    .stats {
+        padding: 12px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .stats-group {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .stats-label {
+        font-size: 12px;
+        color: #999;
+        margin-right: 4px;
+    }
+    .tag {
+        font-size: 11px;
+        padding: 2px 6px;
+        background: #f0f0f0;
+        border-radius: 3px;
+    }
+    .title {
+        font-size: 16px;
+        font-weight: 600;
+    }
+    .count {
+        color: #666;
+        margin-left: 8px;
+    }
+    .meta {
+        color: #666;
+        font-size: 12px;
+    }
+    .table-wrap {
+        flex: 1;
+        overflow: auto;
+    }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid #eee; padding: 10px 12px; text-align: left; }
+    th { background: #fafafa; font-weight: 500; position: sticky; top: 0; z-index: 10; }
+    tr:nth-child(even) { background: #fafafa; }
+    tr:hover { background: #f9f9f9; }
+    tr.checked { background: #e8f5e9; }
+    .code {
+        color: #1976d2;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .code:hover { text-decoration: underline; }
+    .checked-info {
+        font-size: 12px;
+        color: #4caf50;
+    }
+    .right-header {
+        padding: 10px 16px;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 12px;
+        color: #666;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .open-new {
+        font-size: 11px;
+        color: #1976d2;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .open-new:hover { text-decoration: underline; }
+    .placeholder {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+    }
+    /* iframe 居中包装器 */
+    .iframe-wrapper {
+        flex: 1;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+        background: #fff;
+    }
+    .stock-frame {
+        width: 150%;
+        height: 100%;
+        border: none;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="left-panel">
+      <div class="header">
+        <div>
+          <span class="title">VolUp x Yang x Shipan报告 - 创业板</span>
+          <span class="count">共 196 只</span>
+        </div>
+        <div class="toolbar">
+          <span class="checked-info" id="checkedInfo">已选 0</span>
+          <button id="shipanFilterBtn" class="btn" onclick="toggleShipanFilter()">试盘</button>
+          <button id="priceFilterBtn" class="btn active" onclick="togglePriceFilter()">股价 < 10</button>
+          <button class="btn" onclick="selectAll()">全选</button>
+          <button class="btn" onclick="clearAll()">清除</button>
+          <input type="text" class="search" placeholder="搜索..." oninput="filterTable(this.value)">
+          <div class="meta">数据日期: 2026-02-03</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stats-group">
+          <span class="stats-label">板块:</span>
+          <span class="tag">创业板 196</span>
+        </div>
+        <div class="stats-group">
+          <span class="stats-label">行业:</span>
+          <span class="tag">C38电气机械和器材制造业 30</span>
+<span class="tag">C39计算机、通信和其他电子设备制造业 22</span>
+<span class="tag">I65软件和信息技术服务业 18</span>
+<span class="tag">C35专用设备制造业 18</span>
+<span class="tag">C34通用设备制造业 17</span>
+<span class="tag">C26化学原料和化学制品制造业 12</span>
+<span class="tag">C29橡胶和塑料制品业 9</span>
+<span class="tag">M74专业技术服务业 8</span>
+<span class="tag">N77生态保护和环境治理业 7</span>
+<span class="tag">C40仪器仪表制造业 7</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>代码</th>
+              <th>名称</th>
+              <th>板块</th>
+              <th>行业</th>
+              <th>试盘次数</th>
+              <th>今天开盘</th>
+              <th>今天收盘</th>
+              <th>昨天量</th>
+              <th>前2天量</th>
+              <th>前3天量</th>
+              <th>前4天量</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr data-code="300001" data-price="27.52" data-shipan="0"><td><input type="checkbox" class="check" data-code="300001" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300001.html')">300001</a></td><td>特锐德</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>27.520</td><td>27.520</td><td>29567574</td><td>23445945</td><td>21252666</td><td>17988269</td></tr>
+<tr data-code="300040" data-price="6.88" data-shipan="5"><td><input type="checkbox" class="check" data-code="300040" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300040.html')">300040</a></td><td>九洲集团</td><td>创业板</td><td>D44电力、热力生产和供应业</td><td><span title="01-07(下影),01-09(上影),01-14(上影),01-15(下影),01-16(上影)">5</span></td><td>6.880</td><td>6.880</td><td>60508745</td><td>15164866</td><td>15869656</td><td>15070132</td></tr>
+<tr data-code="300050" data-price="5.9" data-shipan="0"><td><input type="checkbox" class="check" data-code="300050" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300050.html')">300050</a></td><td>世纪鼎利</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>5.900</td><td>5.900</td><td>26929882</td><td>14354800</td><td>15040202</td><td>12295200</td></tr>
+<tr data-code="300062" data-price="8.96" data-shipan="0"><td><input type="checkbox" class="check" data-code="300062" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300062.html')">300062</a></td><td>中能电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>8.960</td><td>8.960</td><td>67841037</td><td>30875225</td><td>36271848</td><td>47958383</td></tr>
+<tr data-code="300069" data-price="18.97" data-shipan="3"><td><input type="checkbox" class="check" data-code="300069" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300069.html')">300069</a></td><td>金利华电</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="01-09(下影),01-14(下影),01-15(下影)">3</span></td><td>18.970</td><td>18.970</td><td>5403293</td><td>3166500</td><td>3351800</td><td>4353700</td></tr>
+<tr data-code="300079" data-price="6.15" data-shipan="0"><td><input type="checkbox" class="check" data-code="300079" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300079.html')">300079</a></td><td>数码视讯</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>6.150</td><td>6.150</td><td>85231414</td><td>59837130</td><td>61273574</td><td>37747396</td></tr>
+<tr data-code="300106" data-price="11.28" data-shipan="0"><td><input type="checkbox" class="check" data-code="300106" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300106.html')">300106</a></td><td>西部牧业</td><td>创业板</td><td>C14食品制造业</td><td>0</td><td>11.280</td><td>11.280</td><td>11198649</td><td>9498910</td><td>8326010</td><td>6371850</td></tr>
+<tr data-code="300115" data-price="40.04" data-shipan="0"><td><input type="checkbox" class="check" data-code="300115" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300115.html')">300115</a></td><td>长盈精密</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>40.040</td><td>40.040</td><td>66531872</td><td>60772889</td><td>54155631</td><td>51311044</td></tr>
+<tr data-code="300131" data-price="16.29" data-shipan="0"><td><input type="checkbox" class="check" data-code="300131" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300131.html')">300131</a></td><td>英唐智控</td><td>创业板</td><td>F51批发业</td><td>0</td><td>16.290</td><td>16.290</td><td>99533033</td><td>90017682</td><td>65722908</td><td>63080610</td></tr>
+<tr data-code="300136" data-price="89.47" data-shipan="7"><td><input type="checkbox" class="check" data-code="300136" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300136.html')">300136</a></td><td>信维通信</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td><span title="12-24(涨停),12-25(涨停),12-26(上影),12-29(上影),12-30(上影),12-31(涨停),01-06(下影)">7</span></td><td>89.470</td><td>89.470</td><td>139257303</td><td>120030259</td><td>114407071</td><td>127907648</td></tr>
+<tr data-code="300138" data-price="13.52" data-shipan="0"><td><input type="checkbox" class="check" data-code="300138" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300138.html')">300138</a></td><td>晨光生物</td><td>创业板</td><td>C13农副食品加工业</td><td>0</td><td>13.520</td><td>13.520</td><td>12942529</td><td>10312492</td><td>9441152</td><td>7401666</td></tr>
+<tr data-code="300140" data-price="7.79" data-shipan="0"><td><input type="checkbox" class="check" data-code="300140" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300140.html')">300140</a></td><td>节能环境</td><td>创业板</td><td>N77生态保护和环境治理业</td><td>0</td><td>7.790</td><td>7.790</td><td>61679546</td><td>26101721</td><td>23408750</td><td>19682662</td></tr>
+<tr data-code="300141" data-price="15.94" data-shipan="4"><td><input type="checkbox" class="check" data-code="300141" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300141.html')">300141</a></td><td>和顺电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="12-25(涨停),12-26(下影),01-05(上影),01-07(涨停)">4</span></td><td>15.940</td><td>15.940</td><td>28315550</td><td>13845494</td><td>11344900</td><td>13392700</td></tr>
+<tr data-code="300144" data-price="8.76" data-shipan="0"><td><input type="checkbox" class="check" data-code="300144" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300144.html')">300144</a></td><td>宋城演艺</td><td>创业板</td><td>R88文化艺术业</td><td>0</td><td>8.760</td><td>8.760</td><td>127322503</td><td>120580749</td><td>48269735</td><td>34738257</td></tr>
+<tr data-code="300146" data-price="12.12" data-shipan="0"><td><input type="checkbox" class="check" data-code="300146" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300146.html')">300146</a></td><td>汤臣倍健</td><td>创业板</td><td>C14食品制造业</td><td>0</td><td>12.120</td><td>12.120</td><td>20796384</td><td>20295763</td><td>20181233</td><td>15900100</td></tr>
+<tr data-code="300149" data-price="10.84" data-shipan="1"><td><input type="checkbox" class="check" data-code="300149" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300149.html')">300149</a></td><td>睿智医药</td><td>创业板</td><td>M73研究和试验发展</td><td><span title="01-06(下影)">1</span></td><td>10.840</td><td>10.840</td><td>14831083</td><td>11505620</td><td>11780527</td><td>11673984</td></tr>
+<tr data-code="300150" data-price="5.91" data-shipan="0"><td><input type="checkbox" class="check" data-code="300150" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300150.html')">300150</a></td><td>世纪瑞尔</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>5.910</td><td>5.910</td><td>27388126</td><td>12770256</td><td>15027100</td><td>13126100</td></tr>
+<tr data-code="300169" data-price="7.2" data-shipan="0"><td><input type="checkbox" class="check" data-code="300169" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300169.html')">300169</a></td><td>天晟新材</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td>0</td><td>7.200</td><td>7.200</td><td>31138100</td><td>9683800</td><td>14472200</td><td>11997900</td></tr>
+<tr data-code="300177" data-price="9.36" data-shipan="0"><td><input type="checkbox" class="check" data-code="300177" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300177.html')">300177</a></td><td>中海达</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>9.360</td><td>9.360</td><td>19910499</td><td>14639316</td><td>15652253</td><td>16430331</td></tr>
+<tr data-code="300187" data-price="5.39" data-shipan="0"><td><input type="checkbox" class="check" data-code="300187" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300187.html')">300187</a></td><td>永清环保</td><td>创业板</td><td>N77生态保护和环境治理业</td><td>0</td><td>5.390</td><td>5.390</td><td>9895100</td><td>9470473</td><td>7854900</td><td>6751100</td></tr>
+<tr data-code="300193" data-price="9.45" data-shipan="0"><td><input type="checkbox" class="check" data-code="300193" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300193.html')">300193</a></td><td>佳士科技</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>9.450</td><td>9.450</td><td>10919640</td><td>9014138</td><td>9363766</td><td>7432060</td></tr>
+<tr data-code="300195" data-price="8.76" data-shipan="0"><td><input type="checkbox" class="check" data-code="300195" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300195.html')">300195</a></td><td>长荣股份</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>8.760</td><td>8.760</td><td>18579100</td><td>10790400</td><td>10364600</td><td>12659200</td></tr>
+<tr data-code="300213" data-price="9.43" data-shipan="0"><td><input type="checkbox" class="check" data-code="300213" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300213.html')">300213</a></td><td>佳讯飞鸿</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>9.430</td><td>9.430</td><td>21990500</td><td>19308606</td><td>20420300</td><td>21841400</td></tr>
+<tr data-code="300215" data-price="9.82" data-shipan="0"><td><input type="checkbox" class="check" data-code="300215" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300215.html')">300215</a></td><td>电科院</td><td>创业板</td><td>M74专业技术服务业</td><td>0</td><td>9.820</td><td>9.820</td><td>97638766</td><td>28643373</td><td>36457647</td><td>46404849</td></tr>
+<tr data-code="300217" data-price="5.71" data-shipan="0"><td><input type="checkbox" class="check" data-code="300217" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300217.html')">300217</a></td><td>东方电热</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>5.710</td><td>5.710</td><td>113157057</td><td>41185600</td><td>49948498</td><td>61481177</td></tr>
+<tr data-code="300220" data-price="15.71" data-shipan="0"><td><input type="checkbox" class="check" data-code="300220" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300220.html')">300220</a></td><td>金运激光</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>15.710</td><td>15.710</td><td>3624480</td><td>3000304</td><td>3005400</td><td>2661440</td></tr>
+<tr data-code="300227" data-price="12.75" data-shipan="1"><td><input type="checkbox" class="check" data-code="300227" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300227.html')">300227</a></td><td>光韵达</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td><span title="01-07(下影)">1</span></td><td>12.750</td><td>12.750</td><td>76335293</td><td>34157235</td><td>35668560</td><td>41786908</td></tr>
+<tr data-code="300234" data-price="5.9" data-shipan="0"><td><input type="checkbox" class="check" data-code="300234" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300234.html')">300234</a></td><td>开尔新材</td><td>创业板</td><td>C30非金属矿物制品业</td><td>0</td><td>5.900</td><td>5.900</td><td>18547548</td><td>12583310</td><td>11426762</td><td>8922500</td></tr>
+<tr data-code="300255" data-price="50.18" data-shipan="0"><td><input type="checkbox" class="check" data-code="300255" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300255.html')">300255</a></td><td>常山药业</td><td>创业板</td><td>C27医药制造业</td><td>0</td><td>50.180</td><td>50.180</td><td>36132072</td><td>27736598</td><td>16955532</td><td>16283896</td></tr>
+<tr data-code="300263" data-price="11.57" data-shipan="2"><td><input type="checkbox" class="check" data-code="300263" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300263.html')">300263</a></td><td>隆华科技</td><td>创业板</td><td>C34通用设备制造业</td><td><span title="12-26(下影),12-31(下影)">2</span></td><td>11.570</td><td>11.570</td><td>81721553</td><td>59926047</td><td>56205537</td><td>52735049</td></tr>
+<tr data-code="300264" data-price="6.59" data-shipan="0"><td><input type="checkbox" class="check" data-code="300264" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300264.html')">300264</a></td><td>佳创视讯</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>6.590</td><td>6.590</td><td>28924050</td><td>14802853</td><td>19995902</td><td>17613000</td></tr>
+<tr data-code="300265" data-price="16.22" data-shipan="0"><td><input type="checkbox" class="check" data-code="300265" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300265.html')">300265</a></td><td>通光线缆</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>16.220</td><td>16.220</td><td>102078933</td><td>28266715</td><td>32868426</td><td>35974936</td></tr>
+<tr data-code="300276" data-price="8.7" data-shipan="5"><td><input type="checkbox" class="check" data-code="300276" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300276.html')">300276</a></td><td>三丰智能</td><td>创业板</td><td>C35专用设备制造业</td><td><span title="12-22(涨停),12-26(下影),12-29(下影),01-05(下影),01-06(下影)">5</span></td><td>8.700</td><td>8.700</td><td>37914148</td><td>25321046</td><td>28419654</td><td>34911360</td></tr>
+<tr data-code="300281" data-price="7.73" data-shipan="0"><td><input type="checkbox" class="check" data-code="300281" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300281.html')">300281</a></td><td>金明精机</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>7.730</td><td>7.730</td><td>20287500</td><td>8842900</td><td>9611100</td><td>11845300</td></tr>
+<tr data-code="300284" data-price="7.51" data-shipan="0"><td><input type="checkbox" class="check" data-code="300284" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300284.html')">300284</a></td><td>苏交科</td><td>创业板</td><td>M74专业技术服务业</td><td>0</td><td>7.510</td><td>7.510</td><td>14936442</td><td>12304868</td><td>11332340</td><td>9205600</td></tr>
+<tr data-code="300295" data-price="11.49" data-shipan="1"><td><input type="checkbox" class="check" data-code="300295" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300295.html')">300295</a></td><td>三六五网</td><td>创业板</td><td>I64互联网和相关服务</td><td><span title="02-02(下影)">1</span></td><td>11.490</td><td>11.490</td><td>32168248</td><td>9606714</td><td>12073116</td><td>5364625</td></tr>
+<tr data-code="300305" data-price="6.54" data-shipan="0"><td><input type="checkbox" class="check" data-code="300305" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300305.html')">300305</a></td><td>裕兴股份</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td>0</td><td>6.540</td><td>6.540</td><td>9623985</td><td>9177997</td><td>9425800</td><td>8315329</td></tr>
+<tr data-code="300314" data-price="14.3" data-shipan="0"><td><input type="checkbox" class="check" data-code="300314" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300314.html')">300314</a></td><td>戴维医疗</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>14.300</td><td>14.300</td><td>4859612</td><td>4585788</td><td>4537560</td><td>4679900</td></tr>
+<tr data-code="300321" data-price="42.28" data-shipan="0"><td><input type="checkbox" class="check" data-code="300321" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300321.html')">300321</a></td><td>同大股份</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td>0</td><td>42.280</td><td>42.280</td><td>1481249</td><td>1115600</td><td>1326920</td><td>1125100</td></tr>
+<tr data-code="300323" data-price="8.66" data-shipan="0"><td><input type="checkbox" class="check" data-code="300323" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300323.html')">300323</a></td><td>华灿光电</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>8.660</td><td>8.660</td><td>38046900</td><td>30327167</td><td>23547304</td><td>29783407</td></tr>
+<tr data-code="300341" data-price="17.17" data-shipan="0"><td><input type="checkbox" class="check" data-code="300341" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300341.html')">300341</a></td><td>麦克奥迪</td><td>创业板</td><td>C40仪器仪表制造业</td><td>0</td><td>17.170</td><td>17.170</td><td>10019423</td><td>9032492</td><td>7916327</td><td>7773462</td></tr>
+<tr data-code="300342" data-price="56.15" data-shipan="2"><td><input type="checkbox" class="check" data-code="300342" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300342.html')">300342</a></td><td>天银机电</td><td>创业板</td><td>C34通用设备制造业</td><td><span title="12-22(下影),12-24(涨停)">2</span></td><td>56.150</td><td>56.150</td><td>87743154</td><td>61609189</td><td>55827495</td><td>62418898</td></tr>
+<tr data-code="300352" data-price="6.54" data-shipan="0"><td><input type="checkbox" class="check" data-code="300352" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300352.html')">300352</a></td><td>北信源</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>6.540</td><td>6.540</td><td>80764262</td><td>55631210</td><td>55328977</td><td>49086436</td></tr>
+<tr data-code="300357" data-price="27.76" data-shipan="0"><td><input type="checkbox" class="check" data-code="300357" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300357.html')">300357</a></td><td>我武生物</td><td>创业板</td><td>C27医药制造业</td><td>0</td><td>27.760</td><td>27.760</td><td>6308910</td><td>5433090</td><td>4906700</td><td>3971080</td></tr>
+<tr data-code="300360" data-price="17.75" data-shipan="0"><td><input type="checkbox" class="check" data-code="300360" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300360.html')">300360</a></td><td>炬华科技</td><td>创业板</td><td>C40仪器仪表制造业</td><td>0</td><td>17.750</td><td>17.750</td><td>15149897</td><td>13332884</td><td>13174091</td><td>12415525</td></tr>
+<tr data-code="300363" data-price="23.79" data-shipan="0"><td><input type="checkbox" class="check" data-code="300363" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300363.html')">300363</a></td><td>博腾股份</td><td>创业板</td><td>C27医药制造业</td><td>0</td><td>23.790</td><td>23.790</td><td>12738412</td><td>9524528</td><td>9432020</td><td>9604649</td></tr>
+<tr data-code="300390" data-price="48.53" data-shipan="0"><td><input type="checkbox" class="check" data-code="300390" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300390.html')">300390</a></td><td>天华新能</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>48.530</td><td>48.530</td><td>44444317</td><td>36084316</td><td>23720189</td><td>37497161</td></tr>
+<tr data-code="300407" data-price="13.31" data-shipan="0"><td><input type="checkbox" class="check" data-code="300407" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300407.html')">300407</a></td><td>凯发电气</td><td>创业板</td><td>C37铁路、船舶、航空航天和其他运输设备制造业</td><td>0</td><td>13.310</td><td>13.310</td><td>14926213</td><td>10306363</td><td>9805400</td><td>6852000</td></tr>
+<tr data-code="300417" data-price="13.75" data-shipan="0"><td><input type="checkbox" class="check" data-code="300417" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300417.html')">300417</a></td><td>南华仪器</td><td>创业板</td><td>C40仪器仪表制造业</td><td>0</td><td>13.750</td><td>13.750</td><td>7900040</td><td>4428800</td><td>3916000</td><td>3323270</td></tr>
+<tr data-code="300421" data-price="28.78" data-shipan="0"><td><input type="checkbox" class="check" data-code="300421" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300421.html')">300421</a></td><td>力星股份</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>28.780</td><td>28.780</td><td>23081079</td><td>16012704</td><td>16924085</td><td>18820065</td></tr>
+<tr data-code="300422" data-price="5.01" data-shipan="3"><td><input type="checkbox" class="check" data-code="300422" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300422.html')">300422</a></td><td>博世科</td><td>创业板</td><td>N77生态保护和环境治理业</td><td><span title="01-07(下影),01-13(下影),01-16(上影)">3</span></td><td>5.010</td><td>5.010</td><td>9911614</td><td>8015015</td><td>6849513</td><td>6425140</td></tr>
+<tr data-code="300425" data-price="5.27" data-shipan="0"><td><input type="checkbox" class="check" data-code="300425" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300425.html')">300425</a></td><td>中建环能</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>5.270</td><td>5.270</td><td>10955543</td><td>9486068</td><td>7525352</td><td>7510760</td></tr>
+<tr data-code="300426" data-price="8.91" data-shipan="1"><td><input type="checkbox" class="check" data-code="300426" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300426.html')">300426</a></td><td>华智数媒</td><td>创业板</td><td>R87广播、电视、电影和录音制作业</td><td><span title="01-14(上影)">1</span></td><td>8.910</td><td>8.910</td><td>13754200</td><td>10526900</td><td>10911000</td><td>7973000</td></tr>
+<tr data-code="300427" data-price="15.63" data-shipan="0"><td><input type="checkbox" class="check" data-code="300427" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300427.html')">300427</a></td><td>红相股份</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>15.630</td><td>15.630</td><td>126749788</td><td>74098115</td><td>78939539</td><td>77627448</td></tr>
+<tr data-code="300438" data-price="46.75" data-shipan="0"><td><input type="checkbox" class="check" data-code="300438" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300438.html')">300438</a></td><td>鹏辉能源</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>46.750</td><td>46.750</td><td>37126023</td><td>32367424</td><td>25006137</td><td>26489029</td></tr>
+<tr data-code="300442" data-price="88.4" data-shipan="2"><td><input type="checkbox" class="check" data-code="300442" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300442.html')">300442</a></td><td>润泽科技</td><td>创业板</td><td>I65软件和信息技术服务业</td><td><span title="01-08(下影),01-09(涨停)">2</span></td><td>88.400</td><td>88.400</td><td>91082796</td><td>66434158</td><td>86104939</td><td>83084269</td></tr>
+<tr data-code="300444" data-price="15.78" data-shipan="0"><td><input type="checkbox" class="check" data-code="300444" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300444.html')">300444</a></td><td>双杰电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>15.780</td><td>15.780</td><td>167440916</td><td>67259493</td><td>79509594</td><td>98237980</td></tr>
+<tr data-code="300479" data-price="20.93" data-shipan="1"><td><input type="checkbox" class="check" data-code="300479" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300479.html')">300479</a></td><td>神思电子</td><td>创业板</td><td>I65软件和信息技术服务业</td><td><span title="01-05(下影)">1</span></td><td>20.930</td><td>20.930</td><td>15960698</td><td>9303661</td><td>9237555</td><td>7932094</td></tr>
+<tr data-code="300503" data-price="58.35" data-shipan="3"><td><input type="checkbox" class="check" data-code="300503" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300503.html')">300503</a></td><td>昊志机电</td><td>创业板</td><td>C34通用设备制造业</td><td><span title="12-25(涨停),12-26(涨停),12-29(涨停)">3</span></td><td>58.350</td><td>58.350</td><td>32263956</td><td>25312742</td><td>20449311</td><td>26939850</td></tr>
+<tr data-code="300510" data-price="4.48" data-shipan="1"><td><input type="checkbox" class="check" data-code="300510" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300510.html')">300510</a></td><td>金冠股份</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="01-14(上影)">1</span></td><td>4.480</td><td>4.480</td><td>34537564</td><td>22102637</td><td>25099432</td><td>22004003</td></tr>
+<tr data-code="300517" data-price="12.12" data-shipan="0"><td><input type="checkbox" class="check" data-code="300517" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300517.html')">300517</a></td><td>海波重科</td><td>创业板</td><td>E48土木工程建筑业</td><td>0</td><td>12.120</td><td>12.120</td><td>8511254</td><td>4286200</td><td>4181040</td><td>5260580</td></tr>
+<tr data-code="300519" data-price="15.93" data-shipan="0"><td><input type="checkbox" class="check" data-code="300519" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300519.html')">300519</a></td><td>新光药业</td><td>创业板</td><td>C27医药制造业</td><td>0</td><td>15.930</td><td>15.930</td><td>2726000</td><td>2491390</td><td>2387790</td><td>2556300</td></tr>
+<tr data-code="300529" data-price="20.49" data-shipan="0"><td><input type="checkbox" class="check" data-code="300529" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300529.html')">300529</a></td><td>健帆生物</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>20.490</td><td>20.490</td><td>6950938</td><td>5635728</td><td>6128600</td><td>5945029</td></tr>
+<tr data-code="300535" data-price="21.0" data-shipan="0"><td><input type="checkbox" class="check" data-code="300535" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300535.html')">300535</a></td><td>达威股份</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>21.000</td><td>21.000</td><td>4196568</td><td>2748837</td><td>3314434</td><td>1800808</td></tr>
+<tr data-code="300543" data-price="11.26" data-shipan="5"><td><input type="checkbox" class="check" data-code="300543" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300543.html')">300543</a></td><td>朗科智能</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td><span title="12-26(下影),12-31(下影),01-05(下影),01-06(下影),01-13(上影)">5</span></td><td>11.260</td><td>11.260</td><td>7568151</td><td>7246101</td><td>6237457</td><td>6896411</td></tr>
+<tr data-code="300560" data-price="16.2" data-shipan="0"><td><input type="checkbox" class="check" data-code="300560" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300560.html')">300560</a></td><td>中富通</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>16.200</td><td>16.200</td><td>21244161</td><td>12338190</td><td>19781080</td><td>13117800</td></tr>
+<tr data-code="300573" data-price="69.59" data-shipan="0"><td><input type="checkbox" class="check" data-code="300573" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300573.html')">300573</a></td><td>兴齐眼药</td><td>创业板</td><td>C27医药制造业</td><td>0</td><td>69.590</td><td>69.590</td><td>8909256</td><td>7438799</td><td>7625664</td><td>8248674</td></tr>
+<tr data-code="300583" data-price="14.61" data-shipan="4"><td><input type="checkbox" class="check" data-code="300583" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300583.html')">300583</a></td><td>赛托生物</td><td>创业板</td><td>C27医药制造业</td><td><span title="01-13(上影),01-14(下影),01-21(下影),01-27(下影)">4</span></td><td>14.610</td><td>14.610</td><td>4263600</td><td>3165980</td><td>2776020</td><td>3350020</td></tr>
+<tr data-code="300591" data-price="8.61" data-shipan="0"><td><input type="checkbox" class="check" data-code="300591" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300591.html')">300591</a></td><td>万里马</td><td>创业板</td><td>C19皮革、毛皮、羽毛及其制品和制鞋业</td><td>0</td><td>8.610</td><td>8.610</td><td>22102405</td><td>11145094</td><td>12489261</td><td>17095200</td></tr>
+<tr data-code="300595" data-price="15.88" data-shipan="0"><td><input type="checkbox" class="check" data-code="300595" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300595.html')">300595</a></td><td>欧普康视</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>15.880</td><td>15.880</td><td>14824806</td><td>9524381</td><td>11667320</td><td>13693993</td></tr>
+<tr data-code="300596" data-price="45.29" data-shipan="0"><td><input type="checkbox" class="check" data-code="300596" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300596.html')">300596</a></td><td>利安隆</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>45.290</td><td>45.290</td><td>5841850</td><td>4251210</td><td>5812872</td><td>4949175</td></tr>
+<tr data-code="300599" data-price="10.94" data-shipan="1"><td><input type="checkbox" class="check" data-code="300599" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300599.html')">300599</a></td><td>雄塑科技</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td><span title="12-31(涨停)">1</span></td><td>10.940</td><td>10.940</td><td>12435100</td><td>8619700</td><td>9963133</td><td>10486944</td></tr>
+<tr data-code="300615" data-price="14.15" data-shipan="0"><td><input type="checkbox" class="check" data-code="300615" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300615.html')">300615</a></td><td>欣天科技</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>14.150</td><td>14.150</td><td>5893700</td><td>5741902</td><td>4382034</td><td>4511500</td></tr>
+<tr data-code="300617" data-price="48.04" data-shipan="1"><td><input type="checkbox" class="check" data-code="300617" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300617.html')">300617</a></td><td>安靠智电</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="01-08(下影)">1</span></td><td>48.040</td><td>48.040</td><td>23825084</td><td>9388505</td><td>8206860</td><td>11993477</td></tr>
+<tr data-code="300625" data-price="12.96" data-shipan="0"><td><input type="checkbox" class="check" data-code="300625" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300625.html')">300625</a></td><td>三雄极光</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>12.960</td><td>12.960</td><td>2746140</td><td>2661000</td><td>2432300</td><td>2423737</td></tr>
+<tr data-code="300645" data-price="20.11" data-shipan="0"><td><input type="checkbox" class="check" data-code="300645" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300645.html')">300645</a></td><td>正元智慧</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>20.110</td><td>20.110</td><td>5249410</td><td>3752140</td><td>4169745</td><td>4066200</td></tr>
+<tr data-code="300649" data-price="15.05" data-shipan="3"><td><input type="checkbox" class="check" data-code="300649" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300649.html')">300649</a></td><td>杭州园林</td><td>创业板</td><td>M74专业技术服务业</td><td><span title="01-13(下影),01-14(下影),01-20(下影)">3</span></td><td>15.050</td><td>15.050</td><td>4992800</td><td>2741100</td><td>2737700</td><td>2531900</td></tr>
+<tr data-code="300653" data-price="20.69" data-shipan="0"><td><input type="checkbox" class="check" data-code="300653" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300653.html')">300653</a></td><td>正海生物</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>20.690</td><td>20.690</td><td>2665721</td><td>2537611</td><td>2383550</td><td>2237400</td></tr>
+<tr data-code="300667" data-price="20.43" data-shipan="0"><td><input type="checkbox" class="check" data-code="300667" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300667.html')">300667</a></td><td>必创科技</td><td>创业板</td><td>C40仪器仪表制造业</td><td>0</td><td>20.430</td><td>20.430</td><td>24475357</td><td>8567100</td><td>9227100</td><td>11876100</td></tr>
+<tr data-code="300670" data-price="6.96" data-shipan="1"><td><input type="checkbox" class="check" data-code="300670" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300670.html')">300670</a></td><td>大烨智能</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="12-30(下影)">1</span></td><td>6.960</td><td>6.960</td><td>15707824</td><td>11353450</td><td>8454940</td><td>9202600</td></tr>
+<tr data-code="300717" data-price="21.13" data-shipan="0"><td><input type="checkbox" class="check" data-code="300717" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300717.html')">300717</a></td><td>华信新材</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td>0</td><td>21.130</td><td>21.130</td><td>3170900</td><td>2212118</td><td>1753720</td><td>1547100</td></tr>
+<tr data-code="300740" data-price="23.1" data-shipan="0"><td><input type="checkbox" class="check" data-code="300740" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300740.html')">300740</a></td><td>水羊股份</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>23.100</td><td>23.100</td><td>10484390</td><td>9178884</td><td>10065139</td><td>6762982</td></tr>
+<tr data-code="300746" data-price="13.74" data-shipan="0"><td><input type="checkbox" class="check" data-code="300746" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300746.html')">300746</a></td><td>汉嘉数智</td><td>创业板</td><td>M74专业技术服务业</td><td>0</td><td>13.740</td><td>13.740</td><td>4850600</td><td>3746800</td><td>3694200</td><td>3449300</td></tr>
+<tr data-code="300767" data-price="18.38" data-shipan="0"><td><input type="checkbox" class="check" data-code="300767" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300767.html')">300767</a></td><td>震安科技</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td>0</td><td>18.380</td><td>18.380</td><td>9844243</td><td>8046658</td><td>5243772</td><td>5707113</td></tr>
+<tr data-code="300771" data-price="15.21" data-shipan="0"><td><input type="checkbox" class="check" data-code="300771" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300771.html')">300771</a></td><td>智莱科技</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>15.210</td><td>15.210</td><td>8174320</td><td>7106330</td><td>7642520</td><td>6668790</td></tr>
+<tr data-code="300772" data-price="18.48" data-shipan="0"><td><input type="checkbox" class="check" data-code="300772" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300772.html')">300772</a></td><td>运达股份</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>18.480</td><td>18.480</td><td>20504092</td><td>18229733</td><td>13423649</td><td>17160184</td></tr>
+<tr data-code="300779" data-price="100.0" data-shipan="2"><td><input type="checkbox" class="check" data-code="300779" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300779.html')">300779</a></td><td>惠城环保</td><td>创业板</td><td>C42废弃资源综合利用业</td><td><span title="01-16(下影),01-19(下影)">2</span></td><td>100.000</td><td>100.000</td><td>4512952</td><td>4323200</td><td>4486212</td><td>4196362</td></tr>
+<tr data-code="300793" data-price="15.97" data-shipan="0"><td><input type="checkbox" class="check" data-code="300793" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300793.html')">300793</a></td><td>佳禾智能</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>15.970</td><td>15.970</td><td>12832884</td><td>9266022</td><td>12234181</td><td>9341466</td></tr>
+<tr data-code="300795" data-price="14.21" data-shipan="1"><td><input type="checkbox" class="check" data-code="300795" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300795.html')">300795</a></td><td>米奥会展</td><td>创业板</td><td>L72商务服务业</td><td><span title="01-16(下影)">1</span></td><td>14.210</td><td>14.210</td><td>4938780</td><td>3274580</td><td>4243140</td><td>3823350</td></tr>
+<tr data-code="300800" data-price="12.77" data-shipan="0"><td><input type="checkbox" class="check" data-code="300800" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300800.html')">300800</a></td><td>力合科技</td><td>创业板</td><td>C40仪器仪表制造业</td><td>0</td><td>12.770</td><td>12.770</td><td>5103000</td><td>3730400</td><td>3339650</td><td>3141600</td></tr>
+<tr data-code="300810" data-price="42.33" data-shipan="0"><td><input type="checkbox" class="check" data-code="300810" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300810.html')">300810</a></td><td>中科海讯</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>42.330</td><td>42.330</td><td>4643900</td><td>3538500</td><td>4443850</td><td>4471400</td></tr>
+<tr data-code="300812" data-price="31.26" data-shipan="0"><td><input type="checkbox" class="check" data-code="300812" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300812.html')">300812</a></td><td>易天股份</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>31.260</td><td>31.260</td><td>16868800</td><td>7658160</td><td>8977580</td><td>9636220</td></tr>
+<tr data-code="300817" data-price="20.86" data-shipan="3"><td><input type="checkbox" class="check" data-code="300817" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300817.html')">300817</a></td><td>双飞集团</td><td>创业板</td><td>C34通用设备制造业</td><td><span title="12-22(涨停),01-09(上影),01-12(下影)">3</span></td><td>20.860</td><td>20.860</td><td>4160821</td><td>2721825</td><td>2554517</td><td>3261306</td></tr>
+<tr data-code="300823" data-price="17.73" data-shipan="0"><td><input type="checkbox" class="check" data-code="300823" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300823.html')">300823</a></td><td>建科智能</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>17.730</td><td>17.730</td><td>5992124</td><td>2994660</td><td>2526300</td><td>2627280</td></tr>
+<tr data-code="300824" data-price="11.16" data-shipan="0"><td><input type="checkbox" class="check" data-code="300824" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300824.html')">300824</a></td><td>北鼎股份</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>11.160</td><td>11.160</td><td>5522349</td><td>5216200</td><td>5037530</td><td>4343200</td></tr>
+<tr data-code="300825" data-price="10.13" data-shipan="1"><td><input type="checkbox" class="check" data-code="300825" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300825.html')">300825</a></td><td>阿尔特</td><td>创业板</td><td>M74专业技术服务业</td><td><span title="12-31(下影)">1</span></td><td>10.130</td><td>10.130</td><td>21539885</td><td>9970018</td><td>9350561</td><td>8789999</td></tr>
+<tr data-code="300845" data-price="12.16" data-shipan="0"><td><input type="checkbox" class="check" data-code="300845" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300845.html')">300845</a></td><td>捷安高科</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>12.160</td><td>12.160</td><td>9000797</td><td>5726258</td><td>8820575</td><td>4729575</td></tr>
+<tr data-code="300849" data-price="19.22" data-shipan="0"><td><input type="checkbox" class="check" data-code="300849" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300849.html')">300849</a></td><td>锦盛新材</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td>0</td><td>19.220</td><td>19.220</td><td>3981300</td><td>2752200</td><td>2656450</td><td>2172850</td></tr>
+<tr data-code="300873" data-price="24.82" data-shipan="0"><td><input type="checkbox" class="check" data-code="300873" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300873.html')">300873</a></td><td>海晨股份</td><td>创业板</td><td>G58多式联运和运输代理业</td><td>0</td><td>24.820</td><td>24.820</td><td>4661029</td><td>4456254</td><td>3540261</td><td>4378192</td></tr>
+<tr data-code="300877" data-price="29.74" data-shipan="1"><td><input type="checkbox" class="check" data-code="300877" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300877.html')">300877</a></td><td>金春股份</td><td>创业板</td><td>C17纺织业</td><td><span title="12-26(上影)">1</span></td><td>29.740</td><td>29.740</td><td>4354868</td><td>2345220</td><td>2180230</td><td>2325421</td></tr>
+<tr data-code="300880" data-price="19.51" data-shipan="0"><td><input type="checkbox" class="check" data-code="300880" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300880.html')">300880</a></td><td>迦南智能</td><td>创业板</td><td>C40仪器仪表制造业</td><td>0</td><td>19.510</td><td>19.510</td><td>4757236</td><td>2811466</td><td>2658820</td><td>2688988</td></tr>
+<tr data-code="300886" data-price="28.83" data-shipan="3"><td><input type="checkbox" class="check" data-code="300886" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300886.html')">300886</a></td><td>华业香料</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td><span title="01-13(下影),01-14(下影),01-27(下影)">3</span></td><td>28.830</td><td>28.830</td><td>1945730</td><td>1880831</td><td>1136329</td><td>1154300</td></tr>
+<tr data-code="300893" data-price="23.06" data-shipan="0"><td><input type="checkbox" class="check" data-code="300893" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300893.html')">300893</a></td><td>松原安全</td><td>创业板</td><td>C36汽车制造业</td><td>0</td><td>23.060</td><td>23.060</td><td>11680728</td><td>4349641</td><td>4447824</td><td>3516920</td></tr>
+<tr data-code="300920" data-price="41.5" data-shipan="1"><td><input type="checkbox" class="check" data-code="300920" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300920.html')">300920</a></td><td>润阳科技</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td><span title="12-24(涨停)">1</span></td><td>41.500</td><td>41.500</td><td>1544400</td><td>1150300</td><td>1315900</td><td>1372763</td></tr>
+<tr data-code="300929" data-price="11.97" data-shipan="0"><td><input type="checkbox" class="check" data-code="300929" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300929.html')">300929</a></td><td>华骐环保</td><td>创业板</td><td>N77生态保护和环境治理业</td><td>0</td><td>11.970</td><td>11.970</td><td>5460120</td><td>3784500</td><td>3322776</td><td>3514300</td></tr>
+<tr data-code="300931" data-price="11.35" data-shipan="0"><td><input type="checkbox" class="check" data-code="300931" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300931.html')">300931</a></td><td>通用电梯</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>11.350</td><td>11.350</td><td>7711479</td><td>5599400</td><td>5962700</td><td>6180907</td></tr>
+<tr data-code="300932" data-price="13.78" data-shipan="0"><td><input type="checkbox" class="check" data-code="300932" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300932.html')">300932</a></td><td>三友联众</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>13.780</td><td>13.780</td><td>13124365</td><td>9997991</td><td>11200772</td><td>9196989</td></tr>
+<tr data-code="300935" data-price="36.63" data-shipan="0"><td><input type="checkbox" class="check" data-code="300935" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300935.html')">300935</a></td><td>盈建科</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>36.630</td><td>36.630</td><td>3444289</td><td>2031876</td><td>2672660</td><td>3047940</td></tr>
+<tr data-code="300936" data-price="42.12" data-shipan="0"><td><input type="checkbox" class="check" data-code="300936" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300936.html')">300936</a></td><td>中英科技</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>42.120</td><td>42.120</td><td>2201011</td><td>1577042</td><td>2014271</td><td>1991313</td></tr>
+<tr data-code="300957" data-price="44.01" data-shipan="0"><td><input type="checkbox" class="check" data-code="300957" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300957.html')">300957</a></td><td>贝泰妮</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>44.010</td><td>44.010</td><td>7462523</td><td>4543365</td><td>5697276</td><td>4784199</td></tr>
+<tr data-code="300958" data-price="13.98" data-shipan="0"><td><input type="checkbox" class="check" data-code="300958" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300958.html')">300958</a></td><td>建工修复</td><td>创业板</td><td>N77生态保护和环境治理业</td><td>0</td><td>13.980</td><td>13.980</td><td>3945946</td><td>2889720</td><td>3253600</td><td>2426037</td></tr>
+<tr data-code="300959" data-price="93.75" data-shipan="1"><td><input type="checkbox" class="check" data-code="300959" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300959.html')">300959</a></td><td>线上线下</td><td>创业板</td><td>I65软件和信息技术服务业</td><td><span title="01-12(涨停)">1</span></td><td>93.750</td><td>93.750</td><td>5339858</td><td>2447792</td><td>3873334</td><td>2885222</td></tr>
+<tr data-code="300966" data-price="21.24" data-shipan="2"><td><input type="checkbox" class="check" data-code="300966" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300966.html')">300966</a></td><td>共同药业</td><td>创业板</td><td>C27医药制造业</td><td><span title="01-20(上影),01-27(下影)">2</span></td><td>21.240</td><td>21.240</td><td>2828991</td><td>2017372</td><td>1754091</td><td>2156700</td></tr>
+<tr data-code="300973" data-price="43.29" data-shipan="0"><td><input type="checkbox" class="check" data-code="300973" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300973.html')">300973</a></td><td>立高食品</td><td>创业板</td><td>C14食品制造业</td><td>0</td><td>43.290</td><td>43.290</td><td>5437764</td><td>2727783</td><td>3547370</td><td>1822100</td></tr>
+<tr data-code="300998" data-price="23.79" data-shipan="0"><td><input type="checkbox" class="check" data-code="300998" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz300998.html')">300998</a></td><td>宁波方正</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>23.790</td><td>23.790</td><td>4530584</td><td>1505700</td><td>2737900</td><td>2578366</td></tr>
+<tr data-code="301002" data-price="39.21" data-shipan="3"><td><input type="checkbox" class="check" data-code="301002" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301002.html')">301002</a></td><td>崧盛股份</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td><span title="12-24(下影),12-25(涨停),12-26(下影)">3</span></td><td>39.210</td><td>39.210</td><td>5659593</td><td>4409550</td><td>5478360</td><td>4769754</td></tr>
+<tr data-code="301004" data-price="48.5" data-shipan="1"><td><input type="checkbox" class="check" data-code="301004" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301004.html')">301004</a></td><td>嘉益股份</td><td>创业板</td><td>C33金属制品业</td><td><span title="01-27(下影)">1</span></td><td>48.500</td><td>48.500</td><td>788239</td><td>624590</td><td>600775</td><td>557440</td></tr>
+<tr data-code="301006" data-price="18.32" data-shipan="0"><td><input type="checkbox" class="check" data-code="301006" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301006.html')">301006</a></td><td>迈拓股份</td><td>创业板</td><td>C40仪器仪表制造业</td><td>0</td><td>18.320</td><td>18.320</td><td>2801496</td><td>2227300</td><td>2188600</td><td>1479466</td></tr>
+<tr data-code="301008" data-price="36.15" data-shipan="6"><td><input type="checkbox" class="check" data-code="301008" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301008.html')">301008</a></td><td>宏昌科技</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="12-25(下影),01-05(下影),01-12(下影),01-13(上影),01-14(下影),01-23(下影)">6</span></td><td>36.150</td><td>36.150</td><td>3554881</td><td>2819790</td><td>3346136</td><td>3288673</td></tr>
+<tr data-code="301011" data-price="26.22" data-shipan="0"><td><input type="checkbox" class="check" data-code="301011" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301011.html')">301011</a></td><td>华立科技</td><td>创业板</td><td>C24文教、工美、体育和娱乐用品制造业</td><td>0</td><td>26.220</td><td>26.220</td><td>3446396</td><td>2197835</td><td>3433154</td><td>2501170</td></tr>
+<tr data-code="301012" data-price="28.38" data-shipan="0"><td><input type="checkbox" class="check" data-code="301012" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301012.html')">301012</a></td><td>扬电科技</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>28.380</td><td>28.380</td><td>13034894</td><td>5737823</td><td>8362303</td><td>8235453</td></tr>
+<tr data-code="301018" data-price="72.87" data-shipan="0"><td><input type="checkbox" class="check" data-code="301018" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301018.html')">301018</a></td><td>申菱环境</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>72.870</td><td>72.870</td><td>26215759</td><td>10039954</td><td>8146214</td><td>12926861</td></tr>
+<tr data-code="301031" data-price="142.89" data-shipan="1"><td><input type="checkbox" class="check" data-code="301031" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301031.html')">301031</a></td><td>中熔电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="01-07(下影)">1</span></td><td>142.890</td><td>142.890</td><td>3497024</td><td>3452769</td><td>2981289</td><td>3386289</td></tr>
+<tr data-code="301033" data-price="74.9" data-shipan="0"><td><input type="checkbox" class="check" data-code="301033" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301033.html')">301033</a></td><td>迈普医学</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>74.900</td><td>74.900</td><td>3106277</td><td>944435</td><td>1320313</td><td>872188</td></tr>
+<tr data-code="301037" data-price="15.98" data-shipan="0"><td><input type="checkbox" class="check" data-code="301037" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301037.html')">301037</a></td><td>保立佳</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>15.980</td><td>15.980</td><td>4073862</td><td>3036621</td><td>2383880</td><td>2095922</td></tr>
+<tr data-code="301051" data-price="19.4" data-shipan="4"><td><input type="checkbox" class="check" data-code="301051" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301051.html')">301051</a></td><td>信濠光电</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td><span title="01-05(下影),01-09(下影),01-15(下影),01-19(下影)">4</span></td><td>19.400</td><td>19.400</td><td>6467124</td><td>2486955</td><td>2910418</td><td>3088852</td></tr>
+<tr data-code="301056" data-price="17.81" data-shipan="1"><td><input type="checkbox" class="check" data-code="301056" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301056.html')">301056</a></td><td>森赫股份</td><td>创业板</td><td>C34通用设备制造业</td><td><span title="12-23(涨停)">1</span></td><td>17.810</td><td>17.810</td><td>9878172</td><td>9465456</td><td>7162020</td><td>9686400</td></tr>
+<tr data-code="301059" data-price="13.85" data-shipan="0"><td><input type="checkbox" class="check" data-code="301059" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301059.html')">301059</a></td><td>金三江</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>13.850</td><td>13.850</td><td>6264910</td><td>5115052</td><td>5851087</td><td>4996148</td></tr>
+<tr data-code="301066" data-price="18.31" data-shipan="0"><td><input type="checkbox" class="check" data-code="301066" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301066.html')">301066</a></td><td>万事利</td><td>创业板</td><td>C18纺织服装、服饰业</td><td>0</td><td>18.310</td><td>18.310</td><td>24620417</td><td>9706714</td><td>14843931</td><td>11325383</td></tr>
+<tr data-code="301072" data-price="23.64" data-shipan="0"><td><input type="checkbox" class="check" data-code="301072" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301072.html')">301072</a></td><td>中捷精工</td><td>创业板</td><td>C36汽车制造业</td><td>0</td><td>23.640</td><td>23.640</td><td>2130596</td><td>1691800</td><td>1811391</td><td>1756400</td></tr>
+<tr data-code="301082" data-price="18.95" data-shipan="1"><td><input type="checkbox" class="check" data-code="301082" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301082.html')">301082</a></td><td>久盛电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="12-24(下影)">1</span></td><td>18.950</td><td>18.950</td><td>9189200</td><td>7306180</td><td>6934053</td><td>6742073</td></tr>
+<tr data-code="301085" data-price="65.21" data-shipan="7"><td><input type="checkbox" class="check" data-code="301085" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301085.html')">301085</a></td><td>亚康股份</td><td>创业板</td><td>I65软件和信息技术服务业</td><td><span title="12-31(下影),01-07(上影),01-08(下影),01-12(下影),01-15(下影),01-29(下影),02-02(涨停)">7</span></td><td>65.210</td><td>65.210</td><td>11848476</td><td>2708044</td><td>4855244</td><td>3259300</td></tr>
+<tr data-code="301090" data-price="7.61" data-shipan="0"><td><input type="checkbox" class="check" data-code="301090" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301090.html')">301090</a></td><td>华润材料</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>7.610</td><td>7.610</td><td>11128394</td><td>8911036</td><td>9871609</td><td>9313625</td></tr>
+<tr data-code="301096" data-price="50.66" data-shipan="3"><td><input type="checkbox" class="check" data-code="301096" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301096.html')">301096</a></td><td>百诚医药</td><td>创业板</td><td>M73研究和试验发展</td><td><span title="12-26(下影),12-30(下影),01-05(下影)">3</span></td><td>50.660</td><td>50.660</td><td>3453200</td><td>2131942</td><td>2240349</td><td>3024974</td></tr>
+<tr data-code="301098" data-price="9.53" data-shipan="0"><td><input type="checkbox" class="check" data-code="301098" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301098.html')">301098</a></td><td>金埔园林</td><td>创业板</td><td>E48土木工程建筑业</td><td>0</td><td>9.530</td><td>9.530</td><td>7527963</td><td>6861929</td><td>4775700</td><td>4746605</td></tr>
+<tr data-code="301106" data-price="33.78" data-shipan="0"><td><input type="checkbox" class="check" data-code="301106" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301106.html')">301106</a></td><td>骏成科技</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>33.780</td><td>33.780</td><td>2096667</td><td>1666423</td><td>1659650</td><td>1210620</td></tr>
+<tr data-code="301107" data-price="30.63" data-shipan="0"><td><input type="checkbox" class="check" data-code="301107" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301107.html')">301107</a></td><td>瑜欣电子</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>30.630</td><td>30.630</td><td>2288580</td><td>1741540</td><td>1887220</td><td>1931440</td></tr>
+<tr data-code="301113" data-price="26.12" data-shipan="0"><td><input type="checkbox" class="check" data-code="301113" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301113.html')">301113</a></td><td>雅艺科技</td><td>创业板</td><td>C21家具制造业</td><td>0</td><td>26.120</td><td>26.120</td><td>1962800</td><td>1877508</td><td>1593080</td><td>1958000</td></tr>
+<tr data-code="301120" data-price="21.55" data-shipan="0"><td><input type="checkbox" class="check" data-code="301120" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301120.html')">301120</a></td><td>新特电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>21.550</td><td>21.550</td><td>51057582</td><td>12025028</td><td>16308262</td><td>13346755</td></tr>
+<tr data-code="301131" data-price="47.57" data-shipan="0"><td><input type="checkbox" class="check" data-code="301131" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301131.html')">301131</a></td><td>聚赛龙</td><td>创业板</td><td>C29橡胶和塑料制品业</td><td>0</td><td>47.570</td><td>47.570</td><td>1547510</td><td>1293517</td><td>1186053</td><td>1198036</td></tr>
+<tr data-code="301137" data-price="53.09" data-shipan="1"><td><input type="checkbox" class="check" data-code="301137" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301137.html')">301137</a></td><td>哈焊华通</td><td>创业板</td><td>C33金属制品业</td><td><span title="12-22(下影)">1</span></td><td>53.090</td><td>53.090</td><td>8529715</td><td>7011428</td><td>7936945</td><td>7096698</td></tr>
+<tr data-code="301155" data-price="75.58" data-shipan="0"><td><input type="checkbox" class="check" data-code="301155" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301155.html')">301155</a></td><td>海力风电</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>75.580</td><td>75.580</td><td>13122121</td><td>4275203</td><td>3793920</td><td>2859094</td></tr>
+<tr data-code="301156" data-price="19.36" data-shipan="3"><td><input type="checkbox" class="check" data-code="301156" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301156.html')">301156</a></td><td>美农生物</td><td>创业板</td><td>C14食品制造业</td><td><span title="01-14(下影),01-15(下影),01-27(下影)">3</span></td><td>19.360</td><td>19.360</td><td>3942218</td><td>3717300</td><td>2606120</td><td>2381759</td></tr>
+<tr data-code="301160" data-price="65.19" data-shipan="0"><td><input type="checkbox" class="check" data-code="301160" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301160.html')">301160</a></td><td>翔楼新材</td><td>创业板</td><td>C33金属制品业</td><td>0</td><td>65.190</td><td>65.190</td><td>3555364</td><td>1899373</td><td>2009885</td><td>2061678</td></tr>
+<tr data-code="301162" data-price="74.64" data-shipan="2"><td><input type="checkbox" class="check" data-code="301162" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301162.html')">301162</a></td><td>国能日新</td><td>创业板</td><td>I65软件和信息技术服务业</td><td><span title="12-24(下影),01-06(下影)">2</span></td><td>74.640</td><td>74.640</td><td>3598299</td><td>2373027</td><td>2303282</td><td>1997802</td></tr>
+<tr data-code="301166" data-price="33.02" data-shipan="0"><td><input type="checkbox" class="check" data-code="301166" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301166.html')">301166</a></td><td>优宁维</td><td>创业板</td><td>F51批发业</td><td>0</td><td>33.020</td><td>33.020</td><td>1499591</td><td>1143370</td><td>1303467</td><td>1118800</td></tr>
+<tr data-code="301167" data-price="18.46" data-shipan="0"><td><input type="checkbox" class="check" data-code="301167" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301167.html')">301167</a></td><td>建研设计</td><td>创业板</td><td>M74专业技术服务业</td><td>0</td><td>18.460</td><td>18.460</td><td>3614562</td><td>2765180</td><td>2345700</td><td>2191363</td></tr>
+<tr data-code="301179" data-price="17.22" data-shipan="0"><td><input type="checkbox" class="check" data-code="301179" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301179.html')">301179</a></td><td>泽宇智能</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>17.220</td><td>17.220</td><td>5270024</td><td>4213585</td><td>5213814</td><td>3344363</td></tr>
+<tr data-code="301182" data-price="47.63" data-shipan="0"><td><input type="checkbox" class="check" data-code="301182" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301182.html')">301182</a></td><td>凯旺科技</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>47.630</td><td>47.630</td><td>4970785</td><td>3210254</td><td>2423700</td><td>1707334</td></tr>
+<tr data-code="301190" data-price="23.42" data-shipan="2"><td><input type="checkbox" class="check" data-code="301190" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301190.html')">301190</a></td><td>善水科技</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td><span title="01-08(上影),01-09(下影)">2</span></td><td>23.420</td><td>23.420</td><td>6833545</td><td>5784061</td><td>4070185</td><td>3052872</td></tr>
+<tr data-code="301197" data-price="21.95" data-shipan="0"><td><input type="checkbox" class="check" data-code="301197" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301197.html')">301197</a></td><td>工大科雅</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>21.950</td><td>21.950</td><td>5502174</td><td>2199354</td><td>2533654</td><td>3074100</td></tr>
+<tr data-code="301213" data-price="76.52" data-shipan="0"><td><input type="checkbox" class="check" data-code="301213" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301213.html')">301213</a></td><td>观想科技</td><td>创业板</td><td>I65软件和信息技术服务业</td><td>0</td><td>76.520</td><td>76.520</td><td>2773644</td><td>1512356</td><td>1826200</td><td>2057132</td></tr>
+<tr data-code="301225" data-price="145.05" data-shipan="0"><td><input type="checkbox" class="check" data-code="301225" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301225.html')">301225</a></td><td>恒勃股份</td><td>创业板</td><td>C36汽车制造业</td><td>0</td><td>145.050</td><td>145.050</td><td>1886356</td><td>1046989</td><td>1453983</td><td>1878491</td></tr>
+<tr data-code="301262" data-price="27.83" data-shipan="0"><td><input type="checkbox" class="check" data-code="301262" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301262.html')">301262</a></td><td>海看股份</td><td>创业板</td><td>I63电信、广播电视和卫星传输服务</td><td>0</td><td>27.830</td><td>27.830</td><td>11974677</td><td>10201127</td><td>9010364</td><td>3738977</td></tr>
+<tr data-code="301272" data-price="42.5" data-shipan="0"><td><input type="checkbox" class="check" data-code="301272" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301272.html')">301272</a></td><td>英华特</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>42.500</td><td>42.500</td><td>1057556</td><td>845785</td><td>911376</td><td>727385</td></tr>
+<tr data-code="301273" data-price="30.5" data-shipan="0"><td><input type="checkbox" class="check" data-code="301273" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301273.html')">301273</a></td><td>瑞晨环保</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>30.500</td><td>30.500</td><td>1887600</td><td>1272500</td><td>1037800</td><td>792600</td></tr>
+<tr data-code="301276" data-price="28.36" data-shipan="0"><td><input type="checkbox" class="check" data-code="301276" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301276.html')">301276</a></td><td>嘉曼服饰</td><td>创业板</td><td>C18纺织服装、服饰业</td><td>0</td><td>28.360</td><td>28.360</td><td>4058100</td><td>3068470</td><td>2342020</td><td>1601674</td></tr>
+<tr data-code="301291" data-price="47.0" data-shipan="0"><td><input type="checkbox" class="check" data-code="301291" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301291.html')">301291</a></td><td>明阳电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>47.000</td><td>47.000</td><td>12748828</td><td>12586662</td><td>7603818</td><td>9019020</td></tr>
+<tr data-code="301296" data-price="8.82" data-shipan="0"><td><input type="checkbox" class="check" data-code="301296" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301296.html')">301296</a></td><td>新巨丰</td><td>创业板</td><td>C22造纸和纸制品业</td><td>0</td><td>8.820</td><td>8.820</td><td>5224033</td><td>3589500</td><td>2659100</td><td>2961550</td></tr>
+<tr data-code="301307" data-price="34.94" data-shipan="1"><td><input type="checkbox" class="check" data-code="301307" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301307.html')">301307</a></td><td>美利信</td><td>创业板</td><td>C33金属制品业</td><td><span title="01-14(下影)">1</span></td><td>34.940</td><td>34.940</td><td>8664236</td><td>4808901</td><td>5623138</td><td>6383000</td></tr>
+<tr data-code="301309" data-price="30.56" data-shipan="0"><td><input type="checkbox" class="check" data-code="301309" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301309.html')">301309</a></td><td>万得凯</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>30.560</td><td>30.560</td><td>2744370</td><td>1118611</td><td>1097006</td><td>713601</td></tr>
+<tr data-code="301314" data-price="47.7" data-shipan="0"><td><input type="checkbox" class="check" data-code="301314" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301314.html')">301314</a></td><td>科瑞思</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>47.700</td><td>47.700</td><td>1185052</td><td>985248</td><td>978928</td><td>1055736</td></tr>
+<tr data-code="301320" data-price="18.19" data-shipan="0"><td><input type="checkbox" class="check" data-code="301320" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301320.html')">301320</a></td><td>豪江智能</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>18.190</td><td>18.190</td><td>2757072</td><td>2175849</td><td>2214301</td><td>2363900</td></tr>
+<tr data-code="301327" data-price="59.58" data-shipan="1"><td><input type="checkbox" class="check" data-code="301327" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301327.html')">301327</a></td><td>华宝新能</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="12-29(上影)">1</span></td><td>59.580</td><td>59.580</td><td>3006311</td><td>1371850</td><td>1896367</td><td>1441529</td></tr>
+<tr data-code="301338" data-price="133.0" data-shipan="4"><td><input type="checkbox" class="check" data-code="301338" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301338.html')">301338</a></td><td>凯格精机</td><td>创业板</td><td>C35专用设备制造业</td><td><span title="12-22(涨停),12-24(上影),12-29(下影),01-16(涨停)">4</span></td><td>133.000</td><td>133.000</td><td>6682476</td><td>5179299</td><td>4520967</td><td>4819600</td></tr>
+<tr data-code="301345" data-price="217.57" data-shipan="0"><td><input type="checkbox" class="check" data-code="301345" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301345.html')">301345</a></td><td>涛涛车业</td><td>创业板</td><td>C37铁路、船舶、航空航天和其他运输设备制造业</td><td>0</td><td>217.570</td><td>217.570</td><td>1833900</td><td>985500</td><td>1093503</td><td>1119157</td></tr>
+<tr data-code="301353" data-price="29.6" data-shipan="0"><td><input type="checkbox" class="check" data-code="301353" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301353.html')">301353</a></td><td>普莱得</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>29.600</td><td>29.600</td><td>1819900</td><td>1218938</td><td>1295889</td><td>960854</td></tr>
+<tr data-code="301357" data-price="128.53" data-shipan="0"><td><input type="checkbox" class="check" data-code="301357" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301357.html')">301357</a></td><td>北方长龙</td><td>创业板</td><td>C41其他制造业</td><td>0</td><td>128.530</td><td>128.530</td><td>2135778</td><td>1618122</td><td>1905757</td><td>1759031</td></tr>
+<tr data-code="301359" data-price="21.44" data-shipan="0"><td><input type="checkbox" class="check" data-code="301359" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301359.html')">301359</a></td><td>东南电子</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>21.440</td><td>21.440</td><td>2940400</td><td>2074820</td><td>2152500</td><td>1319811</td></tr>
+<tr data-code="301361" data-price="37.79" data-shipan="0"><td><input type="checkbox" class="check" data-code="301361" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301361.html')">301361</a></td><td>众智科技</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>37.790</td><td>37.790</td><td>4121679</td><td>2274539</td><td>2725386</td><td>2353520</td></tr>
+<tr data-code="301371" data-price="24.8" data-shipan="0"><td><input type="checkbox" class="check" data-code="301371" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301371.html')">301371</a></td><td>敷尔佳</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>24.800</td><td>24.800</td><td>1922413</td><td>1458785</td><td>1886829</td><td>1582649</td></tr>
+<tr data-code="301372" data-price="28.26" data-shipan="0"><td><input type="checkbox" class="check" data-code="301372" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301372.html')">301372</a></td><td>科净源</td><td>创业板</td><td>N77生态保护和环境治理业</td><td>0</td><td>28.260</td><td>28.260</td><td>2510065</td><td>1872896</td><td>1707731</td><td>1452700</td></tr>
+<tr data-code="301376" data-price="19.53" data-shipan="0"><td><input type="checkbox" class="check" data-code="301376" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301376.html')">301376</a></td><td>致欧科技</td><td>创业板</td><td>F52零售业</td><td>0</td><td>19.530</td><td>19.530</td><td>3650806</td><td>3166750</td><td>2347329</td><td>1932575</td></tr>
+<tr data-code="301378" data-price="46.5" data-shipan="3"><td><input type="checkbox" class="check" data-code="301378" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301378.html')">301378</a></td><td>通达海</td><td>创业板</td><td>I65软件和信息技术服务业</td><td><span title="01-06(下影),01-09(涨停),01-12(涨停)">3</span></td><td>46.500</td><td>46.500</td><td>15796819</td><td>5585290</td><td>9213566</td><td>5395771</td></tr>
+<tr data-code="301386" data-price="27.98" data-shipan="0"><td><input type="checkbox" class="check" data-code="301386" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301386.html')">301386</a></td><td>未来电器</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>27.980</td><td>27.980</td><td>12672020</td><td>3643699</td><td>2437752</td><td>2114662</td></tr>
+<tr data-code="301388" data-price="34.44" data-shipan="1"><td><input type="checkbox" class="check" data-code="301388" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301388.html')">301388</a></td><td>欣灵电气</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="12-25(下影)">1</span></td><td>34.440</td><td>34.440</td><td>5315105</td><td>1865462</td><td>2264100</td><td>2010278</td></tr>
+<tr data-code="301390" data-price="38.29" data-shipan="0"><td><input type="checkbox" class="check" data-code="301390" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301390.html')">301390</a></td><td>经纬股份</td><td>创业板</td><td>M74专业技术服务业</td><td>0</td><td>38.290</td><td>38.290</td><td>1232600</td><td>1006448</td><td>1155811</td><td>757000</td></tr>
+<tr data-code="301391" data-price="73.68" data-shipan="0"><td><input type="checkbox" class="check" data-code="301391" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301391.html')">301391</a></td><td>卡莱特</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>73.680</td><td>73.680</td><td>1307540</td><td>892616</td><td>1244415</td><td>965119</td></tr>
+<tr data-code="301392" data-price="122.29" data-shipan="0"><td><input type="checkbox" class="check" data-code="301392" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301392.html')">301392</a></td><td>汇成真空</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>122.290</td><td>122.290</td><td>3921473</td><td>2947449</td><td>2927101</td><td>2476216</td></tr>
+<tr data-code="301399" data-price="20.06" data-shipan="0"><td><input type="checkbox" class="check" data-code="301399" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301399.html')">301399</a></td><td>英特科技</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>20.060</td><td>20.060</td><td>2850857</td><td>2459721</td><td>2474060</td><td>2494760</td></tr>
+<tr data-code="301418" data-price="39.34" data-shipan="0"><td><input type="checkbox" class="check" data-code="301418" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301418.html')">301418</a></td><td>协昌科技</td><td>创业板</td><td>C38电气机械和器材制造业</td><td>0</td><td>39.340</td><td>39.340</td><td>1141100</td><td>1060000</td><td>1093671</td><td>779600</td></tr>
+<tr data-code="301429" data-price="20.95" data-shipan="0"><td><input type="checkbox" class="check" data-code="301429" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301429.html')">301429</a></td><td>森泰股份</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td>0</td><td>20.950</td><td>20.950</td><td>2286002</td><td>1951844</td><td>1443854</td><td>1033471</td></tr>
+<tr data-code="301486" data-price="220.1" data-shipan="0"><td><input type="checkbox" class="check" data-code="301486" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301486.html')">301486</a></td><td>致尚科技</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>220.100</td><td>220.100</td><td>9075370</td><td>8836738</td><td>7027209</td><td>7540021</td></tr>
+<tr data-code="301491" data-price="56.56" data-shipan="2"><td><input type="checkbox" class="check" data-code="301491" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301491.html')">301491</a></td><td>汉桑科技</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td><span title="01-09(下影),01-20(下影)">2</span></td><td>56.560</td><td>56.560</td><td>1325761</td><td>848094</td><td>899476</td><td>997824</td></tr>
+<tr data-code="301508" data-price="32.42" data-shipan="0"><td><input type="checkbox" class="check" data-code="301508" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301508.html')">301508</a></td><td>中机认检</td><td>创业板</td><td>M74专业技术服务业</td><td>0</td><td>32.420</td><td>32.420</td><td>2618644</td><td>1833493</td><td>1980431</td><td>2105477</td></tr>
+<tr data-code="301515" data-price="25.21" data-shipan="0"><td><input type="checkbox" class="check" data-code="301515" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301515.html')">301515</a></td><td>港通医疗</td><td>创业板</td><td>C35专用设备制造业</td><td>0</td><td>25.210</td><td>25.210</td><td>3265900</td><td>1964029</td><td>2729930</td><td>1748630</td></tr>
+<tr data-code="301516" data-price="16.52" data-shipan="0"><td><input type="checkbox" class="check" data-code="301516" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301516.html')">301516</a></td><td>中远通</td><td>创业板</td><td>C39计算机、通信和其他电子设备制造业</td><td>0</td><td>16.520</td><td>16.520</td><td>3982490</td><td>3400363</td><td>2837220</td><td>2470500</td></tr>
+<tr data-code="301519" data-price="14.81" data-shipan="0"><td><input type="checkbox" class="check" data-code="301519" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301519.html')">301519</a></td><td>舜禹股份</td><td>创业板</td><td>N77生态保护和环境治理业</td><td>0</td><td>14.810</td><td>14.810</td><td>4249582</td><td>2650400</td><td>2390366</td><td>1929300</td></tr>
+<tr data-code="301520" data-price="44.92" data-shipan="0"><td><input type="checkbox" class="check" data-code="301520" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301520.html')">301520</a></td><td>万邦医药</td><td>创业板</td><td>M73研究和试验发展</td><td>0</td><td>44.920</td><td>44.920</td><td>1125134</td><td>1115400</td><td>1117100</td><td>1004200</td></tr>
+<tr data-code="301558" data-price="9.56" data-shipan="0"><td><input type="checkbox" class="check" data-code="301558" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301558.html')">301558</a></td><td>三态股份</td><td>创业板</td><td>F52零售业</td><td>0</td><td>9.560</td><td>9.560</td><td>32553276</td><td>29765017</td><td>20433609</td><td>12910100</td></tr>
+<tr data-code="301559" data-price="17.58" data-shipan="0"><td><input type="checkbox" class="check" data-code="301559" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301559.html')">301559</a></td><td>中集环科</td><td>创业板</td><td>C34通用设备制造业</td><td>0</td><td>17.580</td><td>17.580</td><td>3693400</td><td>2751000</td><td>3619671</td><td>2883100</td></tr>
+<tr data-code="301560" data-price="38.05" data-shipan="6"><td><input type="checkbox" class="check" data-code="301560" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301560.html')">301560</a></td><td>众捷汽车</td><td>创业板</td><td>C36汽车制造业</td><td><span title="12-24(下影),01-13(下影),01-14(下影),01-20(上影),01-22(下影),01-23(下影)">6</span></td><td>38.050</td><td>38.050</td><td>2937417</td><td>1924374</td><td>2708600</td><td>2200965</td></tr>
+<tr data-code="301609" data-price="50.15" data-shipan="7"><td><input type="checkbox" class="check" data-code="301609" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301609.html')">301609</a></td><td>山大电力</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="01-14(上影),01-20(涨停),01-21(下影),01-22(上影),01-23(上影),01-26(涨停),01-27(下影)">7</span></td><td>50.150</td><td>50.150</td><td>5646639</td><td>3237253</td><td>5128406</td><td>5165203</td></tr>
+<tr data-code="301617" data-price="76.61" data-shipan="4"><td><input type="checkbox" class="check" data-code="301617" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301617.html')">301617</a></td><td>博苑股份</td><td>创业板</td><td>C26化学原料和化学制品制造业</td><td><span title="12-23(上影),12-25(下影),12-30(下影),12-31(涨停)">4</span></td><td>76.610</td><td>76.610</td><td>2314618</td><td>1737720</td><td>1568171</td><td>1433111</td></tr>
+<tr data-code="301629" data-price="299.44" data-shipan="2"><td><input type="checkbox" class="check" data-code="301629" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301629.html')">301629</a></td><td>矽电股份</td><td>创业板</td><td>C35专用设备制造业</td><td><span title="01-05(涨停),01-07(下影)">2</span></td><td>299.440</td><td>299.440</td><td>2012503</td><td>1961986</td><td>1307800</td><td>1544110</td></tr>
+<tr data-code="301668" data-price="52.83" data-shipan="2"><td><input type="checkbox" class="check" data-code="301668" onchange="saveChecked()"></td><td><a href="javascript:void(0)" class="code" onclick="showStock('https://quote.eastmoney.com/sz301668.html')">301668</a></td><td>昊创瑞通</td><td>创业板</td><td>C38电气机械和器材制造业</td><td><span title="01-13(涨停),01-14(上影)">2</span></td><td>52.830</td><td>52.830</td><td>2459200</td><td>1292637</td><td>1819602</td><td>1843765</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="right-header">
+        <span id="stockTitle">点击左侧股票代码查看详情</span>
+        <a id="openNew" class="open-new" style="display:none" onclick="window.open(currentUrl)" title="新窗口打开">↗ 新窗口</a>
+      </div>
+      <div class="placeholder" id="placeholder">← 选择股票查看行情</div>
+      <div class="iframe-wrapper" id="frameWrapper" style="display:none">
+        <iframe id="stockFrame" class="stock-frame"></iframe>
+      </div>
+    </div>
+  </div>
+  <script>
+    const STORAGE_KEY = 'volupxyangxshipan_创业板';
+    let currentUrl = '';
+    let isPriceFilterActive = true; // 默认开启
+    let isShipanFilterActive = false; // 试盘筛选默认关闭
+    let currentSearchKeyword = '';
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      loadChecked();
+      applyFilters(); // 初始应用筛选
+    });
+
+    function togglePriceFilter() {
+      isPriceFilterActive = !isPriceFilterActive;
+      const btn = document.getElementById('priceFilterBtn');
+      if (isPriceFilterActive) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+      applyFilters();
+    }
+
+    function toggleShipanFilter() {
+      isShipanFilterActive = !isShipanFilterActive;
+      const btn = document.getElementById('shipanFilterBtn');
+      if (isShipanFilterActive) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+      applyFilters();
+    }
+
+    function filterTable(keyword) {
+      currentSearchKeyword = keyword.toLowerCase();
+      applyFilters();
+    }
+
+    function applyFilters() {
+      document.querySelectorAll('#tbody tr').forEach(tr => {
+        const price = parseFloat(tr.dataset.price || 0);
+        const shipanCount = parseInt(tr.dataset.shipan || 0);
+        const text = tr.textContent.toLowerCase();
+        
+        const matchesSearch = text.includes(currentSearchKeyword);
+        const matchesPrice = !isPriceFilterActive || price < 10;
+        const matchesShipan = !isShipanFilterActive || shipanCount >= 2;
+        
+        tr.style.display = (matchesSearch && matchesPrice && matchesShipan) ? '' : 'none';
+      });
+    }
+
+    function loadChecked() {
+      const checked = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      checked.forEach(code => {
+        const cb = document.querySelector(`input[data-code="${code}"]`);
+        if (cb) {
+          cb.checked = true;
+          cb.closest('tr').classList.add('checked');
+        }
+      });
+      updateInfo();
+    }
+
+    function saveChecked() {
+      const checked = [];
+      document.querySelectorAll('.check:checked').forEach(cb => {
+        checked.push(cb.dataset.code);
+        cb.closest('tr').classList.add('checked');
+      });
+      document.querySelectorAll('.check:not(:checked)').forEach(cb => {
+        cb.closest('tr').classList.remove('checked');
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+      updateInfo();
+    }
+
+    function updateInfo() {
+      const count = document.querySelectorAll('.check:checked').length;
+      document.getElementById('checkedInfo').textContent = '已选 ' + count;
+    }
+
+    function selectAll() {
+      document.querySelectorAll('.check').forEach(cb => cb.checked = true);
+      saveChecked();
+    }
+
+    function clearAll() {
+      document.querySelectorAll('.check').forEach(cb => cb.checked = false);
+      saveChecked();
+    }
+
+    function showStock(url) {
+      currentUrl = url;
+      const code = url.match(/([a-z]+\d+)\.html/)[1];
+      document.getElementById('stockTitle').textContent = code.toUpperCase();
+      document.getElementById('openNew').style.display = 'inline';
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('frameWrapper').style.display = 'block';
+      const frame = document.getElementById('stockFrame');
+      frame.src = url;
+    }
+  </script>
+</body>
+</html>

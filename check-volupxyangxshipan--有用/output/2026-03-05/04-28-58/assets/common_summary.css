@@ -1,0 +1,17 @@
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f5f5f5; height: 100vh; overflow: hidden; }
+        .layout { display: flex; height: 100vh; }
+        .sidebar { width: 220px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; }
+        .logo { padding: 18px 20px; font-size: 16px; font-weight: 600; color: #333; border-bottom: 1px solid #e0e0e0; }
+        .meta { padding: 12px 20px; border-bottom: 1px solid #e0e0e0; color: #666; font-size: 12px; line-height: 1.7; }
+        .nav { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .nav-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; cursor: pointer; transition: all 0.2s; }
+        .nav-item:hover { background: #f5f5f5; }
+        .nav-item.active { background: #e3f2fd; color: #1976d2; }
+        .group-name { font-size: 14px; }
+        .group-count { font-size: 12px; background: #e0e0e0; padding: 2px 8px; border-radius: 10px; }
+        .nav-item.active .group-count { background: #1976d2; color: #fff; }
+        .main { flex: 1; background: #fff; }
+        iframe { width: 100%; height: 100%; border: none; }
+    

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VolUp x Yang x Shipan报告 - 2026-03-04</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .layout { display: flex; height: 100vh; }
+        .sidebar {
+            width: 220px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        .logo {
+            padding: 18px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .meta {
+            padding: 12px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+        .nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        .nav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-item:hover { background: #f5f5f5; }
+        .nav-item.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .group-name { font-size: 14px; }
+        .group-count {
+            font-size: 12px;
+            background: #e0e0e0;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .nav-item.active .group-count {
+            background: #1976d2;
+            color: #fff;
+        }
+        .main { flex: 1; background: #fff; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">📊 VolUp x Yang x Shipan报告</div>
+            <div class="meta">
+                <div>策略: 昨放量+今阳线</div>
+                <div>数据日期: 2026-03-04</div>
+                <div>命中数量: 911</div>
+                <div>生成时间: 2026-03-05 03:37:53</div>
+            </div>
+            <nav class="nav">
+                <div class="nav-item active" onclick="showGroup('全市场')">
+                <span class="group-name">全市场</span>
+                <span class="group-count">5001</span>
+            </div>
+<div class="nav-item " onclick="showGroup('全部命中')">
+                <span class="group-name">全部命中</span>
+                <span class="group-count">911</span>
+            </div>
+<div class="nav-item " onclick="showGroup('多重试盘')">
+                <span class="group-name">多重试盘</span>
+                <span class="group-count">323</span>
+            </div>
+<div class="nav-item " onclick="showGroup('准突破')">
+                <span class="group-name">准突破</span>
+                <span class="group-count">238</span>
+            </div>
+<div class="nav-item " onclick="showGroup('纯量价')">
+                <span class="group-name">纯量价</span>
+                <span class="group-count">350</span>
+            </div>
+            </nav>
+        </aside>
+        <main class="main">
+            <iframe id="contentFrame" src="全市场.html"></iframe>
+        </main>
+    </div>
+
+    <script>
+        function showGroup(groupName) {
+            const frame = document.getElementById('contentFrame');
+            frame.src = `${groupName}.html`;
+
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            const current = Array.from(document.querySelectorAll('.nav-item'))
+                .find(item => item.querySelector('.group-name').textContent === groupName);
+            if (current) {
+                current.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
