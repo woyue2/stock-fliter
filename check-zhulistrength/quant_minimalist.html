@@ -247,39 +247,14 @@
 <body>
 
     <div class="phone-mockup">
-        <!-- 状态栏 -->
-        <div class="status-bar">
-            <span>{{REPORT_TITLE}}</span>
-            <span>{{REPORT_DATE}}</span>
-        </div>
-
-        <!-- 头部 -->
-        <div class="header">
-            <div class="header-tag">{{SUBTITLE}}</div>
-            <h1>{{MAIN_TITLE}}</h1>
-            
-            <div class="summary-stats">
-                <div class="stat-badge">
-                    <div class="stat-label">情绪指数</div>
-                    <div class="stat-value {{EMO_CLASS}}">{{EMO_VALUE}}</div>
-                </div>
-                <div class="stat-badge">
-                    <div class="stat-label">监测板块</div>
-                    <div class="stat-value">{{TOTAL_SECTORS}}</div>
-                </div>
-            </div>
-        </div>
+        <br>
 
         <!-- 区块 1: 狙击买点 -->
         <div class="section-title">
             <span style="color: var(--accent-green);">🎯 行动指令：狙击买点</span>
             <span>主力强度</span>
         </div>
-        <div class="sub-section-title">1.1 强势买点 (主力扫货)</div>
-        <div class="data-list">
-            {{BUY_STRONG}}
-        </div>
-        <div class="sub-section-title">1.2 恐慌错杀 (超跌反弹黄金坑)</div>
+        <div class="sub-section-title">1.1 恐慌错杀 (超跌反弹黄金坑)</div>
         <div class="data-list">
             {{BUY_GOLD}}
         </div>
@@ -299,11 +274,7 @@
             <span style="color: var(--accent-red);">🛑 行动指令：撤退避险</span>
             <span>主力强度</span>
         </div>
-        <div class="sub-section-title">3.1 真实派发 (主力砸盘)</div>
-        <div class="data-list">
-            {{SELL_TRUE}}
-        </div>
-        <div class="sub-section-title">3.2 陷阱预警 (诱多 / 假抢筹)</div>
+        <div class="sub-section-title">3.1 陷阱预警 (诱多 / 假抢筹)</div>
         <div class="data-list">
             {{SELL_FAKE}}
         </div>

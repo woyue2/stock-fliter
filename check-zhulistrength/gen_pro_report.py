@@ -158,25 +158,9 @@ def gen_pro_report():
         return html
 
     # 6. 替换模板变量
-    date_str = datetime.now().strftime("%Y.%m.%d %H:%M")
-    avg_intensity = df['主力强度'].mean()
-    # 限制情绪指数在 0-100% 之间
-    clamped_emo = min(100.0, max(0.0, 50 + avg_intensity * 5))
-    emo_value = f"{clamped_emo:.1f}%"
-    emo_class = "price-up" if avg_intensity > 0 else "price-down"
-
     replacements = {
-        "{{REPORT_TITLE}}": "量化雷达终端 PRO",
-        "{{REPORT_DATE}}": date_str,
-        "{{SUBTITLE}}": "独家实战情报",
-        "{{MAIN_TITLE}}": "主力动向<br>作战图谱",
-        "{{EMO_CLASS}}": emo_class,
-        "{{EMO_VALUE}}": emo_value,
-        "{{TOTAL_SECTORS}}": str(len(df)),
-        "{{BUY_STRONG}}": build_cards_html(buy_strong),
         "{{BUY_GOLD}}": build_cards_html(gold_list),
         "{{CARDS_HOLD}}": build_cards_html(hold_list),
-        "{{SELL_TRUE}}": build_cards_html(sell_true_list),
         "{{SELL_FAKE}}": build_cards_html(sell_fake_list)
     }
 
