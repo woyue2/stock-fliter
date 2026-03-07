@@ -216,7 +216,6 @@
         <div>
             <h1 class="text-xl font-black flex items-center gap-2">
                 <span id="page-title">数据加载中...</span>
-                <span id="page-index" class="font-mono text-xs opacity-40" style="color: var(--accent);">/01</span>
             </h1>
         </div>
 
@@ -240,23 +239,23 @@
         <div id="quadrant-labels" class="absolute inset-0 z-20 pointer-events-none">
             <!-- 左上：正数 + 强 -->
             <div class="absolute top-4 left-4 text-left" style="max-width:120px;">
-                <div class="text-[11px] font-black" style="color: var(--accent);">⚡ 左上象限</div>
-                <div id="ql-tl" class="text-[10px] leading-tight mt-0.5" style="color: var(--text-dim);">主力重仓吸筹</div>
+                <div id="ql-tl" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">主力重仓吸筹
+                </div>
             </div>
             <!-- 右上：负数 + 强 -->
             <div class="absolute top-4 right-4 text-right" style="max-width:120px;">
-                <div class="text-[11px] font-black" style="color: var(--accent);">☠️ 右上象限</div>
-                <div id="ql-tr" class="text-[10px] leading-tight mt-0.5" style="color: var(--text-dim);">暴力出逃 危险区</div>
+                <div id="ql-tr" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">暴力出逃
+                    危险区</div>
             </div>
             <!-- 左下：正数 + 弱 -->
             <div class="absolute bottom-4 left-4 text-left" style="max-width:120px;">
-                <div class="text-[11px] font-black" style="color: var(--accent);">🌱 左下象限</div>
-                <div id="ql-bl" class="text-[10px] leading-tight mt-0.5" style="color: var(--text-dim);">温和积累 择机</div>
+                <div id="ql-bl" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">温和积累
+                    择机</div>
             </div>
             <!-- 右下：负数 + 弱 -->
             <div class="absolute bottom-4 right-4 text-right" style="max-width:120px;">
-                <div class="text-[11px] font-black" style="color: var(--accent);">🌊 右下象限</div>
-                <div id="ql-br" class="text-[10px] leading-tight mt-0.5" style="color: var(--text-dim);">正常调整 观察</div>
+                <div id="ql-br" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">正常调整
+                    观察</div>
             </div>
         </div>
 
@@ -283,7 +282,7 @@
         <!-- 市场情绪指示（原点显示） -->
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none flex flex-col items-center justify-center w-24 h-24 rounded-full glass-blur border"
             style="border-color: var(--border); background: transparent;">
-            <div class="text-[9px] font-mono tracuttking-[0.2em] opacity-60" style="color: var(--text-dim);">市场情绪</div>
+            <div class="text-[9px] font-mono tracking-[0.2em] opacity-60" style="color: var(--text-dim);">市场情绪</div>
             <div id="central-value" class="text-2xl font-black font-mono mt-0.5" style="color: var(--accent);">0%</div>
         </div>
         <div id="central-bar" style="display:none;"></div>
@@ -309,7 +308,7 @@
 
     <script>
         // ======= Python 数据注入点 =======
-        const data = {{RADIAL_DATA}};
+        const data = "__RADIAL_DATA__";
 
         let currentTheme = 'luxury';
 
@@ -338,7 +337,6 @@
         function switchPage(idx) {
             const p = data[idx];
             document.getElementById('page-title').innerText = p.title;
-            document.getElementById('page-index').innerText = `/${String(idx + 1).padStart(2, '0')}`;
             document.getElementById('central-value').innerText = p.sentiment;
             document.getElementById('central-value').style.color = p.color;
             document.getElementById('central-bar').style.background = p.color;
@@ -371,22 +369,22 @@
                 if (el) el.setAttribute('fill', p.color);
             });
 
-            const box = document.getElementById('nodes-container');
-            box.innerHTML = '';
-
-            if (!p.items || p.items.length === 0) return;
-
             // === 四象限 动态说明（按页面含义切换）===
             const quadrantText = [
                 { tl: '飞刀 ✗别接', tr: '捡钱包 ★低吸', bl: '跌透前沿', br: '等等看' },  // 策略狙击
                 { tl: '洗盘变跑路 ✗', tr: '锁仓成色足 ✓', bl: '随大势调', br: '温和震荡' },  // 核心持仓
-                { tl: '拉高出货 ☠️', tr: '涨势有真支撑', bl: '悄悄撤离', br: '小幅跟涨' },  // 避险雷达
+                { tl: '拉高出货', tr: '涨势有真支撑', bl: '悄悄撤离', br: '小幅跟涨' },  // 避险雷达
             ];
             const qt = quadrantText[idx] || quadrantText[0];
             document.getElementById('ql-tl').innerText = qt.tl;
             document.getElementById('ql-tr').innerText = qt.tr;
             document.getElementById('ql-bl').innerText = qt.bl;
             document.getElementById('ql-br').innerText = qt.br;
+
+            const box = document.getElementById('nodes-container');
+            box.innerHTML = '';
+
+            if (!p.items || p.items.length === 0) return;
 
             // === 坐标轴散点定位 ===
             const maxAbsVal = Math.max(...p.items.map(item => Math.abs(parseFloat(item.val))), 0.1);

@@ -91,7 +91,7 @@ def gen_radial_report():
     with open(template_path, 'r', encoding='utf-8') as f:
         template = f.read()
 
-    final_html = template.replace('{{RADIAL_DATA}}', json.dumps(radial_data, ensure_ascii=False))
+    final_html = template.replace('"__RADIAL_DATA__"', json.dumps(radial_data, ensure_ascii=False))
 
     # 6. 保存报告
     timestamp = datetime.now().strftime("%m%d_%H%M")
