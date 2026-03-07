@@ -127,9 +127,9 @@
         .card {
             background: var(--bg-card);
             border: 0.5px solid var(--border-thin);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 12px;
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 8px;
             position: relative;
             transition: transform 0.2s ease;
         }
@@ -146,13 +146,13 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .sector-info h3 {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .sector-tag {
@@ -172,7 +172,7 @@
 
         .pct {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
         }
 
@@ -281,8 +281,9 @@
 
         <div class="watermark">ANTIGRAVITY QUANT</div>
 
-        <div class="footer">
-            <p>基于量化决策模型生成。不构成投资建议。<br>© 2026 量化雷达实验室</p>
+        <!-- 页面导航栏 -->
+        <div id="pagination-ctrl" style="padding: 20px; text-align: center; border-top: 0.5px solid var(--border-thin);">
+            {{PAGINATION_LINKS}}
         </div>
     </div>
 

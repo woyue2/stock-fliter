@@ -13,10 +13,14 @@ from datetime import datetime
 def gen_pro_report():
     print("================ 🚀 极简量化终端生成器 V3.0 ================")
     
+    # 获取脚本所在目录，确保从任何地方运行都能找到文件
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(base_dir, 'output')
+    
     # 1. 找到最新的分析结果
-    list_of_files = glob.glob('output/Analyzed_THS_*.csv')
+    list_of_files = glob.glob(os.path.join(output_dir, 'Analyzed_THS_*.csv'))
     if not list_of_files:
-        print("❌ 找不到分析结果文件，请先运行 run_daily_scan.py")
+        print(f"❌ 找不到分析结果文件，请检查目录: {output_dir}")
         return
     latest_file = max(list_of_files, key=os.path.getctime)
     print(f"📂 读取数据: {latest_file}")
@@ -71,7 +75,7 @@ def gen_pro_report():
     sell_fake_list = sell_list[sell_fake_mask]
 
     # 4. 读取 HTML 模板
-    template_path = 'quant_minimalist.html'
+    template_path = os.path.join(base_dir, 'quant_minimalist.html')
     if not os.path.exists(template_path):
         print(f"❌ 找不到模板文件: {template_path}")
         return
@@ -114,9 +118,14 @@ def gen_pro_report():
                 intensity_color = "#00f59b"
             elif '建仓' in behavior:
                 status_text = "📈 缓慢吸纳"
-            elif '真洗盘' in behavior:
-                status_text = "🛡️ 震荡洗浮筹"
-                intensity_color = "#40a9ff"
+            elif '洗盘' in behavior:
+                # 极端预判：主力洗盘期间，如果强度为负（股价在磨或者是微跌），则标记为暴力洗盘
+                if intensity < 0:
+                    status_text = "⚠️ 暴力洗盘 (极限施压)"
+                    intensity_color = "#ff4d6d" # 使用预警红，突出其极限性
+                else:
+                    status_text = "🛡️ 震荡洗浮筹"
+                    intensity_color = "#40a9ff"
                 price_class = ""
             elif '分歧/减仓' in behavior:
                 status_text = "⚖️ 逢高减筹"
@@ -157,24 +166,65 @@ def gen_pro_report():
             html += card
         return html
 
-    # 6. 替换模板变量
-    replacements = {
-        "{{BUY_GOLD}}": build_cards_html(gold_list),
-        "{{CARDS_HOLD}}": build_cards_html(hold_list),
-        "{{SELL_FAKE}}": build_cards_html(sell_fake_list)
-    }
+    # 6. 分页策略：每页最多 7 个卡片，且保持大板块不跨页混杂 (提升实战连贯性)
+    pages_data = []
+    
+    # Page 1: 恐慌错杀 (最多 7 条)
+    pages_data.append({"title": "1.1 恐慌错杀", "data": gold_list})
+    
+    # Page 2-4: 典型洗盘 (20 条拆成 3 页)
+    pages_data.append({"title": "2.1 典型洗盘 (Page 1)", "data": hold_list.iloc[0:7]})
+    pages_data.append({"title": "2.1 典型洗盘 (Page 2)", "data": hold_list.iloc[7:14]})
+    pages_data.append({"title": "2.1 典型洗盘 (Page 3)", "data": hold_list.iloc[14:]})
+    
+    # Page 5-6: 陷阱预警 (11 条拆成 2 页)
+    pages_data.append({"title": "3.1 陷阱预警 (Page 1)", "data": sell_fake_list.iloc[0:6]})
+    pages_data.append({"title": "3.1 陷阱预警 (Page 2)", "data": sell_fake_list.iloc[6:]})
 
-    final_html = template
-    for key, val in replacements.items():
-        final_html = final_html.replace(key, val)
+    # 7. 创建独立文件夹
+    start_time = datetime.now().strftime("%m%d_%H%M")
+    report_dir = os.path.join(output_dir, f'Report_{start_time}')
+    os.makedirs(report_dir, exist_ok=True)
+    
+    num_pages = len(pages_data)
+    
+    for i, page in enumerate(pages_data):
+        page_num = i + 1
+        page_file = f"page_{page_num}.html"
+        
+        # 构造导航条
+        nav_buttons = []
+        for n in range(1, num_pages + 1):
+            if n == page_num:
+                nav_buttons.append(f'<span style="color: var(--accent-green); font-weight: 800; padding: 0 10px;">#{n}</span>')
+            else:
+                nav_buttons.append(f'<a href="page_{n}.html" style="color: var(--text-secondary); text-decoration: none; padding: 0 10px;">{n}</a>')
+        
+        pagination_html = "".join(nav_buttons)
+        
+        # 页面内容填充
+        content_html = f"""
+        <div class="sub-section-title" style="margin-top: 20px;">{page["title"]}</div>
+        <div class="data-list">
+            {"".join(build_cards_html(page["data"]))}
+        </div>
+        """
+        
+        # 简易替换逻辑
+        page_content = template.replace('{{PAGINATION_LINKS}}', pagination_html)
+        
+        # 清除掉老模板中的大类别 section 骨架
+        pattern = r'<!-- 区块.*?</div>\s+<div class="sub-section-title">.*?</div>\s+<div class="data-list">.*?</div>'
+        page_content = re.sub(pattern, '', page_content, flags=re.S)
+        
+        # 在 phone-mockup 的 br 后面注入当前内容 (由于是多处 br，取第一个)
+        page_content = page_content.replace('<div class="phone-mockup">\n        <br>', f'<div class="phone-mockup">\n        <br>\n{content_html}')
 
-    # 7. 保存结果
-    output_path = f'output/Pro_Report_{datetime.now().strftime("%m%d_%H%M")}.html'
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(final_html)
+        with open(os.path.join(report_dir, page_file), 'w', encoding='utf-8') as f:
+            f.write(page_content)
 
-    print(f"\n✅ 极简终端报告生成完成！")
-    print(f"👉 预览文件: {os.path.abspath(output_path)}")
+    print(f"\n✅ 多页报告已生成至文件夹: {report_dir}")
+    print(f"👉 预览首页: {os.path.abspath(os.path.join(report_dir, 'page_1.html'))}")
 
 if __name__ == '__main__':
     gen_pro_report()

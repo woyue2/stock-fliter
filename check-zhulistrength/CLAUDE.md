@@ -18,4 +18,6 @@
 - `calculator.js` - 网页版简易策略评估器的计算逻辑
 - `gen_pro_report.py` - 量化雷达自媒体报告（Pro版）自动化提取生成引擎
 - `quant_minimalist.html` - 极简量化终端风格卡片 UI 渲染模板
+- `gen_radial_report.py` - 量化雷达四象限坐标轴终端（V5黑金版）自动化提取生成引擎
+- `radial_terminal_template.html` - 四象限坐标轴数据终端渲染模板
 - `gen_media_report.py` - 爆款自媒体文案自动写稿脚本

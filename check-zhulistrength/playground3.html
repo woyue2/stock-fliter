@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量化雷达 | 环形终端 V3.0</title>
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Space Grotesk', 'Noto Sans SC', 'sans-serif'],
+                        mono: ['IBM Plex Mono', 'JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        terminal: {
+                            bg: '#0A0A0A',
+                            panel: '#121212',
+                            border: '#262626',
+                            green: '#00F59B',
+                            red: '#FF4D6D',
+                            blue: '#40A9FF',
+                            text: '#E5E5E5',
+                            dim: '#737373'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #E5E5E5;
+        }
+
+        .polar-grid {
+            background-image:
+                radial-gradient(circle, transparent 20%, rgba(255, 255, 255, 0.03) 21%, transparent 22%),
+                radial-gradient(circle, transparent 40%, rgba(255, 255, 255, 0.03) 41%, transparent 42%),
+                radial-gradient(circle, transparent 60%, rgba(255, 255, 255, 0.03) 61%, transparent 62%);
+            background-position: center;
+        }
+
+        .hub-glow {
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.05);
+        }
+
+        .sector-node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .arc-path {
+            fill: none;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 1.5s forwards ease-out;
+        }
+
+        @keyframes draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .glass {
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .active-tab {
+            color: white;
+            border-bottom: 2px solid var(--tab-color);
+        }
+    </style>
+</head>
+
+<body class="h-screen w-full flex flex-col font-sans overflow-hidden">
+
+    <!-- 顶部状态栏 -->
+    <header
+        class="flex-none px-6 py-5 z-20 flex justify-between items-center border-b border-terminal-border bg-terminal-bg/80 backdrop-blur-md">
+        <div>
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <span id="page-index" class="font-mono text-terminal-dim text-sm">01</span>
+                <span id="page-title">恐慌错杀报告</span>
+            </h1>
+        </div>
+    </header>
+
+    <!-- 主交互区 -->
+    <main class="flex-1 relative flex items-center justify-center overflow-hidden">
+
+        <!-- 背景网格 -->
+        <div class="absolute inset-0 polar-grid opacity-50"></div>
+
+        <!-- 中央核心 -->
+        <div
+            class="relative z-20 w-40 h-40 rounded-full glass hub-glow flex flex-col items-center justify-center border border-white/20 shadow-[0_0_50px_rgba(255,255,255,0.05)]">
+            <div class="text-[10px] font-mono text-terminal-dim mb-1 uppercase tracking-[0.3em]">市场情绪</div>
+            <div id="central-value" class="text-4xl font-black font-mono tracking-tighter text-terminal-green">52.4%
+            </div>
+            <div class="w-20 h-[3px] bg-terminal-border mt-4 rounded-full overflow-hidden">
+                <div id="central-bar"
+                    class="h-full bg-terminal-green w-1/2 transition-all duration-1000 shadow-[0_0_10px_rgba(0,245,155,0.5)]">
+                </div>
+            </div>
+        </div>
+
+        <!-- 动态 SVG 轨道 -->
+        <svg id="radial-svg" class="absolute inset-0 w-full h-full z-10" viewBox="0 0 400 400">
+            <!-- 轨道将通过 JS 动态注入 -->
+        </svg>
+
+        <!-- 动态标的点 -->
+        <div id="nodes-container" class="absolute inset-0 z-30 pointer-events-none">
+            <!-- 标点将通过 JS 动态注入 -->
+        </div>
+
+    </main>
+
+    <!-- 底部控制栏 -->
+    <footer class="flex-none p-6 z-20 bg-terminal-bg/80 backdrop-blur-md border-t border-terminal-border">
+        <div class="flex justify-between items-center max-w-md mx-auto">
+            <button onclick="switchPage(0)" class="nav-btn flex flex-col items-center gap-2 group">
+                <div
+                    class="w-10 h-1 rounded-full bg-terminal-border group-[.active]:bg-terminal-green transition-colors">
+                </div>
+                <span
+                    class="text-[10px] font-mono tracking-widest text-terminal-dim group-[.active]:text-white">狙击买点</span>
+            </button>
+            <button onclick="switchPage(1)" class="nav-btn flex flex-col items-center gap-2 group">
+                <div
+                    class="w-10 h-1 rounded-full bg-terminal-border group-[.active]:bg-terminal-blue transition-colors">
+                </div>
+                <span
+                    class="text-[10px] font-mono tracking-widest text-terminal-dim group-[.active]:text-white">坚定持股</span>
+            </button>
+            <button onclick="switchPage(2)" class="nav-btn flex flex-col items-center gap-2 group">
+                <div class="w-10 h-1 rounded-full bg-terminal-border group-[.active]:bg-terminal-red transition-colors">
+                </div>
+                <span
+                    class="text-[10px] font-mono tracking-widest text-terminal-dim group-[.active]:text-white">诱多避险</span>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const data = [
+            {
+                index: "01",
+                title: "恐慌错杀报告",
+                color: "#00F59B",
+                sentiment: "52.4%",
+                items: [
+                    { name: "环境治理", val: "-3.11" },
+                    { name: "零售", val: "-2.61" },
+                    { name: "教育", val: "-2.37" },
+                    { name: "非金属材料", val: "-1.88" },
+                    { name: "塑料制品", val: "-1.14" },
+                    { name: "纺织制造", val: "-1.05" }
+                ]
+            },
+            {
+                index: "02",
+                title: "典型洗盘监测",
+                color: "#40A9FF",
+                sentiment: "48.2%",
+                items: [
+                    { name: "影视院线", val: "+0.99" },
+                    { name: "电力", val: "+0.85" },
+                    { name: "自动化设备", val: "+0.50" },
+                    { name: "美容护理", val: "+0.38" },
+                    { name: "家居用品", val: "+0.32" },
+                    { name: "中药", val: "+0.26" },
+                    { name: "电网设备", val: "-0.21" },
+                    { name: "电源设备", val: "-0.36" },
+                    { name: "旅游及酒店", val: "-0.59" },
+                    { name: "轨交设备", val: "-0.69" },
+                    { name: "IT服务", val: "-0.77" },
+                    { name: "造纸", val: "-0.81" },
+                    { name: "汽车服务", val: "-0.83" }
+                ]
+            },
+            {
+                index: "03",
+                title: "诱多陷阱预警",
+                color: "#FF4D6D",
+                sentiment: "35.1%",
+                items: [
+                    { name: "黑色家电", val: "+3.41" },
+                    { name: "厨卫电器", val: "+2.03" },
+                    { name: "通用设备", val: "+1.37" },
+                    { name: "电池", val: "+1.14" },
+                    { name: "港口航运", val: "-0.66" },
+                    { name: "通信服务", val: "-0.69" },
+                    { name: "包装印刷", val: "-0.70" },
+                    { name: "石油加工", val: "-0.27" },
+                    { name: "钢铁", val: "-0.49" }
+                ]
+            }
+        ];
+
+        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+            const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY + (radius * Math.sin(angleInRadians))
+            };
+        }
+
+        function describeArc(x, y, radius, startAngle, endAngle) {
+            const start = polarToCartesian(x, y, radius, endAngle);
+            const end = polarToCartesian(x, y, radius, startAngle);
+            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return [
+                "M", start.x, start.y,
+                "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+            ].join(" ");
+        }
+
+        function switchPage(idx) {
+            const p = data[idx];
+            document.getElementById('page-index').innerText = p.index;
+            document.getElementById('page-title').innerText = p.title;
+            document.getElementById('central-value').innerText = p.sentiment;
+            document.getElementById('central-value').style.color = p.color;
+            document.getElementById('central-bar').style.backgroundColor = p.color;
+            document.getElementById('central-bar').style.width = p.sentiment;
+
+            document.querySelectorAll('.nav-btn').forEach((btn, i) => {
+                if (i === idx) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            const svg = document.getElementById('radial-svg');
+            svg.innerHTML = '';
+            const container = document.getElementById('nodes-container');
+            container.innerHTML = '';
+
+            const n = p.items.length;
+            p.items.forEach((item, i) => {
+                // 自动计算角度和间距
+                const angle = (360 / n) * i;
+
+                // 极简分层：2层散布法，大幅增加间距，确保文字不重放
+                const dist = 105 + (i % 2) * 65;
+
+                // 绘制弧形装饰轨道
+                const arc = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const arcWidth = 6;
+                arc.setAttribute("d", describeArc(200, 200, dist, angle - arcWidth, angle + arcWidth));
+                arc.setAttribute("class", "arc-path");
+                arc.setAttribute("stroke", p.color);
+                arc.setAttribute("stroke-width", Math.min(10, Math.abs(parseFloat(item.val)) * 4 + 1));
+                arc.setAttribute("opacity", "0.5");
+                svg.appendChild(arc);
+
+                // 绘制节点
+                const pos = polarToCartesian(50, 50, dist / 4, angle);
+                const node = document.createElement('div');
+                node.className = 'sector-node pointer-events-auto';
+                node.style.left = `${pos.x}%`;
+                node.style.top = `${pos.y}%`;
+
+                // 究极强化版标签：白底黑字（最强对比度）+ 增大字号
+                node.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white border-2 border-black px-2 py-0.5 rounded shadow-[4px_4px_0_rgba(0,0,0,0.3)]">
+                            <span class="text-[14px] font-black text-black whitespace-nowrap leading-none">${item.name}</span>
+                        </div>
+                        <div class="text-[12px] font-mono font-black mt-1 px-1.5 rounded-sm bg-black text-white" style="color: ${p.color};">
+                            ${item.val}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(node);
+            });
+        }
+
+        // 初始化显示第一页
+        switchPage(0);
+    </script>
+</body>
+
+</html>
