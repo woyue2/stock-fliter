@@ -103,15 +103,15 @@ def run_daily_scan():
             
             mid_ratio = (mid_net / total_amount) * 100
             
-            # --- 核心判定逻辑树 ---
+            # --- 核心判定逻辑树 (加入价格确认，提升严谨性) ---
             behavior, prediction, warning = "未知", "未知", ""
             
-            # A > 3 (抢筹)
+            # A > 3 (强流入区)
             if main_ratio > 3:
                 if retail_net < 0:
-                    behavior = "真抢筹"
+                    behavior = "真抢筹" if pct_chg > 0.5 else "主力暗中吸筹"
                     prediction = "冲高回落" if pct_chg > 5 else "上涨"
-                    warning = "涨幅透支风险" if pct_chg > 5 else ""
+                    warning = "股价暂未跟随" if pct_chg <= 0.5 else ("涨幅透支风险" if pct_chg > 5 else "")
                 else:
                     behavior = "假抢筹"
                     prediction = "下跌/冲高回落"
@@ -119,16 +119,17 @@ def run_daily_scan():
                 if mid_ratio > 1.5 and prediction == "上涨":
                     warning += " (中单跟风过重)"
 
-            # 1 <= A <= 3 (建仓)
+            # 1 <= A <= 3 (温和流入区)
             elif 1 <= main_ratio <= 3:
                 if retail_net < 0:
-                    behavior = "真建仓"
+                    behavior = "真建仓" if pct_chg > 0 else "底部分歧吸筹"
                     prediction = "上涨"
+                    warning = "资金先行，股价待突破" if pct_chg <= 0 else ""
                 else:
                     behavior = "假建仓"
                     prediction = "冲高回落"
                     
-            # -1 <= A < 1 (洗盘)
+            # -1 <= A < 1 (震荡洗盘区)
             elif -1 <= main_ratio < 1:
                 if retail_net > 0:
                     behavior = "假洗盘/诱多"
@@ -137,16 +138,22 @@ def run_daily_scan():
                     behavior = "真洗盘"
                     prediction = "上涨"
                     
-            # A < -1 (出货)
+            # A < -1 (流出区)
             else:
                 if retail_net < 0:
                     behavior = "假出货/恐慌错杀"
                     prediction = "超跌反弹"
                     warning = "情绪底/散户被洗错杀"
                 else:
-                    behavior = "真出货"
-                    prediction = "继续下跌"
-                    warning = "主力真实派发"
+                    # 关键修复：银行类案例，股价没跌但主力在卖
+                    if pct_chg > -0.2:
+                        behavior = "高位分歧/减仓" 
+                        prediction = "震荡整理"
+                        warning = "股价死撑，主力暗中派发"
+                    else:
+                        behavior = "真出货"
+                        prediction = "继续下跌"
+                        warning = "量价齐跌，确认为派发"
                     
             results.append({
                 '代码': str(row.get('Unnamed: 0', '')),

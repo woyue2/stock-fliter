@@ -232,6 +232,16 @@
             transform: rotate(-90deg);
         }
 
+        .sub-section-title {
+            font-size: 11px;
+            color: var(--text-primary);
+            margin: 0 16px 12px;
+            padding-left: 10px;
+            border-left: 3px solid var(--text-secondary);
+            opacity: 0.9;
+            font-weight: 600;
+        }
+
     </style>
 </head>
 <body>
@@ -262,29 +272,40 @@
 
         <!-- 区块 1: 狙击买点 -->
         <div class="section-title">
-            <span style="color: var(--accent-green);">🎯 ACTION: OPPORTUNITIES</span>
-            <span>INTENSITY</span>
+            <span style="color: var(--accent-green);">🎯 行动指令：狙击买点</span>
+            <span>主力强度</span>
         </div>
+        <div class="sub-section-title">1.1 强势买点 (主力扫货)</div>
         <div class="data-list">
-            {{CARDS_BUY}}
+            {{BUY_STRONG}}
+        </div>
+        <div class="sub-section-title">1.2 恐慌错杀 (超跌反弹黄金坑)</div>
+        <div class="data-list">
+            {{BUY_GOLD}}
         </div>
 
         <!-- 区块 2: 坚定持股 -->
         <div class="section-title">
-            <span style="color: #40a9ff;">🛡️ ACTION: HOLD TIGHT</span>
-            <span>INTENSITY</span>
+            <span style="color: #40a9ff;">🛡️ 行动指令：坚定持股</span>
+            <span>主力强度</span>
         </div>
+        <div class="sub-section-title">2.1 典型洗盘 (主力未走，散户流出)</div>
         <div class="data-list">
             {{CARDS_HOLD}}
         </div>
 
-        <!-- 区块 3: 避险止损 -->
+        <!-- 区块 3: 撤退避险 -->
         <div class="section-title">
-            <span style="color: var(--accent-red);">🛑 ACTION: STOP LOSS</span>
-            <span>INTENSITY</span>
+            <span style="color: var(--accent-red);">🛑 行动指令：撤退避险</span>
+            <span>主力强度</span>
         </div>
+        <div class="sub-section-title">3.1 真实派发 (主力砸盘)</div>
         <div class="data-list">
-            {{CARDS_SELL}}
+            {{SELL_TRUE}}
+        </div>
+        <div class="sub-section-title">3.2 陷阱预警 (诱多 / 假抢筹)</div>
+        <div class="data-list">
+            {{SELL_FAKE}}
         </div>
 
         <div class="watermark">ANTIGRAVITY QUANT</div>

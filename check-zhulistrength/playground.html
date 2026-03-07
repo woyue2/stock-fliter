@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量化战损风 - 多彩配色方案选择器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        .palette-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .palette-name {
+            font-weight: 700;
+            font-size: 18px;
+            color: #555;
+        }
+
+        /* iPhone 尺寸模拟 */
+        .mockup {
+            width: 320px;
+            height: 600px;
+            border-radius: 30px;
+            overflow: hidden;
+            border: 6px solid #e0e0e0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            padding: 30px 20px 10px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .content {
+            padding: 0 20px;
+            flex: 1;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .card {
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+        }
+
+        /* --- 方案 1: 经典雪白 (券商专业版) --- */
+        .theme-white { background: #ffffff; color: #1a1a1a; }
+        .theme-white .header { color: #888; }
+        .theme-white .card.up { background: #fff1f0; border: 1px solid #ffccc7; color: #cf1322; }
+        .theme-white .card.down { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+
+        /* --- 方案 2: 极简浅灰 (苹果设计风) --- */
+        .theme-apple { background: #f5f5f7; color: #1d1d1f; }
+        .theme-apple .header { color: #86868b; }
+        .theme-apple .card { background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .theme-apple .card.up { color: #ff3b30; }
+        .theme-apple .card.down { color: #34c759; }
+
+        /* --- 方案 3: 复古奶油 (报纸阅读感) --- */
+        .theme-cream { background: #fdf6e3; color: #586e75; border-color: #eee8d5; }
+        .theme-cream .header { color: #93a1a1; }
+        .theme-cream .title { color: #073642; }
+        .theme-cream .card { background: #eee8d5; border: 1px solid #dcd3b6; }
+        .theme-cream .card.up { color: #dc322f; font-weight: 700; }
+        .theme-cream .card.down { color: #859900; font-weight: 700; }
+
+        /* --- 方案 4: 深蓝商务 (现代仪表盘) --- */
+        .theme-navy { background: #001529; color: #e6f7ff; border-color: #000; }
+        .theme-navy .header { color: #40a9ff; }
+        .theme-navy .card { background: #002140; border: 1px solid #003a8c; }
+        .theme-navy .card.up { color: #ff4d4f; }
+        .theme-navy .card.down { color: #73d13d; }
+
+        /* --- 方案 5: 柔和石墨 (护眼黑) --- */
+        .theme-graphite { background: #1c1c1e; color: #f2f2f7; border-color: #000; }
+        .theme-graphite .header { color: #8e8e93; }
+        .theme-graphite .card { background: #2c2c2e; }
+        .theme-graphite .card.up { color: #ff453a; }
+        .theme-graphite .card.down { color: #32d74b; }
+
+        /* --- 方案 6: 莫兰迪色 (艺术设计感) --- */
+        .theme-morandi { background: #e0e5ec; color: #444; }
+        .theme-morandi .header { color: #999; }
+        .theme-morandi .card { background: #e0e5ec; box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff; }
+        .theme-morandi .card.up { color: #bc5e5e; }
+        .theme-morandi .card.down { color: #6e8b7e; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. 经典雪白 -->
+    <div class="palette-container">
+        <div class="palette-name">方案 1: 经典雪白 (最清晰)</div>
+        <div class="mockup theme-white">
+            <div class="header">2026.03.06 / ANALYSIS</div>
+            <div class="content">
+                <div class="title">主力资金<br>研判雷达</div>
+                <div class="card up">
+                    <span>农化制品 (抢筹)</span>
+                    <span class="val">+5.27</span>
+                </div>
+                <div class="card down">
+                    <span>通信设备 (出货)</span>
+                    <span class="val">-4.06</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 极简浅灰 -->
+    <div class="palette-container">
+        <div class="palette-name">方案 2: 苹果灰色 (高级感)</div>
+        <div class="mockup theme-apple">
+            <div class="header">2026.03.06 / ANALYSIS</div>
+            <div class="content">
+                <div class="title">主力资金<br>研判雷达</div>
+                <div class="card up">
+                    <span>农化制品 (抢筹)</span>
+                    <span class="val">+5.27</span>
+                </div>
+                <div class="card down">
+                    <span>通信设备 (出货)</span>
+                    <span class="val">-4.06</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 复古奶油 -->
+    <div class="palette-container">
+        <div class="palette-name">方案 3: 复古暖调 (不伤眼)</div>
+        <div class="mockup theme-cream">
+            <div class="header">2026.03.06 / ANALYSIS</div>
+            <div class="content">
+                <div class="title">主力资金<br>研判雷达</div>
+                <div class="card up">
+                    <span>农化制品 (抢筹)</span>
+                    <span class="val">+5.27</span>
+                </div>
+                <div class="card down">
+                    <span>通信设备 (出货)</span>
+                    <span class="val">-4.06</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 深蓝商务 -->
+    <div class="palette-container">
+        <div class="palette-name">方案 4: 商务深蓝 (科技感)</div>
+        <div class="mockup theme-navy">
+            <div class="header">2026.03.06 / ANALYSIS</div>
+            <div class="content">
+                <div class="title">主力资金<br>研判雷达</div>
+                <div class="card up">
+                    <span>农化制品 (抢筹)</span>
+                    <span class="val">+5.27</span>
+                </div>
+                <div class="card down">
+                    <span>通信设备 (出货)</span>
+                    <span class="val">-4.06</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 柔和石墨 -->
+    <div class="palette-container">
+        <div class="palette-name">方案 5: 柔和石墨 (护眼黑)</div>
+        <div class="mockup theme-graphite">
+            <div class="header">2026.03.06 / ANALYSIS</div>
+            <div class="content">
+                <div class="title">主力资金<br>研判雷达</div>
+                <div class="card up">
+                    <span>农化制品 (抢筹)</span>
+                    <span class="val">+5.27</span>
+                </div>
+                <div class="card down">
+                    <span>通信设备 (出货)</span>
+                    <span class="val">-4.06</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 莫兰迪色 -->
+    <div class="palette-container">
+        <div class="palette-name">方案 6: 莫兰迪 (现代审美)</div>
+        <div class="mockup theme-morandi">
+            <div class="header">2026.03.06 / ANALYSIS</div>
+            <div class="content">
+                <div class="title">主力资金<br>研判雷达</div>
+                <div class="card up">
+                    <span>农化制品 (抢筹)</span>
+                    <span class="val">+5.27</span>
+                </div>
+                <div class="card down">
+                    <span>通信设备 (出货)</span>
+                    <span class="val">-4.06</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

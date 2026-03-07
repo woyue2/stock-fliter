@@ -1,3 +1,9 @@
+"""
+[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+[POS]: check-zhulistrength/gen_pro_report.py, 量化雷达自媒体报告（Pro版）自动化提取生成引擎
+[INPUT]: output/Analyzed_THS_*.csv
+[OUTPUT]: output/Pro_Report_*.html
+"""
 import pandas as pd
 import os
 import glob
@@ -38,24 +44,31 @@ def gen_pro_report():
 
     df['散户净额_数值'] = df['散户净额(反推)'].apply(parse_amount)
 
-    # ① 狙击机会 (买点): 抢筹、建仓 (主力扫货) + 恐慌错杀 (超跌反弹)
-    buy_strong_mask = df['主力行为'].str.contains('抢筹|建仓', na=False) & ~df['主力行为'].str.contains('假|错杀', na=False)
+    # ① 狙击机会 (买点): 抢筹、建仓、吸筹 (主力扫货) + 恐慌错杀 (超跌反弹)
+    # 取最强势的板块
+    buy_strong_mask = df['主力行为'].str.contains('抢筹|建仓|吸筹', na=False) & ~df['主力行为'].str.contains('假|错杀', na=False)
     buy_strong = df[buy_strong_mask].sort_values(by='主力强度', ascending=False)
     
-    # 修复 collision：如果包含错杀，必须排除“假”前缀
+    # 取跌得最惨的恐慌错杀板块
     gold_mask = df['主力行为'].str.contains('错杀', na=False) & ~df['主力行为'].str.contains('假洗盘|假建仓|假抢筹|诱多', na=False)
     gold_list = df[gold_mask].sort_values(by='主力强度', ascending=True)
     
     buy_list = pd.concat([buy_strong, gold_list])
 
-    # ② 坚定持股 (防洗盘): 真洗盘 (散户交出筹码，主力没走)
+    # ② 坚定持股 (防洗盘): 真洗盘
     hold_mask = df['主力行为'].str.contains('真洗盘', na=False)
     # 使用转换后的纯数值进行真实金额大小排序
     hold_list = df[hold_mask].sort_values(by='散户净额_数值', ascending=True)
 
-    # ③ 避险止损 (逃顶): 真出货 + 诱多/假抢筹/假洗盘等陷阱
-    sell_mask = df['主力行为'].str.contains('出货|假|诱多', na=False) & ~df['主力行为'].str.contains('错杀', na=False)
+    # ③ 避险止损 (逃顶): 真出货 + 诱多/假抢筹/假洗盘 + 减仓分歧
+    sell_mask = df['主力行为'].str.contains('出货|假|诱多|分歧/减仓', na=False) & ~df['主力行为'].str.contains('错杀', na=False)
     sell_list = df[sell_mask].sort_values(by='主力强度', ascending=True)
+    
+    # 将避险止损进一步拆分为：真跑路 和 陷阱类
+    sell_true_mask = sell_list['主力行为'].str.contains('出货|分歧/减仓', na=False)
+    sell_fake_mask = sell_list['主力行为'].str.contains('假|诱多', na=False)
+    sell_true_list = sell_list[sell_true_mask]
+    sell_fake_list = sell_list[sell_fake_mask]
 
     # 4. 读取 HTML 模板
     template_path = 'quant_minimalist.html'
@@ -76,7 +89,7 @@ def gen_pro_report():
             intensity = float(row['主力强度'])
             
             # 定制化卡片样式
-            if any(x in behavior for x in ['抢筹', '建仓', '错杀']) and '假' not in behavior or '错杀' in behavior:
+            if any(x in behavior for x in ['抢筹', '建仓', '错杀', '吸筹']) and '假' not in behavior:
                 theme_class = "up"
                 price_class = "price-up"
             elif '真洗盘' in behavior:
@@ -92,16 +105,22 @@ def gen_pro_report():
             # 状态文案精雕
             if '错杀' in behavior:
                 status_text = "🎯 黄金坑低吸"
-                intensity_color = "#00f59b" # 用绿色（我们模板的主多颜色）
+                intensity_color = "#00f59b"
                 price_class = "price-up"
             elif '抢筹' in behavior:
                 status_text = "🔥 主力爆买"
+            elif '吸筹' in behavior:
+                status_text = "🕵️ 隐秘吸筹"
+                intensity_color = "#00f59b"
             elif '建仓' in behavior:
                 status_text = "📈 缓慢吸纳"
             elif '真洗盘' in behavior:
                 status_text = "🛡️ 震荡洗浮筹"
-                intensity_color = "#40a9ff" # 蓝色代表中性偏多
+                intensity_color = "#40a9ff"
                 price_class = ""
+            elif '分歧/减仓' in behavior:
+                status_text = "⚖️ 逢高减筹"
+                intensity_color = "#ff4d6d"
             elif '假' in behavior or '诱多' in behavior:
                 status_text = "☢️ 诱多陷阱"
             else:
@@ -126,7 +145,7 @@ def gen_pro_report():
                 </div>
                 <div class="strength-bar-container">
                     <div class="bar-label">
-                        <span>SIGNAL</span>
+                        <span>研判结果</span>
                         <span>{status_text}</span>
                     </div>
                     <div class="bar-bg">
@@ -141,20 +160,24 @@ def gen_pro_report():
     # 6. 替换模板变量
     date_str = datetime.now().strftime("%Y.%m.%d %H:%M")
     avg_intensity = df['主力强度'].mean()
-    emo_value = f"{50 + avg_intensity * 5:.1f}%"
+    # 限制情绪指数在 0-100% 之间
+    clamped_emo = min(100.0, max(0.0, 50 + avg_intensity * 5))
+    emo_value = f"{clamped_emo:.1f}%"
     emo_class = "price-up" if avg_intensity > 0 else "price-down"
 
     replacements = {
-        "{{REPORT_TITLE}}": "QUANT_RADAR_PRO",
+        "{{REPORT_TITLE}}": "量化雷达终端 PRO",
         "{{REPORT_DATE}}": date_str,
-        "{{SUBTITLE}}": "Actionable Insights",
+        "{{SUBTITLE}}": "独家实战情报",
         "{{MAIN_TITLE}}": "主力动向<br>作战图谱",
         "{{EMO_CLASS}}": emo_class,
         "{{EMO_VALUE}}": emo_value,
         "{{TOTAL_SECTORS}}": str(len(df)),
-        "{{CARDS_BUY}}": build_cards_html(buy_list),
+        "{{BUY_STRONG}}": build_cards_html(buy_strong),
+        "{{BUY_GOLD}}": build_cards_html(gold_list),
         "{{CARDS_HOLD}}": build_cards_html(hold_list),
-        "{{CARDS_SELL}}": build_cards_html(sell_list)
+        "{{SELL_TRUE}}": build_cards_html(sell_true_list),
+        "{{SELL_FAKE}}": build_cards_html(sell_fake_list)
     }
 
     final_html = template
