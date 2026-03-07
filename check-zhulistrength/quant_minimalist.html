@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量化雷达 | 极简终端风格</title>
+    <!-- 引入专业字体：Noto Sans SC (中文), Inter (英文标题), JetBrains Mono (硬核数据) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0d1117;
+            --bg-card: #161b22;
+            --accent-green: #00f59b;
+            --accent-red: #ff4d6d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --border-thin: rgba(240, 246, 252, 0.1);
+            --glass-shine: rgba(255, 255, 255, 0.03);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-primary);
+            font-family: 'Noto Sans SC', 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 模拟手机容器，方便截图 */
+        .phone-mockup {
+            width: 375px;
+            background-color: var(--bg-deep);
+            border: 8px solid #21262d;
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        /* 顶部状态条感官设计 */
+        .status-bar {
+            padding: 16px 24px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            border-bottom: 0.5px solid var(--border-thin);
+        }
+
+        .header {
+            padding: 32px 24px 20px;
+        }
+
+        .header-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-green);
+            background: rgba(0, 245, 155, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat-badge {
+            flex: 1;
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-thin);
+            padding: 12px;
+            border-radius: 16px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .section-title {
+            padding: 20px 24px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .data-list {
+            padding: 0 16px 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-thin);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 12px;
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-shine), transparent);
+            border-radius: 20px;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .sector-info h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .sector-tag {
+            font-size: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        .main-value {
+            text-align: right;
+        }
+
+        .price-up { color: var(--accent-red); }
+        .price-down { color: var(--accent-green); }
+
+        .pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* 主力强度仪表条 */
+        .strength-bar-container {
+            margin-top: 10px;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+
+        .bar-bg {
+            height: 4px;
+            background: #21262d;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .up .bar-fill { 
+            background: linear-gradient(90deg, #ff4d6d44, var(--accent-red));
+        }
+        .down .bar-fill { 
+            background: linear-gradient(90deg, #00f59b44, var(--accent-green));
+        }
+
+        .footer {
+            padding: 30px 24px;
+            text-align: center;
+            border-top: 0.5px solid var(--border-thin);
+        }
+
+        .footer p {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .watermark {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.05);
+            position: absolute;
+            bottom: 60px;
+            right: -20px;
+            transform: rotate(-90deg);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="phone-mockup">
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <span>{{REPORT_TITLE}}</span>
+            <span>{{REPORT_DATE}}</span>
+        </div>
+
+        <!-- 头部 -->
+        <div class="header">
+            <div class="header-tag">{{SUBTITLE}}</div>
+            <h1>{{MAIN_TITLE}}</h1>
+            
+            <div class="summary-stats">
+                <div class="stat-badge">
+                    <div class="stat-label">情绪指数</div>
+                    <div class="stat-value {{EMO_CLASS}}">{{EMO_VALUE}}</div>
+                </div>
+                <div class="stat-badge">
+                    <div class="stat-label">监测板块</div>
+                    <div class="stat-value">{{TOTAL_SECTORS}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <span>PROPRIETARY SIGNALS</span>
+            <span>INTENSITY</span>
+        </div>
+
+        <!-- 数据列表 -->
+        <div class="data-list">
+            {{CARDS}}
+        </div>
+
+        <div class="watermark">ANTIGRAVITY QUANT</div>
+
+        <div class="footer">
+            <p>基于量化决策模型生成。不构成投资建议。<br>© 2026 量化雷达实验室</p>
+        </div>
+    </div>
+
+</body>
+</html>
