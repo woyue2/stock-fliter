@@ -536,11 +536,16 @@
                 logging: false,
             });
 
-            const title = document.getElementById('page-title').innerText || 'report';
-            const ts = new Date().toISOString().slice(5, 13).replace('T', '_');
+            let title = document.getElementById('page-title').innerText || 'report';
+            let shortType = '导出';
+            if (title.includes('错杀')) shortType = '错杀';
+            else if (title.includes('洗盘')) shortType = '洗盘';
+            else if (title.includes('诱多')) shortType = '诱多';
+
+            const mmdd = new Date().toISOString().slice(5, 10).replace('-', '');
             const link = document.createElement('a');
-            link.download = `${title}_${ts}_iPhone12.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.download = `${mmdd}-${shortType}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
 
             btn.innerText = '📸 导出';
