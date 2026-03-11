@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  sector_name: str, sample_limit: int
+# OUTPUT: data/sector_minutes/{sector_name}_{date}.csv
+# POS:    analyze-sector-rotation/prototype_minute.py
 # -*- coding: utf-8 -*-
 import os
 import pandas as pd
