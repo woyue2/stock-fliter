@@ -1,9 +1,0 @@
-{
-  "_desc": "量比×换手率×涨跌幅 默认筛选参数",
-  "volume_ratio":    { "min": 4.0,        "max": 10.0  },
-  "pct_chg":         { "min": 3.0,        "max": 8.0   },
-  "price":           { "min": 4.0 },
-  "turnover":        { "min": 2.0,        "max": 15.0  },
-  "amount":          { "min": 200000000,  "max": 2000000000 },
-  "vr_lookback_days": 5
-}

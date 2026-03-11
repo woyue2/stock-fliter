@@ -19,6 +19,10 @@
 - `compare_candidate_pools.py`: 对比两次扫描的候选池差异。
 - `add_sample_industry.py`: 填充测试用的行业数据。
 
+### 建议
+fetch_daily_snap虽然它很快，但建议你的数据流这样配合  主力更新：每天 15:30 以后跑 
+
+fetch_daily_snap.py，保证数据库里有今天的行情。定期校准：每周五或每月初跑一次 fetch_daily_history.py --all，利用 BaoStock 的专业除权因子把这一周/月里所有除权股票的历史记录重新“刷”一遍，确保数据百分百准确。
 ---
 
 ## 🚀 使用方法
