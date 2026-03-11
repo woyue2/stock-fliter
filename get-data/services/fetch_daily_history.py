@@ -355,20 +355,18 @@ def merge_and_save(existing_df: Optional[pd.DataFrame], new_df: pd.DataFrame, pa
     # 1. 保存为 CSV (备份)
     combined_df.to_csv(path, index=False, encoding="utf-8-sig")
 
-    # 2. 增量双写：只把这次新抓到的 new_df 写入 SQLite (秒级完成)
-    if "code" not in new_df.columns:
-        new_df = new_df.copy()
-        new_df["code"] = path.stem.zfill(6)
-        
-    if not new_df.empty:
-        new_df = new_df.copy()
-        if "date" in new_df.columns:
-            new_df["date"] = new_df["date"].map(_format_date)
-        try:
-            # upsert_daily_rows 支持字典列表，自动 INSERT OR REPLACE
-            upsert_daily_rows(new_df.to_dict(orient="records"))
-        except Exception as e:
-            logging.error(f"SQLite 写入失败 ({path.stem}): {e}")
+    # 2. 增量双向同步与修补机制：CSV 与 DB 互相补齐
+    code_str = path.stem.zfill(6)
+    try:
+        from scripts.sync_missing_to_db import sync_bidirectional
+        sync_bidirectional(code_str, path)
+        # 重新读取可能被 sync_bidirectional 补全了的新数据
+        combined_df = pd.read_csv(path, encoding="utf-8-sig")
+        if "date" in combined_df.columns:
+            combined_df["date"] = pd.to_datetime(combined_df["date"])
+    except Exception as e:
+        import logging
+        logging.error(f"双向同步失败 ({path.stem}): {e}")
 
     return combined_df
 
@@ -594,7 +592,31 @@ def main() -> int:
                         global_max_date = fast_latest_date
                     
                     if fast_latest_date.strftime("%Y-%m-%d") >= target_end_date_str:
-                        # 已是最新，直接跳过
+                        db_needs_sync = False
+                        db_latest_str = None
+                        try:
+                            from util.db import _connect
+                            with _connect() as conn:
+                                cur = conn.cursor()
+                                cur.execute("SELECT MAX(date) FROM daily_ohlcv WHERE code=?", (item.code,))
+                                db_row = cur.fetchone()
+                                if db_row and db_row[0]:
+                                    db_latest_str = pd.to_datetime(db_row[0]).strftime("%Y-%m-%d")
+                                if not db_latest_str or db_latest_str < fast_latest_date.strftime("%Y-%m-%d"):
+                                    db_needs_sync = True
+                        except Exception:
+                            db_needs_sync = True
+
+                        synced_rows_count = 0
+                        if db_needs_sync:
+                            try:
+                                from scripts.sync_missing_to_db import sync_bidirectional
+                                rows_added_to_db, _ = sync_bidirectional(item.code, path)
+                                synced_rows_count = rows_added_to_db
+                            except Exception:
+                                pass
+
+                        # 已是最新（或刚完成了 DB 后台补全），跳过网络请求
                         selected.append(item)
                         success_count += 1
                         skipped_count += 1
@@ -602,9 +624,9 @@ def main() -> int:
                         summary_rows.append({
                             "code": item.code,
                             "name": item.name,
-                            "source": "local_fast_check",
+                            "source": "local_fast_check_synced_db" if db_needs_sync else "local_fast_check",
                             "status": "ok_skipped",
-                            "row_count": 0,
+                            "row_count": synced_rows_count,
                             "latest_date": fast_latest_date.strftime("%Y-%m-%d"),
                             "error": "",
                         })

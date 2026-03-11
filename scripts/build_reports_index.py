@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  check-*/output/ 下的 HTML 报告文件
+# OUTPUT: report_index/reports_index.html, reports_list.html
+# POS:    scripts/build_reports_index.py
 # -*- coding: utf-8 -*-
 """
 生成选股报告索引页 reports_index.html。
@@ -19,6 +23,7 @@ CONFIG = [
     ("TD分析", "check-td--有一点点用/output"),
     ("TDxMACDxVolume", "check-tdxmacdxvolume/output"),  # 新增
     ("VolUp x Yang x Shipan", "check-volupxyangxshipan--有用/output"),
+    ("VolRatio x Turn x PctChg", "check-volratioxturnxpctchg/output"),
     ("主力强度分析", "check-zhulistrength/output"),
 ]
 

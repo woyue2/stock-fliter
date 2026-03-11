@@ -1,3 +1,7 @@
+# [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+# INPUT:  Optional[date], Optional[limit], flags (parallel, test, manual skips)
+# OUTPUT: Execution logs, Result summaries in logs/run_all/
+# POS:    run_all_strategies.py
 # -*- coding: utf-8 -*-
 """
 统一调度脚本：一键运行数据更新 + 核心分析模块
@@ -8,6 +12,7 @@
 3. check-maxrsix6u1d/main.py
 4. check-tdxmacdxvolume/main.py
 5. check-volupxyangxshipan/main.py
+6. check-volratioxturnxpctchg/main.py (新增)
 
 设计目标：
 - 便于在本地或云端用单个入口脚本挂到定时任务
@@ -178,11 +183,11 @@ def build_steps(
     skip_maxrsix6u1d: bool,
     skip_tdxmacdxvolume: bool,
     skip_volupxyangxshipan: bool,
-    skip_zhulistrength: bool,
-    skip_build_index: bool,
     get_minutes: bool,
     end_date: Optional[str],
     limit: Optional[int],
+    skip_volratioxturnxpctchg: bool = False,
+    skip_build_index: bool = False,
     low_mem_mode: bool = False,
     shared_raw_dir: Optional[str] = None,
     test: bool = False,
@@ -290,20 +295,26 @@ def build_steps(
                 shared_raw_dir=shared_raw_dir
             )
         )
-    
-    # 4.7 主力强度与散户博弈分析 (A*B*C)
-    if not skip_zhulistrength:
-        cmd = [sys.executable, "main.py"]
+
+    # 4.6 量比 x 换手 x 涨跌幅 动量分析
+    if not skip_volratioxturnxpctchg:
+        cmd = [sys.executable, "main.py", *end_date_args]
+        if effective_limit:
+            cmd.extend(["--limit", str(effective_limit)])
+        if browser_silent:
+            cmd.append("--no-open")
         steps.append(
             Step(
-                name="主力强度分析 (check-zhulistrength)",
+                name="VolRatio x Turn x PctChg 分析 (check-volratioxturnxpctchg)",
                 command=cmd,
-                workdir=PROJECT_ROOT / "check-zhulistrength",
+                workdir=PROJECT_ROOT / "check-volratioxturnxpctchg",
                 group="analysis",
-                low_mem_mode=low_mem_mode
+                low_mem_mode=low_mem_mode,
+                shared_raw_dir=shared_raw_dir
             )
         )
 
+    
     # 5. 生成报告索引（reports_list.html 等）
     if not skip_build_index:
         steps.append(
@@ -367,9 +378,10 @@ def parse_args() -> argparse.Namespace:
         help="跳过 VolUp x Yang x Shipan 模块 (check-volupxyangxshipan)",
     )
     parser.add_argument(
-        "--skip-zhulistrength",
+        "--skip-volratio",
         action="store_true",
-        help="跳过主力强度分析模块 (check-zhulistrength)",
+        dest="skip_volratioxturnxpctchg",
+        help="跳过 量比x换手x涨跌幅 模块 (check-volratioxturnxpctchg)",
     )
     parser.add_argument(
         "--skip-build-index",
@@ -458,7 +470,7 @@ def interactive_prompt(args: argparse.Namespace) -> None:
     print("[2] MAxRSIx6U1D 分析 (check-maxrsix6u1d)")
     print("[3] TDxMACDxVolume 分析 (check-tdxmacdxvolume)")
     print("[4] VolUp x Yang x Shipan 分析 (check-volupxyangxshipan--有用)")
-    print("[5] 主力强度 A*B*C 分析 (check-zhulistrength)")
+    print("[5] VolRatio x Turn x PctChg 分析 (check-volratioxturnxpctchg)")
     print("\n有不需要执行的模组吗？(默认全跑，多线程并行)")
     ans_skip = input("👉 请输入要【跳过】的序号组合（比如 '23' 跳过稳步和组合，直接回车代表全跑）: ").strip()
     
@@ -466,7 +478,7 @@ def interactive_prompt(args: argparse.Namespace) -> None:
     if "2" in ans_skip: args.skip_maxrsix6u1d = True
     if "3" in ans_skip: args.skip_tdxmacdxvolume = True
     if "4" in ans_skip: args.skip_volupxyangxshipan = True
-    if "5" in ans_skip: args.skip_zhulistrength = True
+    if "5" in ans_skip: args.skip_volratioxturnxpctchg = True
 
     # 3. 执行模式问询
     print("\n[步骤 3] 执行模式：是否开启【模块间】并行运行?")
@@ -489,7 +501,6 @@ def main() -> int:
     is_explicit = any([
         args.skip_get_data, args.skip_td, args.skip_maxrsix6u1d, 
         args.skip_tdxmacdxvolume, args.skip_volupxyangxshipan,
-        args.skip_zhulistrength,
         args.get_minutes, args.test
     ])
     if not is_explicit and sys.stdin.isatty():
@@ -506,7 +517,7 @@ def main() -> int:
         skip_maxrsix6u1d=args.skip_maxrsix6u1d,
         skip_tdxmacdxvolume=args.skip_tdxmacdxvolume,
         skip_volupxyangxshipan=args.skip_volupxyangxshipan,
-        skip_zhulistrength=args.skip_zhulistrength,
+        skip_volratioxturnxpctchg=args.skip_volratioxturnxpctchg,
         skip_build_index=args.skip_build_index,
         get_minutes=args.get_minutes,
         end_date=args.end_date,

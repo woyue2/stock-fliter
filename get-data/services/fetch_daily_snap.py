@@ -119,6 +119,54 @@ def run_fast_update():
     except Exception as e:
         print(f"❌ 数据库写入失败: {e}")
 
+    # 4. 追加到 CSV 备份 (e.g. 000001.csv)
+    print("📁 开始更新本地 CSV 备份...")
+    csv_dir = PROJECT_ROOT / "get-data" / "data" / "raw"
+    if not csv_dir.exists():
+        csv_dir.mkdir(parents=True, exist_ok=True)
+    
+    updated_csv_count = 0
+    t_csv = time.time()
+    
+    for row in tqdm(rows_for_db, desc="CSV 备份"):
+        code = row["code"]
+        csv_file = csv_dir / f"{code}.csv"
+        
+        # 组装新行数据
+        # CSV 列顺序参考 000001.csv: date,code,open,high,low,close,volume,amount,pctChg,tradestatus,turn,source
+        new_line = f"{row['date']},{code},{row['open']},{row['high']},{row['low']},{row['close']},{int(row['volume'])},{row['amount']},{row['pctchg']},1,{row['turn']},sinasnap\n"
+        
+        # 简单的追加写入。如果不希望相同日期重复写入，可以增加读取最后一行判断的逻辑：
+        should_append = True
+        if csv_file.exists():
+            try:
+                with open(csv_file, 'r', encoding='utf-8') as f:
+                    # 粗糙读取最后一行，判断日期是否已存在（避免重复运行导致多次追加）
+                    lines = f.read().splitlines()
+                    if lines and lines[-1].startswith(row["date"]):
+                        should_append = False
+            except Exception:
+                pass
+                
+        if should_append:
+            # 文件不存在则先写入表头
+            is_new = not csv_file.exists()
+            with open(csv_file, 'a', encoding='utf-8') as f:
+                if is_new:
+                    f.write("date,code,open,high,low,close,volume,amount,pctChg,tradestatus,turn,source\n")
+                f.write(new_line)
+            updated_csv_count += 1
+            
+    print(f"📁 [CSV] 成功更新 {updated_csv_count} 个本地 CSV 备份文件！(耗时: {time.time()-t_csv:.3f}秒)")
+
+    # 5. 执行双向同步，确保快照写入的数据也能补全过去遗漏的历史 CSV 记录且同步 DB
+    print("🔄 开始执行 CSV 与 SQLite 双向数据补全同步...")
+    try:
+        from scripts.sync_missing_to_db import sync_all
+        sync_all()
+    except Exception as e:
+        print(f"⚠️ 双向同步执行失败: {e}")
+
     total_time = time.time() - start_time
     print(f"🎉 全部完成！总耗时: {total_time:.2f} 秒。")
 

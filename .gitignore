@@ -20,12 +20,15 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
-*.db
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Virtual Environment
 venv/
 ENV/
 env/
+.env
 
 # IDE
 .vscode/
@@ -33,6 +36,7 @@ env/
 *.swp
 *.swo
 *~
+.claude/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -42,34 +46,21 @@ env/
 logs/
 debug.log
 
-# Data files - 忽略 get-data/data 目录下的所有文件
-# 先排除整个目录
+# Data files
 get-data/data/*
-
-# 但是保留 selected_stocks_all.csv（必须在排除规则之后）
-!get-data/data/selected_stocks_all.csv
 !get-data/data/.gitkeep
-
-# raw 目录下的所有文件都忽略
 get-data/data/raw/**
 
-# Output directories
-check-maxrsix6u1d/output/*
-check-new-indicators/output/*
-check-td/output/*
-get-data/output/*
-check-market-sentiment/output/*
-check-volupxyangxshipan/output/*
-check-tdxmacdxvolume/output/*
-
-# 保留 output 目录结构
-!check-maxrsix6u1d/output/.gitkeep
-!check-new-indicators/output/.gitkeep
-!check-td/output/.gitkeep
-!get-data/output/.gitkeep
-!check-market-sentiment/output/.gitkeep
-!check-volupxyangxshipan/output/.gitkeep
-!check-tdxmacdxvolume/output/.gitkeep
+# Output & Reports (Global)
+**/output/
+**/report/
+**/reports/
+**/archive/
+**/archieve/
+**/raw/
+report_index/
+**/stats_output.txt
+**/Untitled.ipynb
 
 # OS
 .DS_Store
@@ -78,35 +69,52 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
-*.swp
 nul
 
-# Git 历史备份（合并子仓库时的备份）
+# Git history backup
 git-history-backup/
 
-# 数据库文件
+# Database
 *.db
 *.sqlite
 *.sqlite3
 
-# CSV 输出文件（除了特定保留的）
+# CSV/Excel/Archives
 *.csv
-!get-data/data/selected_stocks_all.csv
-
-# 大型数据文件
+*.xls
+*.xlsx
 *.parquet
 *.feather
 *.h5
 *.hdf5
+*.zip
+*.tar.gz
+*.rar
 
-# 子目录的 .git（防止子模块问题）
-check-maxrsix6u1d/.git/
-check-td/.git/
-check-new-indicators/.git/
+# Images (Screenshots/Generated Charts)
+# If you have static icons, put them in a dedicated folder or unignore specifically.
+images/*.png
+images/*.jpg
+images/*.jpeg
 
-# 临时分析输出与个人文件
-check-sell-decision/stock_analysis_*.md
-report_index/reports_index_*/
-Untitled.ipynb
-每日运行.md
-check-zhulistrength/output/
+# Specific Strategy Ignores
+check-zhulistrength/input/
+check-zhulistrength/playgrounds/
+check-zhulistrength/reporters/
+check-zhulistrength/templates/
+check-zhulistrength/docs/
+check-zhulistrength/gen.rule
+check-zhulistrength/gen_media_report.py
+check-zhulistrength/gen_pro_report.py
+check-zhulistrength/gen_radial_report.py
+check-zhulistrength/playground*.html
+check-zhulistrength/print_groups.py
+check-zhulistrength/quant_minimalist.html
+check-zhulistrength/radial_terminal_template.html
+check-zhulistrength/模板.md
+check-zhulistrength/环形图.html
+check-zhulistrength/策略.md
+check-zhulistrength/记住
+
+# Miscellaneous
+濮ｅ繑妫╂潻鎰攽.md
