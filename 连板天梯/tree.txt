@@ -1,0 +1,17 @@
+.
+├── SKILL.md
+├── archieve
+│   └── 0311连板天梯.csv
+├── raw
+│   └── 0311连板天梯.csv
+├── report
+│   └── 0311_report.md
+├── scripts
+│   ├── __pycache__
+│   │   └── analyze.cpython-312.pyc
+│   └── analyze.py
+└── tree.txt
+
+5 directories, 7 files
+
+提示词 使用技能skill.md帮我整理 ... 并分析，结果存入report

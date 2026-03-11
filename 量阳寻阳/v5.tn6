@@ -1,0 +1,51 @@
+{ VOLUP X YANG X SHIPAN v5版(验证用) }
+
+{ 1. 基础定义 }
+V_MA20 := MA(VOL, 20);
+HIGH_250 := HHV(H, 250);
+MAX_OC := MAX(C, O);
+MIN_OC := MIN(C, O);
+UPPER_SHADOW := H - MAX_OC;
+LOWER_SHADOW := MIN_OC - L;
+BODY := ABS(C - O);
+DAY_RANGE := MAX(H - L, 0.01);
+PCT_CHG := (C - REF(C, 1)) / REF(C, 1) * 100;
+
+{ 2. 试盘信号定义 }
+LOW_POS := C < HIGH_250 * 0.8;
+COND_LIMIT := LOW_POS AND PCT_CHG > 7.0 AND VOL > V_MA20 * 1.3;
+COND_UPPER := LOW_POS AND (H-MAX_OC) > BODY * 1.5 AND (H-MAX_OC) > DAY_RANGE * 0.4 AND VOL > V_MA20 * 1.5;
+COND_LOWER := LOW_POS AND (MIN_OC-L) > BODY * 1.5 AND VOL > V_MA20 * 1.1;
+SHIPAN_COUNT := COUNT(COND_LIMIT OR COND_UPPER OR COND_LOWER, 45);
+
+{ --- 板块过滤逻辑 --- }
+IS_MAIN_BOARD := NOT(CODELIKE('30')) AND NOT(CODELIKE('68'));
+NOT_ST := IF(NAMELIKE('ST'), 0, 1) AND IF(NAMELIKE('*ST'), 0, 1);
+
+{ 3. 核心选股条件 }
+{ T-1日: 昨日高开 }
+T1_OPEN_HIGH := REF(O, 1) >= REF(C, 2);
+
+{ T-2日: 前日缩量，收阳，实体突破 }
+T2_VOL_LESS := REF(V, 2) < REF(V, 3);
+T2_YANG := REF(C, 2) > REF(O, 2);
+T2_TOP_UP := REF(MAX_OC, 2) > REF(MAX_OC, 3);
+
+{ T-3日: 爆量 }
+T3_VOL_BREAK := REF(V, 3) > REF(V, 4) AND REF(V, 3) > REF(V, 5) AND REF(V, 3) > REF(V, 6);
+
+{ 重心条件: MP2 > MP3 > MP4 }
+MP2 := (REF(C, 2) + REF(O, 2)) / 2;
+MP3 := (REF(C, 3) + REF(O, 3)) / 2;
+MP4 := (REF(C, 4) + REF(O, 4)) / 2;
+CENTER_COND := MP2 > MP3 AND MP3 > MP4;
+
+{ 倍量前的缩量: V4<V3, V5<V3, V6<V3 }
+PRE_VOL_LESS := REF(V, 4) < REF(V, 3) AND REF(V, 5) < REF(V, 3) AND REF(V, 6) < REF(V, 3);
+
+{ 4. 汇总判断 }
+IS_MATCH := T1_OPEN_HIGH AND T2_VOL_LESS AND T2_YANG AND T2_TOP_UP AND T3_VOL_BREAK AND CENTER_COND AND PRE_VOL_LESS AND SHIPAN_COUNT >= 1 AND IS_MAIN_BOARD AND NOT_ST;
+
+{ --- 计算排序比值 --- }
+MAX_PRE_V := MAX(REF(V,4), MAX(REF(V,5), REF(V,6)));
+爆量高比: IF(IS_MATCH, REF(V,3) / MAX_PRE_V, 0);
