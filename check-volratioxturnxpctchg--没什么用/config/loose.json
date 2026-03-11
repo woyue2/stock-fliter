@@ -1,0 +1,23 @@
+{
+    "_desc": "宽松版：放宽量比和换手率上限，适合流动性较低的市场",
+    "volume_ratio": {
+        "min": 3.0,
+        "max": 15.0
+    },
+    "pct_chg": {
+        "min": 2.0,
+        "max": 9.0
+    },
+    "price": {
+        "min": 3.0
+    },
+    "turnover": {
+        "min": 1.5,
+        "max": 20.0
+    },
+    "amount": {
+        "min": 100000000,
+        "max": 3000000000
+    },
+    "vr_lookback_days": 5
+}

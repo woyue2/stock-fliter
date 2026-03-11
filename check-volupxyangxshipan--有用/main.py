@@ -20,7 +20,7 @@ def main() -> int:
     )
     parser.add_argument("--test", action="store_true", help="测试模式，前 10 只股票")
     parser.add_argument("--limit", "-l", type=int, default=None, help="限制扫描股票数量")
-    parser.add_argument("--date", "-d", type=str, default=None, help="指定数据日期 (YYYY-MM-DD)")
+    parser.add_argument("--date", "--end-date", "-d", type=str, default=None, help="指定数据日期 (YYYY-MM-DD)")
     parser.add_argument("--no-html", action="store_true", help="不生成 HTML 报告")
     parser.add_argument("--no-markdown", action="store_true", help="不生成 Markdown 报告")
     parser.add_argument("--no-open", action="store_true", help="不自动打开 HTML 报告")

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量化雷达 | 极简终端风格</title>
+    <!-- 引入专业字体：Noto Sans SC (中文), Inter (英文标题), JetBrains Mono (硬核数据) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0d1117;
+            --bg-card: #161b22;
+            --accent-green: #00f59b;
+            --accent-red: #ff4d6d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --border-thin: rgba(240, 246, 252, 0.1);
+            --glass-shine: rgba(255, 255, 255, 0.03);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-primary);
+            font-family: 'Noto Sans SC', 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 模拟手机容器，方便截图 */
+        .phone-mockup {
+            width: 375px;
+            background-color: var(--bg-deep);
+            border: 8px solid #21262d;
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        /* 顶部状态条感官设计 */
+        .status-bar {
+            padding: 16px 24px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            border-bottom: 0.5px solid var(--border-thin);
+        }
+
+        .header {
+            padding: 32px 24px 20px;
+        }
+
+        .header-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-green);
+            background: rgba(0, 245, 155, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat-badge {
+            flex: 1;
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-thin);
+            padding: 12px;
+            border-radius: 16px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .section-title {
+            padding: 20px 24px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .data-list {
+            padding: 0 16px 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-thin);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-shine), transparent);
+            border-radius: 20px;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .sector-info h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .sector-tag {
+            font-size: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        .main-value {
+            text-align: right;
+        }
+
+        .price-up { color: var(--accent-red); }
+        .price-down { color: var(--accent-green); }
+
+        .pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* 主力强度仪表条 */
+        .strength-bar-container {
+            margin-top: 10px;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+
+        .bar-bg {
+            height: 4px;
+            background: #21262d;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .up .bar-fill { 
+            background: linear-gradient(90deg, #ff4d6d44, var(--accent-red));
+        }
+        .down .bar-fill { 
+            background: linear-gradient(90deg, #00f59b44, var(--accent-green));
+        }
+
+        .footer {
+            padding: 30px 24px;
+            text-align: center;
+            border-top: 0.5px solid var(--border-thin);
+        }
+
+        .footer p {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .watermark {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.05);
+            position: absolute;
+            bottom: 60px;
+            right: -20px;
+            transform: rotate(-90deg);
+        }
+
+        .sub-section-title {
+            font-size: 11px;
+            color: var(--text-primary);
+            margin: 0 16px 12px;
+            padding-left: 10px;
+            border-left: 3px solid var(--text-secondary);
+            opacity: 0.9;
+            font-weight: 600;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="phone-mockup">
+        <br>
+
+        <!-- 区块 1: 狙击买点 -->
+        <div class="section-title">
+            <span style="color: var(--accent-green);">🎯 行动指令：狙击买点</span>
+            <span>主力强度</span>
+        </div>
+        <div class="sub-section-title">1.1 恐慌错杀 (超跌反弹黄金坑)</div>
+        <div class="data-list">
+            {{BUY_GOLD}}
+        </div>
+
+        <!-- 区块 2: 坚定持股 -->
+        <div class="section-title">
+            <span style="color: #40a9ff;">🛡️ 行动指令：坚定持股</span>
+            <span>主力强度</span>
+        </div>
+        <div class="sub-section-title">2.1 典型洗盘 (主力未走，散户流出)</div>
+        <div class="data-list">
+            {{CARDS_HOLD}}
+        </div>
+
+        <!-- 区块 3: 撤退避险 -->
+        <div class="section-title">
+            <span style="color: var(--accent-red);">🛑 行动指令：撤退避险</span>
+            <span>主力强度</span>
+        </div>
+        <div class="sub-section-title">3.1 陷阱预警 (诱多 / 假抢筹)</div>
+        <div class="data-list">
+            {{SELL_FAKE}}
+        </div>
+
+        <div class="watermark">ANTIGRAVITY QUANT</div>
+
+        <!-- 页面导航栏 -->
+        <div id="pagination-ctrl" style="padding: 20px; text-align: center; border-top: 0.5px solid var(--border-thin);">
+            {{PAGINATION_LINKS}}
+        </div>
+    </div>
+
+</body>
+</html>
