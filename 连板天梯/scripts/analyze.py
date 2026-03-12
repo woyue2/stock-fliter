@@ -7,6 +7,75 @@ import shutil
 from collections import Counter, defaultdict
 from pathlib import Path
 
+# Mapping of cities or keywords to provinces
+KEYWORD_TO_PROVINCE = {
+    '北京': '北京', '上海': '上海', '天津': '天津', '重庆': '重庆',
+    '河北': '河北', '山西': '山西', '辽宁': '辽宁', '吉林': '吉林', '黑龙江': '黑龙江',
+    '江苏': '江苏', '浙江': '浙江', '安徽': '安徽', '福建': '福建', '江西': '江西', '山东': '山东',
+    '河南': '河南', '湖北': '湖北', '湖南': '湖南', '广东': '广东', '海南': '海南',
+    '四川': '四川', '贵州': '贵州', '云南': '云南', '陕西': '陕西', '甘肃': '甘肃', '青海': '青海',
+    '内蒙古': '内蒙古', '广西': '广西', '西藏': '西藏', '宁夏': '宁夏', '新疆': '新疆',
+    '深圳': '广东', '青岛': '山东', '宁波': '浙江', '厦门': '福建', '大连': '辽宁',
+    '南京': '江苏', '苏州': '江苏', '无锡': '江苏', '江阴': '江苏', '泰州': '江苏', '南通': '江苏',
+    '杭州': '浙江', '金华': '浙江', '烟台': '山东', '潍坊': '山东', '济南': '山东',
+    '郑州': '河南', '洛阳': '河南',
+    '西安': '陕西', '宝鸡': '陕西',
+    '广州': '广东', '珠海': '广东', '东莞': '广东', '佛山': '广东',
+    '成都': '四川', '绵阳': '四川',
+    '长沙': '湖南', '株洲': '湖南',
+    '武汉': '湖北', '襄阳': '湖北',
+    '合肥': '安徽', '马鞍山': '安徽',
+    '福州': '福建', '泉州': '福建',
+    '南昌': '江西', '昆明': '云南',
+    '哈尔滨': '黑龙江', '沈阳': '辽宁', '长春': '吉林', '呼和浩特': '内蒙古'
+}
+
+import json
+
+# Load mapping from external JSON
+MAP_FILE = os.path.join(os.path.dirname(__file__), 'region_map.json')
+try:
+    with open(MAP_FILE, 'r', encoding='utf-8') as f:
+        STOCK_MAPPING = json.load(f)
+except Exception:
+    STOCK_MAPPING = {}
+
+def get_region(code, name, reason):
+    # 1. Manual mapping (external JSON)
+    if code in STOCK_MAPPING:
+        return STOCK_MAPPING[code]
+    
+    # 2. Specific keywords (State-owned)
+    m = re.search(r'([^\+ ]+)(国资|国企)', reason)
+    if m:
+        city_or_prov = m.group(1)
+        for k, p in KEYWORD_TO_PROVINCE.items():
+            if k in city_or_prov:
+                return p
+    
+    # 3. Combined string check
+    combined = name + " " + reason
+    for k, p in KEYWORD_TO_PROVINCE.items():
+        if k in combined:
+            return p
+            
+    # 4. Central entities
+    if '央企' in reason or '国家电投' in reason:
+        return '北京'
+    
+    # 5. Name prefix heuristics
+    provinces = ['江苏', '浙江', '山东', '福建', '广东', '海南', '四川', '湖南', '湖北', '河南', 
+                 '河北', '山西', '陕西', '吉林', '广西', '甘肃', '西藏', '新疆', '安徽', '江西', 
+                 '青海', '贵州', '云南', '北京', '上海', '天津', '重庆']
+    for p in provinces:
+        if name.startswith(p):
+            return p
+    if name.startswith('内蒙'): return '内蒙古'
+    if name.startswith('宁夏'): return '宁夏'
+    if name.startswith('黑龙'): return '黑龙江'
+    
+    return "未知"
+
 def parse_raw_to_formatted(raw_file_path, archieve_dir):
     with open(raw_file_path, 'r', encoding='utf-8') as f:
         lines = [line.strip() for line in f if line.strip()]
@@ -49,13 +118,28 @@ def parse_raw_to_formatted(raw_file_path, archieve_dir):
             
         else:
             if len(parts) >= 4:
-                code = parts[0].strip()
-                if code.isdigit():
-                    code = code.zfill(6)
-                name = parts[1].strip()
-                time = parts[2].strip()
-                reason = ",".join(parts[3:]).strip()
-                parsed_data.append((current_category, code, name, time, reason, current_category_stats))
+                # Detection: If it's a pre-formatted CSV, the 'Code' is in parts[1]
+                # If it's raw software text, the 'Code' is in parts[0]
+                if len(parts) >= 6 and parts[1].isdigit() and len(parts[1]) == 6:
+                    # This is likely a pre-formatted CSV
+                    code = parts[1].strip()
+                    name = parts[2].strip()
+                    # Remove any existing region suffix from name if re-processing
+                    name = re.sub(r'\(.*?\)$', '', name)
+                    time = parts[3].strip()
+                    reason = parts[4].strip()
+                else:
+                    code = parts[0].strip()
+                    if code.isdigit():
+                        code = code.zfill(6)
+                    name = parts[1].strip()
+                    time = parts[2].strip()
+                    reason = ",".join(parts[3:]).strip()
+                
+                region = get_region(code, name, reason)
+                display_name = f"{name}({region})"
+                
+                parsed_data.append((current_category, code, display_name, time, reason, current_category_stats))
 
     filename = os.path.basename(raw_file_path)
     archieve_path = os.path.join(archieve_dir, filename)
@@ -98,6 +182,25 @@ def get_keywords(file_path):
             total_count += 1
             
     return total_keywords, category_keywords, total_count
+
+def get_region_stats(file_path):
+    regions = Counter()
+    with open(file_path, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        found_header = False
+        for row in reader:
+            if not row: continue
+            if row[0] == '连板梯队' or (len(row) > 2 and row[2] == '股票名称'):
+                found_header = True
+                continue
+            if not found_header: continue
+            if len(row) < 3: continue
+            
+            name_with_region = row[2].strip()
+            m = re.search(r'\(([^)]+)\)$', name_with_region)
+            if m:
+                regions[m.group(1)] += 1
+    return regions
 
 def process_pipeline():
     base_dir = '/mnt/f/QIANQIAN/stock-fliter/连板天梯'
@@ -219,6 +322,17 @@ def process_pipeline():
         print("> **AI解盘**：这种“排队式”分布是确立主线题材的核心标准。覆盖层级越深（跨越首板、二板、三板等），说明该题材的资金合力越强，抗分歧能力也越强。")
     else:
         print("今日暂无明显具有梯队层次感的题材。市场表现为散兵游勇模式。")
+    print()
+
+    # 5. 自动分析：区域热力分布
+    print("### 📍 5. 区域热力分布 (省份垂直统计)")
+    region_stats = get_region_stats(archieve_path)
+    if region_stats:
+        top_regions = region_stats.most_common(8)
+        print("今日活跃涨停个股的地区分布：")
+        for reg, count in top_regions:
+            print(f" - **{reg}**: {count} 只")
+        print(f"> **AI解盘**：地区属性有时会触发区域性的政策预期或国资重组预期。当某一地区（如{'、'.join([r for r, c in top_regions[:3]])}）出现异常聚集时，可关注该地区其他尚未起涨的同属性个股。")
     print()
 
     # Detailed dump
