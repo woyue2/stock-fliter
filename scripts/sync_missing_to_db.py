@@ -85,7 +85,7 @@ def sync_bidirectional(code: str, csv_path: Path) -> tuple[int, int]:
                 merged_csv["tradestatus"] = 1
 
             merged_csv["date_dt"] = pd.to_datetime(merged_csv["date"])
-            merged_csv = merged_csv.sort_values("date_dt").drop_columns("date_dt", errors="ignore") if "date_dt" in merged_csv.columns else merged_csv
+            merged_csv = merged_csv.sort_values("date_dt").drop(columns=["date_dt"], errors="ignore") if "date_dt" in merged_csv.columns else merged_csv
             
             merged_csv = merged_csv.drop_duplicates(subset=["date"], keep="last")
             
