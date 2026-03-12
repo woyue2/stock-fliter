@@ -16,7 +16,7 @@ import requests
 import json
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 from tqdm import tqdm
 
 # 确保能找到 util.db
@@ -54,15 +54,39 @@ def fetch_page(page_num: int, num_per_page: int = 80) -> list:
         print(f"\n[Error] Page {page_num} fetch failed: {e}")
     return []
 
+def get_actual_trade_date() -> str:
+    """从新浪行情接口获取实际行情日期（以沪指为准）"""
+    url = "http://hq.sinajs.cn/list=sh000001"
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=10)
+        # 响应格式: var hq_str_sh000001="上证指数,...,2026-03-12,15:00:00,";
+        data = res.text.split(",")
+        if len(data) > 30:
+            date_str = data[30]
+            if len(date_str) == 10 and "-" in date_str:
+                return date_str
+    except Exception as e:
+        print(f"⚠️ 无法从新浪获取行情日期: {e}")
+    
+    # 回退逻辑：如果是凌晨且未开盘，优先取“昨天”
+    now = datetime.now()
+    if now.hour < 9: # 9点前肯定还没开盘，数据大概率是昨天的
+        return (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    return now.strftime("%Y-%m-%d")
+
 def run_fast_update():
     print("🚀 [FastUpdate] 开始极速全市场快照拉取...")
     start_time = time.time()
     
-    # 按照 80 只一页，全市场大约 5000 多只，抓 70 页就够覆盖了
+    # 0. 获取真实的行情日期
+    trade_date = get_actual_trade_date()
+    print(f"📅 识别行情日期: {trade_date}")
+
+    # 1. ... 后面代码保持一致，只需将 today_str 替换为 trade_date
     total_pages = 70
     all_raw_data = []
 
-    # 1. 降低并发数 (从 20 降到 3)，增加稳定性，防止触发新浪 456 拒访问
+    # ... 并发请求逻辑 ...
     print(f"📡 正在向新浪财经发起 {total_pages} 个页面请求 (低并发模式)...")
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = {executor.submit(fetch_page, page): page for page in range(1, total_pages + 1)}
@@ -78,12 +102,10 @@ def run_fast_update():
     print(f"✅ 成功拉取到 {len(all_raw_data)} 只股票快照，开始数据清洗入库...")
     
     # 2. 清洗数据并映射字段
-    today_str = datetime.now().strftime("%Y-%m-%d")
     rows_for_db = []
     
     for item in all_raw_data:
         raw_code = item.get("symbol", "")
-        # symbol 类似 "sh600000" 或 "bj920000", 我们只要纯数字
         code = "".join(filter(str.isdigit, raw_code))[-6:]
         if not code or not code.isdigit() or len(code) != 6:
             continue
@@ -91,7 +113,7 @@ def run_fast_update():
         try:
             row = {
                 "code": code,
-                "date": today_str,
+                "date": trade_date,
                 "open": float(item.get("open", 0)),
                 "high": float(item.get("high", 0)),
                 "low": float(item.get("low", 0)),
