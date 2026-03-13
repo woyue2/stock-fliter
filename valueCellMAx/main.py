@@ -32,6 +32,22 @@ def save_note_to_db(code: str, note: str):
 def main():
     st.sidebar.title("🚀 ValueCellMAx")
 
+    def normalize_stock_code(raw: str) -> str:
+        digits = "".join(ch for ch in (raw or "").strip() if ch.isdigit())
+        if len(digits) < 6:
+            return ""
+        if len(digits) > 6:
+            digits = digits[-6:]
+        return digits
+
+    def resolve_stock_display_from_code(code: str) -> str:
+        all_stocks = get_stock_list()
+        prefix = f"[{code}]"
+        for s in all_stocks:
+            if s.startswith(prefix):
+                return s
+        return f"[{code}]"
+
     # --- 核心图表区域 (定义在前面以避免 UnboundLocalError) ---
     @st.fragment
     def render_chart_area(stock_code, selected_stock, df, current_idx, show_ma):
@@ -202,25 +218,38 @@ def main():
                 styled_df = df_display.style.applymap(color_resonance, subset=['共振级别'])
                 
                 # 使用 st.dataframe 交互式展示
+                # 增加 key 以确保状态稳定性，并支持 st.session_state 直接访问
                 event = st.dataframe(
                     styled_df, 
                     use_container_width=True, 
                     hide_index=True,
                     on_select="rerun",
-                    selection_mode="single-row"
+                    selection_mode="single-row",
+                    key="td_results_df"
                 )
                 
-                # 处理行选中
-                if event.get("selection") and event["selection"]["rows"]:
-                    selected_row_idx = event["selection"]["rows"][0]
+                # [DEBUG] 打印事件及 Session State 内容
+                # st.write("Selection Event Selection:", event.get("selection"))
+                # st.write("Session State Selection:", st.session_state.get("td_results_df", {}).get("selection"))
+                
+                # 处理行选中: 优先使用 event，备选使用 session_state
+                selection = event.get("selection") or st.session_state.get("td_results_df", {}).get("selection")
+                
+                if selection and selection.get("rows"):
+                    selected_row_idx = selection["rows"][0]
                     # 从显示的DataFrame获取代码和名称
                     selected_code = df_display.iloc[selected_row_idx]['代码']
                     selected_name = df_display.iloc[selected_row_idx]['名称']
+                    
+                    # [DEBUG] 确认代码提取
+                    # st.toast(f"Selected: {selected_code} {selected_name}")
                     
                     # 只有在选择的股票变化时才更新状态并强制rerun
                     current_selection = st.session_state.get('selected_td_stock')
                     if not current_selection or current_selection.get('code') != selected_code:
                         st.session_state.selected_td_stock = {"code": selected_code, "name": selected_name}
+                        # [DEBUG] 确认状态更新
+                        # st.write("Updated session state:", st.session_state.selected_td_stock)
                         st.rerun()
             else:
                 st.warning(f"目前 {current_date} 无 TD 信号。请在左侧点击“开始扫描”。")
@@ -234,7 +263,8 @@ def main():
                 df_chart = get_clean_df(code)
                 if not df_chart.empty:
                     # 找到当前日期在 DataFrame 中的索引
-                    date_series = pd.to_datetime(df_chart['date']).dt.strftime('%Y-%m-%d')
+                    # NOTE: get_clean_df 已将 'date' 重命名为 'time'
+                    date_series = pd.to_datetime(df_chart['time']).dt.strftime('%Y-%m-%d')
                     chart_idx_list = date_series[date_series <= current_date].index
                     if not chart_idx_list.empty:
                         chart_idx = chart_idx_list[-1]
@@ -243,6 +273,14 @@ def main():
                         st.warning("无法定位到当前日期的K线数据。")
                 else:
                     st.error("无法加载该股票的K线数据。")
+                
+                st.divider()
+                st.subheader("📝 复盘日记")
+                current_note_td = load_note_from_db(code)
+                new_note_td = st.text_area("逻辑存证", value=current_note_td, height=200, key=f"td_note_{code}")
+                if st.button("💾 存档", use_container_width=True, key=f"td_save_{code}"):
+                    save_note_to_db(code, new_note_td)
+                    st.success("已存档")
             else:
                 st.info("👈 请点击左侧列表中的股票以预览K线图。")
 
@@ -261,13 +299,25 @@ def main():
 
         # 2. 股票选择
         stock_list = get_stock_list_by_strategy(strategy_opt, signal_type, current_date)
+
+        manual_code_raw = st.sidebar.text_input("或直接输入代码", value="", placeholder="例如 600121")
+        manual_code = normalize_stock_code(manual_code_raw)
+        if manual_code_raw.strip() and not manual_code:
+            st.sidebar.error("代码格式不正确，请输入 6 位数字，例如 600121。")
+        
+        manual_selected_stock = ""
+        if manual_code:
+            manual_selected_stock = resolve_stock_display_from_code(manual_code)
+            st.session_state.selected_stock_str = manual_selected_stock
         
         # 确定初始选中的股票
         default_index = 0
         if 'selected_stock_str' in st.session_state and st.session_state.selected_stock_str in stock_list:
             default_index = stock_list.index(st.session_state.selected_stock_str)
 
-        if not stock_list:
+        if manual_selected_stock:
+            selected_stock = manual_selected_stock
+        elif not stock_list:
             st.sidebar.error(f"所选策略/日期下无匹配股票。")
             if strategy_opt == "无": return
             selected_stock = ""
