@@ -1,12 +1,12 @@
-# [PROTOCOL]: 变更时更新此头部，然后检查父级 /CLAUDE.md
-# INPUT:  code: str | rows: list[dict]
-# OUTPUT: pd.DataFrame | None
-# POS:    util/db.py
-# -*- coding: utf-8 -*-
 """
-统一数据库访问层 (SQLite)
+[L3] util/db.py
+[ROLE]: 统一数据库访问层 (SQLite)
+[INPUT]: code: str | rows: list[dict] | Optional[conn]
+[OUTPUT]: pd.DataFrame | None
+[POS]: 核心数据访问层，被 fetch_daily_*, analyze, sync_missing_to_db 等消费
+[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
 
-唯一感知存储后端的地方。所有 check-* 模块通过此接口读写数据，
+唯一感知存储后端的地方。所有模块通过此接口读写数据，
 不直接操作 CSV 或 sqlite3。
 
 数据库路径: get-data/data/stocks.db
@@ -69,7 +69,6 @@ CREATE TABLE IF NOT EXISTS daily_ohlcv (
     PRIMARY KEY (code, date)
 ) WITHOUT ROWID
 """
-
 _DDL_FUND_FLOW = """
 CREATE TABLE IF NOT EXISTS daily_fund_flow (
     code     TEXT NOT NULL,
@@ -77,6 +76,37 @@ CREATE TABLE IF NOT EXISTS daily_fund_flow (
     main_net REAL DEFAULT 0,  -- 主力净额 (10k RMB or Million)
     retail_net REAL DEFAULT 0, -- 散户净额
     PRIMARY KEY (code, date)
+) WITHOUT ROWID
+"""
+
+_DDL_USER_JOURNAL = """
+CREATE TABLE IF NOT EXISTS user_journal (
+    code        TEXT PRIMARY KEY,
+    note        TEXT NOT NULL DEFAULT '',
+    update_time TEXT DEFAULT (datetime('now', 'localtime'))
+)
+"""
+
+_DDL_ANNOTATIONS = """
+CREATE TABLE IF NOT EXISTS chart_annotations (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    code        TEXT NOT NULL,
+    date        TEXT NOT NULL,
+    text        TEXT NOT NULL,
+    price       REAL,
+    color       TEXT DEFAULT '#ffffff'
+)
+"""
+
+_DDL_STRATEGY = """
+CREATE TABLE IF NOT EXISTS strategy_signals (
+    code          TEXT NOT NULL,
+    date          TEXT NOT NULL,
+    strategy_name TEXT NOT NULL,
+    signal_type   TEXT NOT NULL,
+    score         REAL DEFAULT 0,
+    extra_info    TEXT,  -- 存储富文本数据 (JSON)
+    PRIMARY KEY (code, date, strategy_name, signal_type)
 ) WITHOUT ROWID
 """
 
@@ -109,6 +139,9 @@ def ensure_schema() -> None:
         conn.execute(_DDL_STOCK_INFO)
         conn.execute(_DDL_DAILY)
         conn.execute(_DDL_FUND_FLOW)
+        conn.execute(_DDL_USER_JOURNAL)
+        conn.execute(_DDL_ANNOTATIONS)
+        conn.execute(_DDL_STRATEGY)
         conn.execute(_DDL_IDX_DATE)
         conn.execute(_DDL_IDX_FF_DATE)
         # 针对 check-zhulistrength 优化的复合索引：代码 + 日期降序 + 核心净额字段
@@ -131,6 +164,20 @@ def get_daily_data(code: str, days: int = 365) -> pd.DataFrame:
     return _read_daily_from_csv(code)
 
 
+def get_all_daily_fingerprints() -> set[tuple[str, str]]:
+    """一次性获取数据库中所有 (code, date) 的指纹库，用于极速对账。"""
+    if not _DB_PATH.exists():
+        return set()
+    try:
+        with _connect() as conn:
+            # 只取 code 和 date 组合，使用原生 SQL 避免 DataFrame 开销
+            cursor = conn.execute("SELECT code, date FROM daily_ohlcv")
+            return set(cursor.fetchall())
+    except Exception as e:
+        logger.error("Failed to load DB fingerprints: %s", e)
+        return set()
+
+
 def get_stock_info_map() -> dict[str, dict]:
     """
     返回 {code: {name, industry, concepts, bs_code}} 映射。
@@ -144,17 +191,122 @@ def get_stock_info_map() -> dict[str, dict]:
     return _read_stock_info_from_csv()
 
 
-# ── 写入 ──────────────────────────────────────────────────────
-def upsert_daily_rows(rows: list[dict]) -> None:
+def get_journal_note(code: str) -> str:
+    """读取指定股票的复盘笔记。"""
+    query = "SELECT note FROM user_journal WHERE code = ?"
+    try:
+        with _connect() as conn:
+            res = conn.execute(query, (code,)).fetchone()
+            return res[0] if res else ""
+    except Exception as e:
+        logger.error("Failed to read journal note for %s: %s", code, e)
+        return ""
+
+
+def upsert_journal_note(code: str, note: str) -> None:
+    """写入/更新股票复盘笔记。"""
+    query = """
+    INSERT INTO user_journal (code, note, update_time) 
+    VALUES (?, ?, datetime('now', 'localtime'))
+    ON CONFLICT(code) DO UPDATE SET 
+        note = excluded.note,
+        update_time = excluded.update_time
     """
-    批量写入/更新日线数据。
+    try:
+        with _connect() as conn:
+            conn.execute(query, (code, note))
+    except Exception as e:
+        logger.error("Failed to upsert journal note for %s: %s", code, e)
+
+
+def get_chart_annotations(code: str) -> list[dict]:
+    """读取指定股票的所有图表注解。"""
+    query = "SELECT date, text, price, color FROM chart_annotations WHERE code = ?"
+    try:
+        with _connect() as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(query, (code,)).fetchall()
+            return [dict(r) for r in rows]
+    except Exception as e:
+        logger.error("Failed to read annotations for %s: %s", code, e)
+        return []
+
+
+def add_chart_annotation(code: str, date: str, text: str, price: float = None, color: str = "#ffffff") -> None:
+    """添加图表注解。"""
+    query = "INSERT INTO chart_annotations (code, date, text, price, color) VALUES (?, ?, ?, ?, ?)"
+    try:
+        with _connect() as conn:
+            conn.execute(query, (code, date, text, price, color))
+    except Exception as e:
+        logger.error("Failed to add annotation for %s: %s", code, e)
+
+
+def delete_chart_annotation(code: str, date: str, text: str) -> None:
+    """删除指定的图表注解。"""
+    query = "DELETE FROM chart_annotations WHERE code = ? AND date = ? AND text = ?"
+    try:
+        with _connect() as conn:
+            conn.execute(query, (code, date, text))
+    except Exception as e:
+        logger.error("Failed to delete annotation for %s: %s", code, e)
+
+
+def get_strategy_signals(date: str, strategy_name: str = 'TD') -> list[dict]:
+    """读取指定日期和策略的所有信号。"""
+    query = """
+        SELECT s.code, i.name, s.signal_type, s.score, s.extra_info
+        FROM strategy_signals s
+        LEFT JOIN stock_info i ON s.code = i.code
+        WHERE s.date = ? AND s.strategy_name = ?
+    """
+    try:
+        with _connect() as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(query, (date, strategy_name)).fetchall()
+            return [dict(r) for r in rows]
+    except Exception as e:
+        logger.error("Failed to read strategy signals for %s on %s: %s", strategy_name, date, e)
+        return []
+
+
+def upsert_strategy_signals(rows: list[dict]) -> None:
+    """批量插入或更新策略信号。"""
+    query = """
+        INSERT INTO strategy_signals (code, date, strategy_name, signal_type, score, extra_info)
+        VALUES (:code, :date, :strategy_name, :signal_type, :score, :extra_info)
+        ON CONFLICT(code, date, strategy_name, signal_type) DO UPDATE SET
+            score = excluded.score,
+            extra_info = excluded.extra_info
+    """
+    try:
+        with _connect() as conn:
+            conn.executemany(query, rows)
+    except Exception as e:
+        logger.error("Failed to upsert strategy signals: %s", e)
+
+
+def get_available_strategies() -> list[str]:
+    """获取数据库中已存储的所有策略名称。"""
+    try:
+        with _connect() as conn:
+            rows = conn.execute("SELECT DISTINCT strategy_name FROM strategy_signals").fetchall()
+            return [r[0] for r in rows]
+    except Exception:
+        return []
+
+
+# ── 写入 ──────────────────────────────────────────────────────
+def upsert_daily_rows(rows: list[dict], conn: Optional[sqlite3.Connection] = None) -> None:
+    """
+    批量写入/更新日线数据。支持传入连接以复用。
 
     rows 每项需含键: code, date, open, high, low, close, volume
     可选键: amount, pctchg, turn
     """
     if not rows:
         return
-    ensure_schema()
+    
     sql = """
         INSERT OR REPLACE INTO daily_ohlcv
             (code, date, open, high, low, close, volume, amount, pctchg, turn)
@@ -163,6 +315,13 @@ def upsert_daily_rows(rows: list[dict]) -> None:
              :amount,:pctchg,:turn)
     """
     normalized = [_normalize_daily_row(r) for r in rows]
+    
+    # [IMPL] 支持传入连接以减少 open/close 和事务开销 (外部连接需自行 commit)
+    if conn:
+        conn.executemany(sql, normalized)
+        return
+
+    ensure_schema()
     with _connect() as conn:
         conn.executemany(sql, normalized)
 
