@@ -1,0 +1,555 @@
+<!--
+[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+[POS]: check-zhulistrength/radial_terminal_template.html, 坐标轴可视化（V5黑金版）前端渲染母版
+[INPUT]: None (Served via internal replacement)
+[OUTPUT]: Browser UI
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=578, initial-scale=1.0">
+    <title>量化雷达终端 V5.0 | 黑金Pro版</title>
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --panel: rgba(20, 20, 20, 0.85);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #00F59B;
+            --text-main: #FFFFFF;
+            --text-dim: #737373;
+            --node-bg: #FFFFFF;
+            --node-text: #000000;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="cyber"] {
+            --bg: #030308;
+            --panel: rgba(10, 10, 30, 0.9);
+            --border: rgba(0, 245, 155, 0.15);
+            --accent: #00F59B;
+            --text-main: #E0FFF0;
+            --text-dim: #2A7A55;
+            --node-bg: #0A2018;
+            --node-text: #00F59B;
+            --shadow: 0 0 25px rgba(0, 245, 155, 0.15);
+        }
+
+        [data-theme="paper"] {
+            --bg: #F5F2EA;
+            --panel: #FFFFFF;
+            --border: #1A1A1A;
+            --accent: #C0392B;
+            --text-main: #1A1A1A;
+            --text-dim: #888888;
+            --node-bg: #FFFFFF;
+            --node-text: #1A1A1A;
+            --shadow: 3px 3px 0px 0px #1A1A1A;
+        }
+
+        [data-theme="glass"] {
+            --bg: #1a1c2c;
+            --panel: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.15);
+            --accent: #FFD700;
+            --text-main: #FFFFFF;
+            --text-dim: rgba(255, 255, 255, 0.45);
+            --node-bg: rgba(255, 255, 255, 0.12);
+            --node-text: #FFFFFF;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        [data-theme="matrix"] {
+            --bg: #000000;
+            --panel: rgba(0, 20, 0, 0.8);
+            --border: rgba(0, 255, 65, 0.2);
+            --accent: #00FF41;
+            --text-main: #00FF41;
+            --text-dim: #004400;
+            --node-bg: #001A00;
+            --node-text: #00FF41;
+            --shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+        }
+
+        [data-theme="luxury"] {
+            --bg: #0D0D0D;
+            --panel: #161616;
+            --border: rgba(193, 154, 107, 0.3);
+            --accent: #C19A6B;
+            --text-main: #F0E6D6;
+            --text-dim: #5A4A3A;
+            --node-bg: #1C1810;
+            --node-text: #C19A6B;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        [data-theme="swiss"] {
+            --bg: #FAFAFA;
+            --panel: #FFFFFF;
+            --border: #E0E0E0;
+            --accent: #0051FF;
+            --text-main: #111111;
+            --text-dim: #AAAAAA;
+            --node-bg: #FFFFFF;
+            --node-text: #111111;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        html,
+        body {
+            width: 578px;
+            height: 865.5px;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Noto Sans SC', sans-serif;
+            transition: background 0.6s ease, color 0.4s ease;
+        }
+
+        [data-theme="glass"] body {
+            background: linear-gradient(135deg, #1a1c2c 0%, #4a192c 50%, #1a1c2c 100%);
+        }
+
+        .polar-grid {
+            background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center;
+        }
+
+        .sector-node {
+            position: absolute;
+            transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .arc-path {
+            fill: none;
+            stroke-linecap: round;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 1.8s forwards ease-out;
+        }
+
+        @keyframes draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .hub-ring {
+            animation: spin 25s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .glass-blur {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .btn-theme {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            background: transparent;
+            transition: all 0.25s;
+            white-space: nowrap;
+        }
+
+        .btn-theme:hover {
+            border-color: var(--accent);
+            color: var(--text-main);
+        }
+
+        .btn-theme.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        .node-label {
+            background: var(--node-bg);
+            color: var(--node-text);
+            border: 1.5px solid var(--accent);
+            box-shadow: var(--shadow);
+            padding: 5px 10px 4px 10px;
+            border-radius: 4px;
+            font-size: 17px;
+            font-weight: 900;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+
+        .node-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 800;
+            margin-top: 3px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            background: var(--panel);
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+
+<body class="h-screen w-full flex flex-col overflow-hidden">
+    <header class="flex-none px-5 py-3 z-50 flex justify-between items-center border-b glass-blur"
+        style="border-color: var(--border); background: var(--panel);">
+        <div>
+            <h1 class="text-xl font-black flex items-center gap-2">
+                <span id="page-title">数据加载中...</span>
+            </h1>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="exportToImage()" class="text-[11px] px-3 py-1.5 rounded font-bold transition-all"
+                style="background: var(--accent); color: #000;">
+                📸 导出
+            </button>
+            <button onclick="localStorage.clear(); location.reload();"
+                class="text-[10px] px-2 py-1 border rounded opacity-40 hover:opacity-100 transition-opacity"
+                style="border-color: var(--border); color: var(--text-dim);">
+                重置
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 relative flex items-center justify-center overflow-hidden">
+        <div class="absolute inset-0 polar-grid opacity-10"></div>
+
+        <!-- 四象限标注 -->
+        <div id="quadrant-labels" class="absolute inset-0 z-20 pointer-events-none">
+            <!-- 左上：正数 + 强 -->
+            <div class="absolute top-4 left-4 text-left" style="max-width:120px;">
+                <div id="ql-tl" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">主力重仓吸筹
+                </div>
+            </div>
+            <!-- 右上：负数 + 强 -->
+            <div class="absolute top-4 right-4 text-right" style="max-width:120px;">
+                <div id="ql-tr" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">暴力出逃
+                    危险区</div>
+            </div>
+            <!-- 左下：正数 + 弱 -->
+            <div class="absolute bottom-4 left-4 text-left" style="max-width:120px;">
+                <div id="ql-bl" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">温和积累
+                    择机</div>
+            </div>
+            <!-- 右下：负数 + 弱 -->
+            <div class="absolute bottom-4 right-4 text-right" style="max-width:120px;">
+                <div id="ql-br" class="text-[13px] font-black leading-tight mt-0.5" style="color: var(--accent);">正常调整
+                    观察</div>
+            </div>
+        </div>
+
+        <!-- 坐标轴 SVG -->
+        <svg id="radial-svg" class="absolute inset-0 w-full h-full z-10" preserveAspectRatio="none">
+            <!-- X 轴 -->
+            <line id="ax-x1" x1="5%" y1="50%" x2="95%" y2="50%" stroke-width="1.5" opacity="0.4" />
+            <!-- Y 轴 -->
+            <line id="ax-y1" x1="50%" y1="5%" x2="50%" y2="95%" stroke-width="1.5" opacity="0.4" />
+            <!-- 轴标签 -->
+            <text id="lbl-left" x="3%" y="50%" dominant-baseline="middle" text-anchor="start" font-size="10"
+                opacity="0.5">- 负数</text>
+            <text id="lbl-right" x="97%" y="50%" dominant-baseline="middle" text-anchor="end" font-size="10"
+                opacity="0.5">正数 +</text>
+            <text id="lbl-top" x="50%" y="4%" dominant-baseline="hanging" text-anchor="middle" font-size="10"
+                opacity="0.5">强 ↑</text>
+            <text id="lbl-bot" x="50%" y="96%" dominant-baseline="auto" text-anchor="middle" font-size="10"
+                opacity="0.5">↓ 弱</text>
+        </svg>
+
+        <!-- 节点层 -->
+        <div id="nodes-container" class="absolute inset-0 z-30" style="overflow:visible;"></div>
+
+        <!-- 市场情绪指示（原点显示） -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none flex flex-col items-center justify-center w-24 h-24 rounded-full glass-blur border"
+            style="border-color: var(--border); background: transparent;">
+            <div class="text-[9px] font-mono tracking-[0.2em] opacity-60" style="color: var(--text-dim);">市场情绪</div>
+            <div id="central-value" class="text-2xl font-black font-mono mt-0.5" style="color: var(--accent);">0%</div>
+        </div>
+        <div id="central-bar" style="display:none;"></div>
+    </main>
+
+    <footer class="flex-none px-6 py-4 z-50 glass-blur"
+        style="border-top: 1px solid var(--border); background: var(--panel);">
+        <div class="flex justify-around items-center max-w-xs mx-auto">
+            <button onclick="switchPage(0)" class="nav-btn group flex flex-col items-center gap-2">
+                <div class="w-10 h-[2px] rounded-full transition-all" style="background: var(--border);"></div>
+                <span class="text-[11px] font-black tracking-[0.15em]" style="color: var(--text-dim);">策略狙击</span>
+            </button>
+            <button onclick="switchPage(1)" class="nav-btn group flex flex-col items-center gap-2">
+                <div class="w-10 h-[2px] rounded-full transition-all" style="background: var(--border);"></div>
+                <span class="text-[11px] font-black tracking-[0.15em]" style="color: var(--text-dim);">核心持仓</span>
+            </button>
+            <button onclick="switchPage(2)" class="nav-btn group flex flex-col items-center gap-2">
+                <div class="w-10 h-[2px] rounded-full transition-all" style="background: var(--border);"></div>
+                <span class="text-[11px] font-black tracking-[0.15em]" style="color: var(--text-dim);">避险雷达</span>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // ======= Python 数据注入点 =======
+        const data = "__RADIAL_DATA__";
+
+        let currentTheme = 'luxury';
+
+        function setTheme(name) {
+            document.body.setAttribute('data-theme', name);
+            currentTheme = name;
+            document.querySelectorAll('.btn-theme').forEach(b => {
+                b.classList.toggle('active', b.dataset.themeName === name);
+            });
+            const activeIdx = [...document.querySelectorAll('.nav-btn')].findIndex(b => b.dataset.active === 'true');
+            switchPage(activeIdx === -1 ? 0 : activeIdx);
+        }
+
+        function polar(cx, cy, r, deg) {
+            const rad = (deg - 90) * Math.PI / 180;
+            return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+        }
+
+        function arcPath(cx, cy, r, startDeg, endDeg) {
+            const s = polar(cx, cy, r, endDeg);
+            const e = polar(cx, cy, r, startDeg);
+            const large = endDeg - startDeg <= 180 ? 0 : 1;
+            return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y}`;
+        }
+
+        function switchPage(idx) {
+            const p = data[idx];
+            document.getElementById('page-title').innerText = p.title;
+            document.getElementById('central-value').innerText = p.sentiment;
+            document.getElementById('central-value').style.color = p.color;
+            document.getElementById('central-bar').style.background = p.color;
+            document.getElementById('central-bar').style.width = p.sentiment;
+
+            document.querySelectorAll('.nav-btn').forEach((btn, i) => {
+                const bar = btn.querySelector('div');
+                const label = btn.querySelector('span');
+                if (i === idx) {
+                    btn.dataset.active = 'true';
+                    bar.style.background = p.color;
+                    bar.style.height = '4px';
+                    label.style.color = 'var(--text-main)';
+                } else {
+                    btn.dataset.active = 'false';
+                    bar.style.background = 'var(--border)';
+                    bar.style.height = '2px';
+                    label.style.color = 'var(--text-dim)';
+                }
+            });
+
+            // === 坐标轴颜色跟随页面配色 ===
+            const svg = document.getElementById('radial-svg');
+            ['ax-x1', 'ax-y1'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.setAttribute('stroke', p.color);
+            });
+            ['lbl-left', 'lbl-right', 'lbl-top', 'lbl-bot'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.setAttribute('fill', p.color);
+            });
+
+            // === 四象限 动态说明（按页面含义切换）===
+            const quadrantText = [
+                { tl: '飞刀 ✗别接', tr: '捡钱包 ★低吸', bl: '跌透前沿', br: '等等看' },  // 策略狙击
+                { tl: '洗盘变跑路 ✗', tr: '锁仓成色足 ✓', bl: '随大势调', br: '温和震荡' },  // 核心持仓
+                { tl: '拉高出货', tr: '涨势有真支撑', bl: '悄悄撤离', br: '小幅跟涨' },  // 避险雷达
+            ];
+            const qt = quadrantText[idx] || quadrantText[0];
+            document.getElementById('ql-tl').innerText = qt.tl;
+            document.getElementById('ql-tr').innerText = qt.tr;
+            document.getElementById('ql-bl').innerText = qt.bl;
+            document.getElementById('ql-br').innerText = qt.br;
+
+            const box = document.getElementById('nodes-container');
+            box.innerHTML = '';
+
+            if (!p.items || p.items.length === 0) return;
+
+            // === 坐标轴散点定位 ===
+            const maxAbsVal = Math.max(...p.items.map(item => Math.abs(parseFloat(item.val))), 0.1);
+
+            // 先计算每个节点的初始位置，检查是否有 localStorage 保存的位置
+            const nodeInfos = p.items.map(item => {
+                const val = parseFloat(item.val);
+                const absVal = Math.abs(val);
+                const storageKey = `pos_v2_${currentTheme}_${p.title}_${item.name}`;
+                const savedPos = localStorage.getItem(storageKey);
+                if (savedPos) {
+                    const { left, top } = JSON.parse(savedPos);
+                    return { item, val, storageKey, x: parseFloat(left), y: parseFloat(top), fromStorage: true };
+                }
+                // X: 负数往左(9%~47%)，正数往右(53%~91%)
+                const x = val >= 0
+                    ? 53 + (val / maxAbsVal) * 38
+                    : 47 - (absVal / maxAbsVal) * 38;
+                // Y: abs大→靠上，abs小→靠下
+                const y = 82 - (absVal / maxAbsVal) * 68;
+                return { item, val, storageKey, x, y, fromStorage: false };
+            });
+
+            // === 弹开算法（只对非 localStorage 的节点起效）===
+            // 假设每个节点标签约占 16% 宽 × 10% 高
+            const HW = 8.5, HH = 6;  // 半宽/半高（百分比单位）
+            const freeNodes = nodeInfos.filter(n => !n.fromStorage);
+            for (let iter = 0; iter < 60; iter++) {
+                for (let a = 0; a < freeNodes.length; a++) {
+                    for (let b = a + 1; b < freeNodes.length; b++) {
+                        const na = freeNodes[a], nb = freeNodes[b];
+                        const dx = nb.x - na.x, dy = nb.y - na.y;
+                        const ox = HW * 2 - Math.abs(dx);  // 水平重叠量
+                        const oy = HH * 2 - Math.abs(dy);  // 垂直重叠量
+                        if (ox > 0 && oy > 0) {
+                            // 沿较小重叠的轴推开
+                            if (oy < ox) {
+                                const push = (oy / 2 + 0.3) * (dy >= 0 ? 1 : -1);
+                                na.y = Math.max(12, Math.min(86, na.y - push));
+                                nb.y = Math.max(12, Math.min(86, nb.y + push));
+                            } else {
+                                const push = (ox / 2 + 0.3) * (dx >= 0 ? 1 : -1);
+                                na.x = Math.max(5, Math.min(93, na.x - push));
+                                nb.x = Math.max(5, Math.min(93, nb.x + push));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // === 渲染节点 ===
+            nodeInfos.forEach(info => {
+                const node = document.createElement('div');
+                node.className = 'sector-node pointer-events-auto';
+                node.style.left = `${info.x}%`;
+                node.style.top = `${info.y}%`;
+
+                const px = info.x, py = info.y;
+                const isLeft = px < 45; const isRight = px > 55;
+                const isTop = py < 30; const isBot = py > 70;
+                node.style.transform = `translate(${isLeft ? '0%' : isRight ? '-100%' : '-50%'}, ${isTop ? '0%' : isBot ? '-100%' : '-50%'})`;
+
+                const alignDir = isLeft ? 'flex-start' : isRight ? 'flex-end' : 'center';
+                const textAlign = isLeft ? 'left' : isRight ? 'right' : 'center';
+
+                node.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:${alignDir};cursor:grab;user-select:none;">
+                        <div class="node-label" style="text-align:${textAlign}">${info.item.name}</div>
+                        <div class="node-val" style="text-align:${textAlign}">${info.item.val}</div>
+                    </div>
+                `;
+                box.appendChild(node);
+                makeDraggable(node, info.storageKey);
+            });
+        }
+
+        function makeDraggable(el, storageKey) {
+            let dragging = false;
+            let startX, startY, origLeft, origTop;
+
+            function getClient(e) {
+                return e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+                    : { x: e.clientX, y: e.clientY };
+            }
+
+            function onStart(e) {
+                dragging = true;
+                const c = getClient(e);
+                startX = c.x;
+                startY = c.y;
+                origLeft = parseFloat(el.style.left);
+                origTop = parseFloat(el.style.top);
+                el.style.cursor = 'grabbing';
+                el.style.zIndex = 1000;
+                e.preventDefault();
+            }
+
+            function onMove(e) {
+                if (!dragging) return;
+                const c = getClient(e);
+                const dx = (c.x - startX) / window.innerWidth * 100;
+                const dy = (c.y - startY) / window.innerHeight * 100;
+                el.style.left = `${origLeft + dx}%`;
+                el.style.top = `${origTop + dy}%`;
+
+                const px = parseFloat(el.style.left);
+                const py = parseFloat(el.style.top);
+                const iL = px < 38; const iR = px > 62; const iT = py < 30; const iB = py > 70;
+                const tx = iL ? '0%' : iR ? '-100%' : '-50%';
+                const ty = iT ? '0%' : iB ? '-100%' : '-50%';
+                el.style.transform = `translate(${tx}, ${ty})`;
+            }
+
+            function onEnd() {
+                if (!dragging) return;
+                dragging = false;
+                el.style.cursor = 'grab';
+                el.style.zIndex = '';
+                localStorage.setItem(storageKey, JSON.stringify({
+                    left: el.style.left,
+                    top: el.style.top
+                }));
+            }
+
+            el.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
+            el.addEventListener('touchstart', onStart, { passive: false });
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onEnd);
+        }
+
+        setTheme('luxury');
+
+        async function exportToImage() {
+            const btn = document.querySelector('[onclick="exportToImage()"]');
+            btn.innerText = '...';
+            btn.style.opacity = '0.5';
+
+            const canvas = await html2canvas(document.body, {
+                width: 578,
+                height: 865.5,
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                logging: false,
+            });
+
+            let title = document.getElementById('page-title').innerText || 'report';
+            let shortType = '导出';
+            if (title.includes('错杀')) shortType = '错杀';
+            else if (title.includes('洗盘')) shortType = '洗盘';
+            else if (title.includes('诱多')) shortType = '诱多';
+
+            const mmdd = new Date().toISOString().slice(5, 10).replace('-', '');
+            const link = document.createElement('a');
+            link.download = `${mmdd}-${shortType}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+
+            btn.innerText = '📸 导出';
+            btn.style.opacity = '1';
+        }
+    </script>
+</body>
+
+</html>

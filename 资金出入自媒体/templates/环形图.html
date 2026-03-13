@@ -1,0 +1,156 @@
+<html vid="0">
+
+<head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <title vid="4">Market Sentinel Radial</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17" vid="5"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap"
+        rel="stylesheet" vid="6">
+    <script vid="7">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Space Grotesk', 'sans-serif'],
+                        mono: ['IBM Plex Mono', 'monospace'],
+                    },
+                    colors: {
+                        void: '#EBEBEB',
+                        panel: '#FFFFFF',
+                        border: '#000000',
+                        ink: '#000000',
+                        sub: '#666666'
+                    }
+                }
+            }
+        }
+    </script>
+    <style vid="8">
+        .polar-grid {
+            background-image:
+                radial-gradient(circle, transparent 20%, #E5E5E5 21%, transparent 22%),
+                radial-gradient(circle, transparent 40%, #E5E5E5 41%, transparent 42%),
+                radial-gradient(circle, transparent 60%, #E5E5E5 61%, transparent 62%),
+                radial-gradient(circle, transparent 80%, #E5E5E5 81%, transparent 82%);
+            background-position: center;
+        }
+
+        .radial-line {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 1px;
+            background: rgba(0, 0, 0, 0.1);
+            transform-origin: left;
+        }
+
+        .sector-node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+
+        .window-shadow {
+            box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
+        }
+
+        .arc-path {
+            fill: none;
+            stroke-linecap: square;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-void text-ink h-screen w-full flex flex-col font-sans overflow-hidden selection:bg-black selection:text-white"
+    vid="9">
+
+    <header class="flex-none px-6 py-4 z-20 flex justify-between items-center border-b border-black bg-void" vid="10">
+        <div vid="11">
+            <div class="flex items-center gap-2" vid="12">
+                <span class="w-2 h-2 rounded-full bg-black" vid="13"></span>
+                <span class="text-[10px] font-mono uppercase tracking-widest text-ink" vid="14">Radial Monitor</span>
+            </div>
+            <h1 class="text-xl font-bold text-ink tracking-tight flex items-baseline gap-2" vid="15">
+                <span class="font-mono text-ink" vid="16">1.1</span>
+                <span vid="17">恐慌错杀</span>
+            </h1>
+        </div>
+        <div class="flex gap-2" vid="18">
+            <button class="p-2 rounded-md border border-black hover:bg-black hover:text-white transition-colors"
+                vid="19">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" vid="20">
+                    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" vid="21"></path>
+                    <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" vid="22"></path>
+                    <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" vid="23"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 relative flex items-center justify-center overflow-hidden" vid="24">
+
+        <div class="absolute inset-0 polar-grid z-0 opacity-60" vid="25"></div>
+
+        <svg class="absolute inset-0 w-full h-full z-10" viewBox="0 0 400 400" vid="31">
+
+
+            <path d="M 200,80 A 120,120 0 0 1 303,140" class="arc-path" stroke="#000000" stroke-width="14" opacity="1"
+                vid="32"></path>
+
+
+            <path d="M 315,170 A 120,120 0 0 1 290,285" class="arc-path" stroke="#000000" stroke-width="8" opacity="0.6"
+                vid="33"></path>
+
+
+            <path d="M 260,315 A 120,120 0 0 1 140,315" class="arc-path" stroke="#000000" stroke-width="6" opacity="0.3"
+                vid="34"></path>
+
+
+            <path d="M 110,285 A 120,120 0 0 1 85,170" class="arc-path" stroke="#000000" stroke-width="2" opacity="0.1"
+                vid="35"></path>
+
+            <path d="M 97,140 A 120,120 0 0 1 180,82" class="arc-path" stroke="#000000" stroke-width="1" opacity="0.1"
+                stroke-dasharray="4,4" vid="36"></path>
+        </svg>
+
+
+        <div class="sector-node z-20 top-[15%] left-[50%] text-center group" vid="37">
+            <div class="block" vid="40">
+                <span class="text-sm font-bold text-ink bg-void px-1" vid="41">环境治理</span>
+            </div>
+            <span class="text-xs font-mono text-ink block font-bold" vid="42">-3.11</span>
+        </div>
+
+        <div class="sector-node z-20 top-[45%] left-[85%] text-left" vid="43">
+
+            <div class="block" vid="46">
+                <span class="text-sm font-bold text-ink bg-void px-1" vid="47">零售</span>
+            </div>
+            <span class="text-xs font-mono text-ink block font-bold" vid="48">-2.61</span>
+        </div>
+
+        <div class="sector-node z-20 top-[85%] left-[50%] text-center" vid="49">
+
+            <div class="block" vid="52">
+                <span class="text-sm font-bold text-ink bg-void px-1" vid="53">教育</span>
+            </div>
+            <span class="text-xs font-mono text-ink block font-bold" vid="54">-2.37</span>
+        </div>
+
+        <div class="sector-node z-20 top-[45%] left-[15%] text-right" vid="55">
+
+            <div class="block" vid="58">
+                <span class="text-sm font-bold text-ink bg-void px-1" vid="59">非金属材料</span>
+            </div>
+            <span class="text-xs font-mono text-sub block font-bold" vid="60">-1.88</span>
+        </div>
+    </main>
+
+</body>
+
+</html>
