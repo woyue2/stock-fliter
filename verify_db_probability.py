@@ -27,21 +27,62 @@ EXIT_DATES = ["2026-03-06", "2026-03-09"]
 def check_magic(price):
     if price <= 0: return False
     pl = round(price, 2)
-    d2 = int(pl // 1) % 10
-    d3 = int(pl * 10) % 10
-    d4 = int(pl * 100) % 10
+    # 提取各数字位 (对齐通达信 D0-D4)
+    d0 = int(pl // 100) % 10  # 百位
+    d1 = int(pl // 10) % 10   # 十位
+    d2 = int(pl // 1) % 10    # 个位
+    d3 = int(pl * 10) % 10    # 十分位
+    d4 = int(pl * 100) % 10   # 百分位
     
-    sq_aaa = (d2 == d3 == d4)
-    sq_aba = (d2 == d4)
-    sq_cc = (d3 == d4)
-    sq_zero = (d4 == 0)
-    sq_seq = (d2 == d3 - 1 == d4 - 2) or (d2 == d3 + 1 == d4 + 2)
-    sq_math = ((d2 + d3 == d4) or (d2 + d4 == d3) or (d3 + d4 == d2)) or \
-              (((d2 * d3 == d4) or (d2 * d4 == d3) or (d3 * d4 == d2)) and pl >= 1) or \
-              ((d2 + d3 + d4) % 10 == 0 and (d2 + d3 + d4) > 0)
-    sq_int = (int(pl) == d3 + d4) or (int(pl) == d3 * d4)
+    # 1. 四位基础形态 (PL >= 10)
+    base_4bit = False
+    if pl >= 10:
+        base_4bit = (
+            (d1 == d2 == d3 == d4) or                   # AAAA
+            (d1 == d2 and d3 == d4) or                  # AABB
+            (d1 == d3 and d2 == d4) or                  # ABAB
+            (d1 == d4 and d2 == d3) or                  # ABBA
+            (d1 == d3 and abs(d2 - d4) == 1)            # ABAC
+        )
+
+    # 2. 三位基础形态 (AAA, ABA, CC, 尾0, 顺子)
+    base_3bit = (
+        (d2 == d3 == d4) or                             # AAA
+        (d2 == d4) or                                   # ABA
+        (d3 == d4) or                                   # CC
+        (d4 == 0) or                                    # 尾数0
+        (d2 == d3 - 1 == d4 - 2) or                     # 顺子 123
+        (d2 == d3 + 1 == d4 + 2)                        # 逆顺 321
+    )
     
-    return sq_aaa or sq_aba or sq_cc or sq_zero or sq_seq or sq_math or sq_int
+    # 3. 数学运算 (按价格区间严格隔离，防止 13.07 之类的跳位误判)
+    # A. 一位数带两位小数运算 (仅限 PL < 10)
+    math_1bit = False
+    if pl < 10:
+        math_1bit = (
+            (d2 + d3 == d4 or d2 + d4 == d3 or d3 + d4 == d2) or
+            ((d2 * d3 == d4 or d2 * d4 == d3 or d3 * d4 == d2) and pl >= 1) or
+            ((d2 + d3 + d4) % 10 == 0 and (d2 + d3 + d4) > 0)
+        )
+    
+    # B. 两位数带两位小数运算 (10 <= PL < 100)
+    math_2bit = False
+    if 10 <= pl < 100:
+        math_2bit = (
+            ((d1 + d2 + d3 + d4) % 10 == 0 and (d1 + d2 + d3 + d4) > 0) or  # 全位合十
+            (d1 + d2 == d3 + d4) or (d1 + d4 == d2 + d3) or (d1 + d3 == d2 + d4) or
+            (d1 + d2 + d3 == d4 or d1 + d2 + d4 == d3 or d1 + d3 + d4 == d2 or d2 + d3 + d4 == d1) or
+            (d1 * d2 == d3 * d4 and pl >= 1)
+        )
+        
+    math_3bit = False
+    if pl >= 100:
+        math_3bit = ((d0 + d1 + d2 + d3 + d4) % 10 == 0 and (d0 + d1 + d2 + d3 + d4) > 0)
+
+    # 4. 整数平衡 (如 13.94 -> 13 = 9+4)
+    int_math = (int(pl) == d3 + d4) or (int(pl) == d3 * d4)
+    
+    return base_4bit or base_3bit or math_1bit or math_2bit or math_3bit or int_math
 
 def _pick_kline_table(conn: sqlite3.Connection) -> str:
     df = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", conn)
@@ -142,6 +183,7 @@ def _worker_backtest_batch(
     exit_days: int,
     rsi_hook: bool = False,
     vol_shrink: bool = False,
+    vol_ratio: float = 1.0,
 ) -> list[dict]:
     # [IMPL] 返回每笔交易的详细记录：日期,代码,RSI,收益,是否触发移动止损
     trade_records = []
@@ -211,37 +253,50 @@ def _worker_backtest_batch(
                 # [IMPL] 成交量缩量逻辑检查
                 if vol_shrink:
                     if idx <= 0: continue
-                    # 规则：今日成交量 < 昨日成交量
-                    if volume[idx] >= volume[idx-1]:
+                    # 规则：今日成交量 < 昨日成交量 * vol_ratio
+                    if volume[idx] >= volume[idx-1] * vol_ratio:
                         continue
 
                 exit_dates = _next_trading_dates(calendar, buy_date, exit_days)
                 if not exit_dates:
                     continue
                 
+                # [IMPL] 严谨回测逻辑 (对齐 A 股 T+1):
+                # 1. T+1 (buy_date) 只能买入, 不能卖出, 但要记录 T+1 的最高价用于抬升止损线
                 p = 0.0
-                peak_price = buy_open
+                buy_high = float(high[buy_idx])
+                peak_price = max(buy_open, buy_high)
                 triggered_ts = False
                 
+                # 2. 从 T+2 开始循环检查卖出条件 (exit_dates 包含 T+2, T+3...)
                 for i, ed in enumerate(exit_dates):
                     ei = date_to_idx.get(ed)
                     if ei is not None:
-                        curr_low = float(low[ei])
+                        curr_open = float(open_[ei])
                         curr_high = float(high[ei])
+                        curr_low = float(low[ei])
+                        curr_close = float(close[ei])
                         
-                        # 检查是否触碰当前的移动止损线
                         stop_price = peak_price * (1 - TRAILING_PERCENT)
-                        if curr_low <= stop_price:
+                        
+                        # 检查止损触发:
+                        # a) 如果开盘就低开于止损价下方 (直接吃大面, 止损价卖不掉, 只能开盘逃命)
+                        if curr_open <= stop_price:
+                            p = (curr_open - buy_open) / buy_open
+                            triggered_ts = True
+                            break
+                        # b) 如果盘中触碰止损价
+                        elif curr_low <= stop_price:
                             p = (stop_price - buy_open) / buy_open
                             triggered_ts = True
                             break
                         
-                        # 更新最高价以抬升止损线
+                        # 未触发止损, 更新最高价
                         peak_price = max(peak_price, curr_high)
                         
-                        # 最后期限平仓
+                        # 如果是最后期限 (T+3), 强制以收盘价平仓
                         if i == len(exit_dates) - 1:
-                            p = (float(close[ei]) - buy_open) / buy_open
+                            p = (curr_close - buy_open) / buy_open
                 
                 trade_records.append({
                     "date": d,
@@ -264,6 +319,7 @@ def run_backtest_range(
     out_csv: str,
     rsi_hook: bool = False,
     vol_shrink: bool = False,
+    vol_ratio: float = 1.0,
 ) -> None:
     conn = sqlite3.connect(db_path)
     table = _pick_kline_table(conn)
@@ -287,12 +343,12 @@ def run_backtest_range(
     
     all_trade_records = []
 
-    print(f"Starting Detailed Backtest (Strategy: 2% Trailing Stop + RSI-6, Workers: {workers}, Hook: {rsi_hook}, VolShrink: {vol_shrink})")
+    print(f"Starting Detailed Backtest (Strategy: 2% Trailing Stop + RSI-6, Workers: {workers}, Hook: {rsi_hook}, VolShrink: {vol_shrink}, VolRatio: {vol_ratio})")
     
     with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
-                _worker_backtest_batch, db_path, table, chunk, query_start, query_end, calendar, target_dates, exit_days, rsi_hook, vol_shrink
+                _worker_backtest_batch, db_path, table, chunk, query_start, query_end, calendar, target_dates, exit_days, rsi_hook, vol_shrink, vol_ratio
             ): chunk for chunk in code_chunks
         }
         
@@ -335,6 +391,7 @@ if __name__ == "__main__":
     parser.add_argument("--out", default="result.csv")
     parser.add_argument("--rsi-hook", action="store_true", help="仅保留 RSI 低位勾头信号 (RSI<35 且今日>昨日)")
     parser.add_argument("--vol-shrink", action="store_true", help="仅保留今日成交量小于昨日的信号 (缩量)")
+    parser.add_argument("--vol-ratio", type=float, default=1.0, help="缩量比例阈值 (例如 0.8 表示今日成交量需小于昨日的 80%%)")
     args = parser.parse_args()
 
     # 逻辑处理：单日模式或范围模式
@@ -356,5 +413,6 @@ if __name__ == "__main__":
         workers=args.workers,
         out_csv=args.out,
         rsi_hook=args.rsi_hook,
-        vol_shrink=args.vol_shrink
+        vol_shrink=args.vol_shrink,
+        vol_ratio=args.vol_ratio
     )
