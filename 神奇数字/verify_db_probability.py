@@ -1,8 +1,8 @@
 """
 [INPUT]:    依赖 get-data/data/stocks.db 提供的 K 线数据
-[OUTPUT]:   生成包含每日胜率统计的 CSV 文件
-[POS]:      回测验证模块，用于评估 Smile Number 策略的历史表现
-[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+[OUTPUT]:   生成包含个股胜率及移动止损详情的 CSV 文件 (result.csv)
+[POS]:      回测验证模块，采用多进程模拟 A 股实操（T+1 制度/移动止损/右侧确认）
+[PROTOCOL]: 变更逻辑后必须同步更新 docs/evolution.md
 """
 import sqlite3
 import pandas as pd
@@ -222,53 +222,62 @@ def _worker_backtest_batch(
             # [IMPL] 计算该股票全量的 RSI-6
             rsi_values = _compute_rsi(close, 6)
 
-            for d in dates:
+            for d in dates: # d 是 T1 (确认确认发生日)
                 if d not in target_dates:
                     continue
-                idx = date_to_idx.get(d)
-                if idx is None or not _compute_signal_for_index(open_, high, low, close, idx):
-                    continue
-
-                cal_pos = calendar_idx.get(d)
-                if cal_pos is None or cal_pos + 1 >= len(calendar):
+                
+                idx_t1 = date_to_idx.get(d)
+                if idx_t1 is None or idx_t1 < 1:
                     continue
                 
-                buy_date = calendar[cal_pos + 1]
-                buy_idx = date_to_idx.get(buy_date)
+                # [IMPL] 右侧确认逻辑模式:
+                # T0 (昨日): 满足 Smile + 神奇数字底 (探底日)
+                # T1 (今日): 满足 RSI 上勾 + 后置过滤 (确认日)
+                idx_t0 = idx_t1 - 1
+                
+                # 1. 检查昨日 (T0) 是否满足探底信号
+                if not _compute_signal_for_index(open_, high, low, close, idx_t0):
+                    continue
+                
+                # 2. 检查今日 (T1) 的右侧确认条件
+                curr_rsi = float(rsi_values[idx_t1])
+                prev_rsi = float(rsi_values[idx_t0])
+                
+                # RSI 黄金勾逻辑 (勾头向上且昨日低位)
+                if rsi_hook:
+                    if not (curr_rsi > prev_rsi and prev_rsi < RSI_HOOK_THRESHOLD):
+                        continue
+                
+                # 成交量缩量逻辑
+                if vol_shrink:
+                    if volume[idx_t1] >= volume[idx_t0] * vol_ratio:
+                        continue
+
+                # 3. 既然 T1 已经勾头确认, 那么实战中我们要在次日 (T2) 开盘买入
+                cal_pos_t1 = calendar_idx.get(d)
+                if cal_pos_t1 is None or cal_pos_t1 + 1 >= len(calendar):
+                    continue
+                
+                buy_date_t2 = calendar[cal_pos_t1 + 1]
+                buy_idx = date_to_idx.get(buy_date_t2)
                 if buy_idx is None:
                     continue
                 
                 buy_open = float(open_[buy_idx])
                 
-                # [IMPL] RSI 黄金勾逻辑检查
-                curr_rsi = float(rsi_values[idx])
-                if rsi_hook:
-                    # 获取昨日索引 (idx - 1)
-                    if idx <= 0: continue
-                    prev_rsi = float(rsi_values[idx-1])
-                    # 规则：今日勾头向上 (curr > prev) 且 昨天还在低位坑里 (< 35)
-                    if not (curr_rsi > prev_rsi and prev_rsi < RSI_HOOK_THRESHOLD):
-                        continue
-
-                # [IMPL] 成交量缩量逻辑检查
-                if vol_shrink:
-                    if idx <= 0: continue
-                    # 规则：今日成交量 < 昨日成交量 * vol_ratio
-                    if volume[idx] >= volume[idx-1] * vol_ratio:
-                        continue
-
-                exit_dates = _next_trading_dates(calendar, buy_date, exit_days)
+                # [IMPL] 严谨回测逻辑 (对齐 A 股 T+1):
+                # T2 买入后, 当日跑不掉. 最早离场日期从 T3 开始.
+                exit_dates = _next_trading_dates(calendar, buy_date_t2, exit_days)
                 if not exit_dates:
                     continue
                 
-                # [IMPL] 严谨回测逻辑 (对齐 A 股 T+1):
-                # 1. T+1 (buy_date) 只能买入, 不能卖出, 但要记录 T+1 的最高价用于抬升止损线
+                # A. 初始化 T2 (买入日) 的数据, 用于抬升移动止损线
                 p = 0.0
                 buy_high = float(high[buy_idx])
                 peak_price = max(buy_open, buy_high)
                 triggered_ts = False
                 
-                # 2. 从 T+2 开始循环检查卖出条件 (exit_dates 包含 T+2, T+3...)
+                # B. 从 T3 开始循环检查离场条件 (exit_dates 包含 T3, T4...)
                 for i, ed in enumerate(exit_dates):
                     ei = date_to_idx.get(ed)
                     if ei is not None:
@@ -279,29 +288,28 @@ def _worker_backtest_batch(
                         
                         stop_price = peak_price * (1 - TRAILING_PERCENT)
                         
-                        # 检查止损触发:
-                        # a) 如果开盘就低开于止损价下方 (直接吃大面, 止损价卖不掉, 只能开盘逃命)
-                        if curr_open <= stop_price:
+                        # 检查止损触发
+                        if curr_open <= stop_price: # 低开直接出局
                             p = (curr_open - buy_open) / buy_open
                             triggered_ts = True
                             break
-                        # b) 如果盘中触碰止损价
-                        elif curr_low <= stop_price:
+                        elif curr_low <= stop_price: # 盘中触碰止损线
                             p = (stop_price - buy_open) / buy_open
                             triggered_ts = True
                             break
                         
-                        # 未触发止损, 更新最高价
+                        # 未触发, 更新最高价
                         peak_price = max(peak_price, curr_high)
                         
-                        # 如果是最后期限 (T+3), 强制以收盘价平仓
+                        # 最后期限强制平仓
                         if i == len(exit_dates) - 1:
                             p = (curr_close - buy_open) / buy_open
                 
                 trade_records.append({
-                    "date": d,
+                    "date": d, # 信号确认日期 T1
                     "code": code,
-                    "rsi_6": round(rsi_values[idx], 2),
+                    "rsi_t1": round(curr_rsi, 2),
+                    "rsi_t0": round(prev_rsi, 2),
                     "profit_pct": round(p * 100, 2),
                     "is_ts": 1 if triggered_ts else 0
                 })
@@ -371,13 +379,13 @@ def run_backtest_range(
     print(f"\n--- 详细交易统计 (Trailing Stop: 2%) ---")
     avg_p = df_out["profit_pct"].mean()
     ts_rate = df_out["is_ts"].mean()
-    avg_rsi = df_out["rsi_6"].mean()
+    avg_rsi_t1 = df_out["rsi_t1"].mean()
     print(f"信号总数: {len(df_out)}")
-    print(f"平均选股 RSI-6: {avg_rsi:.2f}")
+    print(f"平均确认日 RSI-6 (T1): {avg_rsi_t1:.2f}")
     print(f"全局平均单笔收益: {avg_p:.2f}%")
     print(f"移动止损触发率 (TS): {ts_rate:.2%}")
     if rsi_hook:
-        print(f"黄金勾过滤生效: 已自动剔除趋势不符或非低位信号")
+        print(f"右侧确认逻辑: 已过滤昨日探底但今日未勾头的信号 (RSI_T1 > RSI_T0)")
     print(f"详细个股结果已保存至 {out_csv}")
 
 
@@ -391,7 +399,7 @@ if __name__ == "__main__":
     parser.add_argument("--out", default="result.csv")
     parser.add_argument("--rsi-hook", action="store_true", help="仅保留 RSI 低位勾头信号 (RSI<35 且今日>昨日)")
     parser.add_argument("--vol-shrink", action="store_true", help="仅保留今日成交量小于昨日的信号 (缩量)")
-    parser.add_argument("--vol-ratio", type=float, default=1.0, help="缩量比例阈值 (例如 0.8 表示今日成交量需小于昨日的 80%%)")
+    parser.add_argument("--vol-ratio", type=float, default=0.9, help="缩量比例阈值 (例如 0.9 表示今日成交量需小于昨日的 90%%)")
     args = parser.parse_args()
 
     # 逻辑处理：单日模式或范围模式

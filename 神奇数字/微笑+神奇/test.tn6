@@ -1,0 +1,39 @@
+{ 微笑战法 - 右侧确认版 (SQSZ_R) }
+{ 核心：昨日摸底信号 + 今日勾头缩量确认 }
+
+{ --- 1. 基础位提取 (给昨天用) --- }
+PL_T0 := ROUND2(REF(L, 1), 2);
+D0 := MOD(INTPART(PL_T0/100), 10);  { 百位 }
+D1 := MOD(INTPART(PL_T0/10), 10);   { 十位 }
+D2 := MOD(INTPART(PL_T0), 10);      { 个位 }
+D3 := MOD(INTPART(PL_T0*10), 10);   { 十分位 }
+D4 := MOD(INTPART(PL_T0*100), 10);  { 百分位 }
+
+{ --- 2. 神奇数字判断 (完全对齐 Python 版严格位逻辑) --- }
+BASE_4BIT := PL_T0>=10 AND ((D1=D2 AND D2=D3 AND D3=D4) OR (D1=D2 AND D3=D4) OR (D1=D3 AND D2=D4) OR (D1=D4 AND D2=D3) OR (D1=D3 AND ABS(D2-D4)=1));
+BASE_3BIT := (D2=D3 AND D3=D4) OR (D2=D4) OR (D3=D4) OR (D4=0) OR ((D2=D3-1 AND D3=D4-1) OR (D2=D3+1 AND D3=D4+1));
+
+MATH_1BIT := PL_T0<10 AND ((D2+D3=D4 OR D2+D4=D3 OR D3+D4=D2) OR (D2*D3=D4 OR D2*D4=D3 OR D3*D4=D2) OR (MOD(D2+D3+D4, 10)=0 AND (D2+D3+D4)>0));
+MATH_2BIT := PL_T0>=10 AND PL_T0<100 AND ((MOD(D1+D2+D3+D4, 10)=0 AND (D1+D2+D3+D4)>0) OR (D1+D2 = D3+D4) OR (D1+D4 = D2+D3) OR (D1+D3 = D2+D4) OR (D1+D2+D3=D4 OR D1+D2+D4=D3 OR D1+D3+D4=D2 OR D2+D3+D4=D1) OR (D1*D2=D3*D4));
+MATH_3BIT := PL_T0>=100 AND (MOD(D0+D1+D2+D3+D4, 10)=0 AND (D0+D1+D2+D3+D4)>0);
+INT_MATH := INTPART(PL_T0) = (D3+D4) OR INTPART(PL_T0) = (D3*D4);
+
+IS_MAGIC_T0 := BASE_4BIT OR BASE_3BIT OR MATH_1BIT OR MATH_2BIT OR MATH_3BIT OR INT_MATH;
+
+{ --- 3. 微笑探底逻辑 (针对昨天) --- }
+S1_RANGE_MIN := REF(LLV(L, 25), 5);
+S1_DONE := REF(L, 1) <= S1_RANGE_MIN * 1.02;
+IN_S2 := REF(L, 1) < REF(LLV(L, 5), 2);
+BOX_SHAPE := (REF(C, 1) > REF(O, 1) * 0.995) AND (ABS(REF(C, 1) - REF(O, 1)) < (REF(H, 1) - REF(L, 1)) * 0.5);
+S2_DROP := REF(L, 1) < REF(O, 1) AND REF(L, 1) < REF(C, 1);
+NEAR_BOTTOM := REF(L, 1) < MA(C, 60);
+
+T0_BOTTOM := S1_DONE AND IN_S2 AND BOX_SHAPE AND S2_DROP AND NEAR_BOTTOM AND IS_MAGIC_T0 AND REF(L,1)=REF(LLV(L,10),1);
+
+{ --- 4. 今天的右侧确认条件 --- }
+R6 := RSI(6);
+R6_HOOK := R6 > REF(R6, 1) AND REF(R6, 1) < 35; { RSI 勾头且昨日低位 }
+VOL_SHRINK := V < REF(V, 1) * 0.82;              { 显著缩量 18% }
+
+{ --- 5. 最终选股结论 --- }
+SQSZ_R: T0_BOTTOM AND R6_HOOK AND VOL_SHRINK;
