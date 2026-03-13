@@ -211,11 +211,17 @@ def main():
                 )
                 
                 # 处理行选中
-                if event and event.get("selection") and event["selection"]["rows"]:
+                if event.get("selection") and event["selection"]["rows"]:
                     selected_row_idx = event["selection"]["rows"][0]
-                    selected_code = df_results.iloc[selected_row_idx]['代码']
-                    selected_name = df_results.iloc[selected_row_idx]['名称']
-                    st.session_state.selected_td_stock = {"code": selected_code, "name": selected_name}
+                    # 从显示的DataFrame获取代码和名称
+                    selected_code = df_display.iloc[selected_row_idx]['代码']
+                    selected_name = df_display.iloc[selected_row_idx]['名称']
+                    
+                    # 只有在选择的股票变化时才更新状态并强制rerun
+                    current_selection = st.session_state.get('selected_td_stock')
+                    if not current_selection or current_selection.get('code') != selected_code:
+                        st.session_state.selected_td_stock = {"code": selected_code, "name": selected_name}
+                        st.rerun()
             else:
                 st.warning(f"目前 {current_date} 无 TD 信号。请在左侧点击“开始扫描”。")
 
