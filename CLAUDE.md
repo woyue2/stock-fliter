@@ -51,6 +51,15 @@ cd check-volupxyangxshipan--有用
 python main.py --test --no-open
 ```
 
+**Backtesting & Verification** (multi-process)
+```bash
+# Full range backtest with optimized filters (RSI hook + Vol shrink)
+python verify_db_probability.py --range-start 2025-01-01 --range-end 2026-03-13 --rsi-hook --vol-shrink
+
+# Check single day detailed results (useful for replay)
+python verify_db_probability.py --target-date 2026-03-04 --rsi-hook --out result_details.csv
+```
+
 **Utilities**
 ```bash
 # Build reports index
