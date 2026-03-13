@@ -33,6 +33,7 @@ from data_loader import (
     iter_stock_items, load_daily_data, get_board_type, 
 )
 from indicators_lib import TechnicalIndicators
+from util.td_core import TDCore
 
 
 @dataclass
@@ -72,21 +73,6 @@ def _worker_process_stock_td(item: Any, config: TDAnalyzerConfig) -> Tuple[Optio
         if "date" in df.columns and not df.empty:
             last_dt = pd.to_datetime(df["date"].iloc[-1])
             
-        # 实例化临时分析器以确保方法可用
-        # 注意：这里我们避开了类成员 state 的问题，只调用纯计算方法
-        from indicators_lib import TechnicalIndicators
-        
-        # 模拟 _analyze_stock 逻辑
-        df_daily = df.copy()
-        df_weekly = TechnicalIndicators.resample_ohlcv(df_daily, "W")
-        try:
-            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "ME") 
-        except Exception:
-            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "M")
-            
-        result = {}
-        # 注意：这里需要调用类的方法。为了保持逻辑一致，我们直接访问原类的方法。
-        # 这里为了 picklable，我们可能需要将这些方法变为静态方法，或者在子进程中重新实例化。
         analyzer = TDAnalyzer(config, Path("."))
         
         analysis = analyzer._analyze_stock(df)
@@ -241,160 +227,10 @@ class TDAnalyzer:
             "月最高价", "月最低价", "月均价",
         ]
         return result_df[[c for c in column_order if c in result_df.columns]]
-    
+
     def _analyze_stock(self, df_daily: pd.DataFrame) -> Dict:
-        df_daily = df_daily.copy()
-        df_weekly = TechnicalIndicators.resample_ohlcv(df_daily, "W")
-        try:
-            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "ME") 
-        except Exception:
-            df_monthly = TechnicalIndicators.resample_ohlcv(df_daily, "M")
-            
-        result = {}
-        for df, prefix in [(df_daily, "日"), (df_weekly, "周"), (df_monthly, "月")]:
-            result.update(self._analyze_period(df, prefix))
-            result.update(self._get_td_info(df, prefix))
-            
-        result.update(self._build_resonance(
-            result["日TD计数"], result["周TD计数"], result["月TD计数"]
-        ))
-        
-        # 计算历史波动率 (Parkinson)
-        if "high" in df_daily.columns and "low" in df_daily.columns:
-            vol = TechnicalIndicators.calculate_parkinson_volatility(df_daily["high"], df_daily["low"], window=20)
-            result["波动率"] = round(vol, 4)
-        else:
-            result["波动率"] = 0.0
-            
-        return result
-    
-    def _analyze_period(self, df: pd.DataFrame, prefix: str) -> Dict:
-        if df.empty:
-            return {
-                f"{prefix}最新日期": "", f"{prefix}最新价": None,
-                f"{prefix}最高价": None, f"{prefix}最低价": None, f"{prefix}均价": None,
-            }
-        last_row = df.iloc[-1]
-        return {
-            f"{prefix}最新日期": pd.Timestamp(last_row["date"]).strftime("%Y-%m-%d"),
-            f"{prefix}最新价": round(float(last_row["close"]), 2),
-            f"{prefix}最高价": round(float(df["high"].max()), 2),
-            f"{prefix}最低价": round(float(df["low"].min()), 2),
-            f"{prefix}均价": round(float(df["close"].mean()), 2),
-        }
-
-    def _get_td_level(self, td_count: int) -> str:
-        # 10底以上进公司（分组），6-9底个体户（不分组）
-        if td_count >= 20: return f"{td_count}底(20+极限)"
-        if td_count >= 15: return f"{td_count}底(15-20极地)"
-        if td_count >= 10: return f"{td_count}底(10-15深底)"
-        if td_count >= 6: return f"{td_count}底"
-        return "无"
-
-    def _get_last_high_td(self, sequence: pd.Series, df: pd.DataFrame) -> Tuple[str, Optional[float]]:
-        for idx in range(len(sequence) - 1, -1, -1):
-            if sequence.iloc[idx] >= 6:
-                row = df.iloc[idx]
-                return pd.Timestamp(row["date"]).strftime("%Y-%m-%d"), round(float(row["close"]), 2)
-        return "", None
-
-    def _get_td_info(self, df: pd.DataFrame, prefix: str) -> Dict:
-        if df.empty or "close" not in df.columns:
-            return {
-                f"{prefix}TD计数": 0, f"{prefix}9底": False, f"{prefix}8底": False,
-                f"{prefix}7底": False, f"{prefix}6底": False, f"{prefix}底部级别": "无",
-                f"{prefix}最近高底日期": "", f"{prefix}最近高底价格": None,
-            }
-
-        close_series = df["close"].reset_index(drop=True).astype(float)
-        sequence = TechnicalIndicators.calculate_td_sequence(close_series)
-        td_count = int(sequence.iloc[-1]) if not sequence.empty else 0
-        
-        last_dt, last_price = self._get_last_high_td(sequence, df)
-        
-        return {
-            f"{prefix}TD计数": td_count,
-            f"{prefix}9底": td_count >= 9,
-            f"{prefix}8底": td_count >= 8,
-            f"{prefix}7底": td_count >= 7,
-            f"{prefix}6底": td_count >= 6,
-            f"{prefix}底部级别": self._get_td_level(td_count),
-            f"{prefix}最近高底日期": last_dt,
-            f"{prefix}最近高底价格": last_price,
-        }
-        
-    def _comb(self, label: str, val: int, req_idx: List[int], counts: List[int]) -> Optional[Tuple[str, int]]:
-        if all(counts[i] >= val for i in req_idx):
-            return (label, val)
-        return None
-
-    def _build_combinations(self, c: List[int]) -> List[Tuple[str, int]]:
-        combos = []
-        # 寻找存在的最高共同值，从最高值递减到6，所有数值都支持组合
-        max_val = max(c) if c else 0
-        if max_val < 6:
-            return []
-            
-        for val in range(max_val, 5, -1):
-            # 所有数字都支持探测多周期共振
-            combos.append(self._comb("日周月", val, [0, 1, 2], c))
-            combos.append(self._comb("日周", val, [0, 1], c))
-            combos.append(self._comb("日月", val, [0, 2], c))
-            combos.append(self._comb("周月", val, [1, 2], c))
-            combos.append(self._comb("日", val, [0], c))
-            combos.append(self._comb("周", val, [1], c))
-            combos.append(self._comb("月", val, [2], c))
-        
-        valid_combos = [cb for cb in combos if cb]
-        return valid_combos
-
-    def _build_resonance(self, daily: int, weekly: int, monthly: int) -> Dict:
-        combinations = self._build_combinations([daily, weekly, monthly])
-        
-        # 1. 组/阶优先级: 20+ > 15-20 > 10-15 > 9 > 8 > 7 > 6
-        def get_group_rank(val):
-            if val >= 20: return 6
-            if val >= 15: return 5
-            if val >= 10: return 4
-            return (val - 6) # (9->3, 8->2, 7->1, 6->0)
-        
-        # 2. 共振级别优先级: 3周期 > 2周期 > 1周期
-        def get_resonance_rank(label):
-            return len(label) # "日周月"->3, "日周"->2, "日"->1
-
-        # 最终排序权重
-        def get_total_priority(x):
-            label, val = x
-            # group_rank(10,000) + resonance_rank(1,000) + val(1)
-            return get_group_rank(val) * 10000 + get_resonance_rank(label) * 1000 + val
-
-        combinations.sort(key=get_total_priority, reverse=True)
-        
-        if not combinations:
-            return {
-                "共振级别": "无底部信号",
-                "底部详情": "无",
-                "底部权重": 0
-            }
-
-        top_label, top_val = combinations[0]
-        
-        # 分组名称
-        group_suffix = ""
-        if top_val >= 20: group_suffix = "(20+极限)"
-        elif top_val >= 15: group_suffix = "(15-20极地)"
-        elif top_val >= 10: group_suffix = "(10-15深底)"
-        # 6-9 不加后缀，保持个体户状态
-        
-        level = f"{top_label}{top_val}底{group_suffix}"
-        detail_str = " + ".join(f"{n}{v}" for n, v in combinations[:5]) # 核心信号详情
-        
-        return {
-            "9底及以上周期数": sum(c >= 9 for c in [daily, weekly, monthly]),
-            "共振级别": level,
-            "底部详情": detail_str,
-            "底部权重": get_total_priority(combinations[0])
-        }
+        """调用统一的 TD 核心逻辑"""
+        return TDCore.full_analyze(df_daily)
 
     def save(self, df: pd.DataFrame, filename: Optional[str] = None, output_dir: Optional[Path] = None) -> Path:
         if filename is None:
