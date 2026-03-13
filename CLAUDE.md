@@ -107,6 +107,12 @@ check-<strategy>/
 - `api_server.py` - Flask API for stock searching
 - Run: `python server/api_server.py`
 
+**valueCellMAx/** - 专业复盘与技术交互系统
+- `main.py` - Streamlit 主程序
+- `data_provider.py` - SQLite 数据供给
+- `notes.json` - 复盘笔记本地存储
+- Run: `streamlit run valueCellMAx/main.py`
+
 **tests/** - Core logic validation (regression tests)
 - `test_new_indicators_lib.py` - Indicators (TD 13/drawdown, etc.)
 - Run: `python tests/test_new_indicators_lib.py`
