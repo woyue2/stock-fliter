@@ -1,0 +1,13 @@
+- 直接指定选股日即可（买入日和卖出窗口会自动按交易日历推算）：
+python verify_db_probability.py --target-date 2026-03-05
+python verify_db_probability.py --target-date 2026-03-05 --no-details
+- 你也可以手动指定（逗号分隔）：
+python verify_db_probability.py --target-date 2026-03-05 --buy-date 2026-03-06 --exit-dates 2026-03-09,2026-03-10
+
+# 长时间间隔
+python3 verify_db_probability.py --range-start 2025-01-01 --range-end 2026-12-31 --workers 8 --out result.csv
+
+
+python3 verify_db_probability.py --target-date 2026-03-04 --rsi-hook --vol-shrink --vol-ratio 0.82
+# 2026-03-01 至今，开启 RSI 黄金勾，且成交量必须缩减 18% 以上
+python3 verify_db_probability.py --range-start 2026-03-01 --range-end 2026-03-13 --rsi-hook --vol-shrink --vol-ratio 0.82

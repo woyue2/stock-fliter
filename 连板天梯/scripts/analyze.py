@@ -232,13 +232,36 @@ def process_pipeline():
     
     # Get yesterday's stats (for comparison)
     # Re-read archieve files after moving the new one
-    updated_archieve_files = sorted([f for f in os.listdir(archieve_dir) if f.endswith('.csv')])
+    # Filter for standard files (e.g., those matching 4 digits for date, or excluding vX/test)
+    def is_standard_data(f):
+        if 'test' in f.lower(): return False
+        if re.search(r'_v\d+', f): return False
+        return True
+        
+    all_archieve_files = [f for f in os.listdir(archieve_dir) if f.endswith('.csv')]
+    standard_files = sorted([f for f in all_archieve_files if is_standard_data(f)])
+    
     yesterday_total_kw = None
-    if len(updated_archieve_files) >= 2:
-        yesterday_file = updated_archieve_files[-2]  # previous one
-        y_path = os.path.join(archieve_dir, yesterday_file)
-        yesterday_total_kw, _, yesterday_total_count = get_keywords(y_path)
-        print(f"[*] 发现昨日数据: {yesterday_file}，将进行对比分析。")
+    if len(standard_files) >= 2:
+        # The last one is the one we just added (archieve_path)
+        # So we want the one before the current one in the sorted list
+        current_filename = os.path.basename(archieve_path)
+        try:
+            current_idx = standard_files.index(current_filename)
+            if current_idx > 0:
+                yesterday_file = standard_files[current_idx - 1]
+                y_path = os.path.join(archieve_dir, yesterday_file)
+                yesterday_total_kw, _, yesterday_total_count = get_keywords(y_path)
+                print(f"[*] 发现对比基准数据: {yesterday_file}")
+            else:
+                print(f"[*] 当前文件 {current_filename} 是集合中最早的标准文件，跳过对比。")
+        except ValueError:
+            # If for some reason current_filename is not in standard_files
+            yesterday_file = standard_files[-2] if len(standard_files) >= 2 else None
+            if yesterday_file:
+                y_path = os.path.join(archieve_dir, yesterday_file)
+                yesterday_total_kw, _, yesterday_total_count = get_keywords(y_path)
+                print(f"[*] 发现对比基准数据: {yesterday_file}")
         
     print("\n" + "="*50)
     print("## 连板天梯深度分析报告")

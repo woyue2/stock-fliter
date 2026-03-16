@@ -1,0 +1,17 @@
+
+
+{--- 3. 日线周期执行 (今日触发点) ---}
+D_MA25 := MA(C, 25);              {25日均线}
+D_V5 := MA(V, 5);                  {5日均量}
+D_V60 := MA(V, 60);                {60日均量}
+D_DIF := EMA(C, 12) - EMA(C, 26);  {MACD快线}
+D_DEA := EMA(D_DIF, 9);            {MACD慢线}
+
+{日线条件：价格站上25日线，成交量金叉，MACD金叉}
+PRICE_OK := C > D_MA25;                    {价格站上25日线}
+VOL_CROSS := D_V5 > D_V60;           {成交量5日上穿60日线（当日金叉）}
+MACD_CROSS := D_DIF> D_DEA;         {MACD金叉（当日金叉）}
+
+{--- 4. 最终选股输出 ---}
+{三周期共振：月线OK且周线OK且日线三个条件同时满足}
+XG: PRICE_OK AND VOL_CROSS AND MACD_CROSS;

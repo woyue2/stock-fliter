@@ -1,0 +1,32 @@
+{--- 1. 月线周期判断 ---}
+{跨周期调用系统指标，参数(25,5,5,5)是为了强行把第一条均线改为25}
+M_MA25 := "MA.MA1#MONTH"(25,5,5,5); 
+M_VMA5 := "VOL.MAVOL1#MONTH"(5,60);
+M_VMA60 := "VOL.MAVOL2#MONTH"(5,60);
+M_DIF := "MACD.DIF#MONTH"(12,26,9);
+M_DEA := "MACD.DEA#MONTH"(12,26,9);
+
+{月线状态：股价站上25月线，5月量大于60月量，月线MACD多头}
+M_OK := (C#MONTH > M_MA25) AND (M_VMA5 > M_VMA60) AND (M_DIF > M_DEA);
+
+{--- 2. 周线周期判断 ---}
+W_MA25 := "MA.MA1#WEEK"(25,5,5,5);
+W_VMA5 := "VOL.MAVOL1#WEEK"(5,60);
+W_VMA60 := "VOL.MAVOL2#WEEK"(5,60);
+W_DIF := "MACD.DIF#WEEK"(12,26,9);
+W_DEA := "MACD.DEA#WEEK"(12,26,9);
+
+{周线状态：同上}
+W_OK := (C#WEEK > W_MA25) AND (W_VMA5 > W_VMA60) AND (W_DIF > W_DEA);
+
+{--- 3. 日线周期执行 (今日触发点) ---}
+D_MA25 := MA(C, 25);              {25日均线}
+D_V5 := MA(V, 5);                  {5日均量}
+D_V60 := MA(V, 60);                {60日均量}
+D_DIF := EMA(C, 12) - EMA(C, 26);  {MACD快线}
+D_DEA := EMA(D_DIF, 9);            {MACD慢线}
+D_OK := (C > D_MA25) AND (D_V5 > D_V60) AND (D_DIF > D_DEA );
+
+{--- 4. 最终选股输出 ---}
+{把SELECT: 改成了 XG: (选股的拼音缩写)，这是通达信的标准写法}
+XG: M_OK AND W_OK AND D_OK;
