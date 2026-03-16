@@ -1,0 +1,26 @@
+{百日窄箱+试盘起涨 选股}
+
+{--- 1. 过去的极窄箱体构建 (排除最近5天的异动期) ---}
+N := 80;
+BOX_H := REF(HHV(H, N), 5); {之前的箱体顶部}
+BOX_L := REF(LLV(L, N), 5); {之前的箱体底部}
+BOX_AMP := (BOX_H - BOX_L) / BOX_L <= 0.20; {振幅控制在20%以内，主力高度控盘}
+
+{多重回踩确认}
+TOUCH_BOTTOM := REF(L, 5) <= BOX_L * 1.05;
+MULTI_BOTTOM := COUNT(TOUCH_BOTTOM, N) >= 3;
+
+{--- 2. 近期试盘动作 (近5天内出现) ---}
+{条件：放出近期天量(大于60日均量1.5倍)，且带有明显的上影线去试探箱体顶部}
+UPPER_SHADOW := H - MAX(C, O); {上影线长度}
+BODY := ABS(C - O);            {实体长度}
+IS_TEST := V > MA(V, 60) * 1.5 AND UPPER_SHADOW > BODY AND H >= BOX_H;
+HAS_TEST := EXIST(IS_TEST, 5); {最近5天内发生过试盘}
+
+{--- 3. 当前精准伏击点 (洗盘结束，起飞前夜) ---}
+{要求今天成交量相比试盘日萎缩，且价格在5日线附近企稳，没有跌回坑底}
+VOL_SHRINK := V < REF(V, 1) AND V < MA(V, 5); 
+PRICE_OK := C >= MA(C, 5) AND C <= BOX_H * 1.08; {股价刚好在箱体上沿附近摩擦}
+
+{--- 综合输出 ---}
+SELECT: BOX_AMP AND MULTI_BOTTOM AND HAS_TEST AND VOL_SHRINK AND PRICE_OK;

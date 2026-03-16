@@ -1,0 +1,23 @@
+{ 低吸回马枪 - 选股公式 (HMQ_XG) }
+{ 核心逻辑：前期起跳 + 近期锁仓(缩倍量) + 今日踩线阴线 }
+
+{ --- 基础参数 --- }
+EXP10 := EXPMA(C, 10);
+LIMIT_UP := C/REF(C, 1) > 1.095; { 涨停板判定 }
+
+{ --- 条件 1：前期有势 (10日内有过涨停) --- }
+HAS_STRONG := EXIST(LIMIT_UP, 10);
+
+{ --- 条件 2：量——缩倍量 (5日内最高量的一半以下) --- }
+V_SHRINK := V < HHV(V, 5) * 0.5;
+
+{ --- 条件 3：价——高开低走阴线 --- }
+IS_YIN := C < O AND O > REF(C, 1);
+
+{ --- 条件 4：位——踩稳/回踩 EXPMA 10 --- }
+{ 考虑到异步：缩倍量可能在今天，也可能在过去 3 天内出现过 }
+HAD_SHRINK := EXIST(V_SHRINK, 3);
+ON_SUPPORT := L <= EXP10 * 1.01 AND C >= EXP10 * 0.985; { 触碰或回踩 10 日线支撑 }
+
+{ --- 最终合成：回马枪触发 --- }
+HMQ_XG: HAS_STRONG AND HAD_SHRINK AND IS_YIN AND ON_SUPPORT;

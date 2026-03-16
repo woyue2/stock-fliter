@@ -1,0 +1,30 @@
+{百日窄箱+多次试盘起涨 选股}
+
+{--- 1. 过去的极窄箱体构建 ---}
+N := 80;
+BOX_H := REF(HHV(H, N), 5); {之前的箱体顶部}
+BOX_L := REF(LLV(L, N), 5); {之前的箱体底部}
+BOX_AMP := (BOX_H - BOX_L) / BOX_L <= 0.20; {振幅控制在20%以内}
+
+{多重回踩确认}
+TOUCH_BOTTOM := REF(L, 5) <= BOX_L * 1.05;
+MULTI_BOTTOM := COUNT(TOUCH_BOTTOM, N) >= 3;
+
+{--- 2. 核心修正：多次爆量试盘痕迹 ---}
+UPPER_SHADOW := H - MAX(C, O); {上影线长度}
+BODY := ABS(C - O);            {实体长度}
+{单次试盘标准：爆量1.5倍以上 + 上影线大于实体 + 最高价摸到箱体上沿附近}
+IS_TEST := V > MA(V, 60) * 1.5 AND UPPER_SHADOW > BODY AND H >= BOX_H * 0.95;
+
+{修正点：整个箱体周期内，必须有至少 2 次以上的试盘动作，证明主力在反复运作}
+MULTI_TEST := COUNT(IS_TEST, N) >= 2; 
+{且最近 10 天内刚刚发生过一次，保证股性别凉}
+RECENT_TEST := EXIST(IS_TEST, 10);
+
+{--- 3. 当前精准伏击点 (洗盘结束，起飞前夜) ---}
+{要求今天量能萎缩回落，且价格在5日线附近企稳}
+VOL_SHRINK := V < MA(V, 5); 
+PRICE_OK := C >= MA(C, 5) AND C <= BOX_H * 1.08; 
+
+{--- 综合输出 ---}
+SELECT: BOX_AMP AND MULTI_BOTTOM AND MULTI_TEST AND RECENT_TEST AND VOL_SHRINK AND PRICE_OK;

@@ -1,0 +1,26 @@
+{ 低吸回马枪 - 主图指标 (HMQ_ZT) }
+{ 核心：EXPMA(10) 支撑线 + 信号可视化标记 }
+
+{ --- 1. 均线绘制 --- }
+操盘线: EXPMA(C, 10), COLORYELLOW, LINETHICK2;
+
+{ --- 2. 信号计算 (逻辑同选股) --- }
+LIMIT_UP := C/REF(C, 1) > 1.095;
+HAS_STRONG := EXIST(LIMIT_UP, 10);
+V_SHRINK := V < HHV(V, 5) * 0.5;
+IS_YIN := C < O AND O > REF(C, 1);
+HAD_SHRINK := EXIST(V_SHRINK, 3);
+ON_SUPPORT := L <= EXPMA(C, 10) * 1.01 AND C >= EXPMA(C, 10) * 0.985;
+
+BUY_SIGNAL := HAS_STRONG AND HAD_SHRINK AND IS_YIN AND ON_SUPPORT;
+
+{ --- 3. 视觉标记 --- }
+{ 标记缩倍量日 }
+DRAWTEXT(V_SHRINK, L * 0.98, '缩'), COLORGREEN;
+
+{ 标记回马枪买点 }
+DRAWICON(BUY_SIGNAL, L * 0.96, 1); { 绘制红箭头 }
+DRAWTEXT(BUY_SIGNAL, L * 0.94, '回马枪'), COLORRED;
+
+{ --- 辅助线 --- }
+涨停价: IF(LIMIT_UP, C, DRAWNULL), POINTDOT, COLORRED;
