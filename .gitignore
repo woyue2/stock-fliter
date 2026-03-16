@@ -67,9 +67,13 @@ report_index/
 Thumbs.db
 
 # Temporary files
+tmp/
+.streamlit/
 *.tmp
 *.bak
 nul
+**/测试结果/
+**/测试命令
 
 # Git history backup
 git-history-backup/
