@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-技术指标库 (Technical Indicators Library)
-项目统一的技术指标计算库
+[INPUT]:    收盘价、最高价、最低价、成交量等 Pandas Series 数据
+[OUTPUT]:   MA, EXPMA, MACD, RSI, TD, 波动率等技术指标计算结果 (Series 或 DataFrame)
+[POS]:      项目底层技术指标库，被所有 analyze 模块和验证脚本消费
+[PROTOCOL]: 变更计算逻辑时需同步更新 doc/ 里的指标定义，并保持与通达信算法对齐
 """
 import pandas as pd
 import numpy as np
@@ -14,6 +16,15 @@ class TechnicalIndicators:
     def calculate_ma(data: pd.Series, period: int) -> pd.Series:
         """计算移动平均线"""
         return data.rolling(window=period).mean()
+
+    @staticmethod
+    def calculate_expma(data: pd.Series, period: int) -> pd.Series:
+        """
+        计算EXPMA (指数平滑移动平均线)
+        通达信算法: Y = [2*X + (N-1)*Y'] / (N+1)
+        等价于 pandas 的 ewm(span=period, adjust=False)
+        """
+        return data.ewm(span=period, adjust=False).mean()
 
     @staticmethod
     def calculate_macd(data: pd.Series, fast_period=12, slow_period=26, signal_period=9):
