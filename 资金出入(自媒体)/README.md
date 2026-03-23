@@ -93,17 +93,9 @@ python run_daily_scan.py
 ### Step 3: 提取雷达报告 (渲染)
 核心数据算好后，你想要什么画风的报告，就跑下面对应的渲染脚本，它们都在 `reporters/` 里面躺好了，结果也会一律输出到 `output/` 目录中。
 
-*   **【极简看盘 Pro版】**：买点、卖点、洗盘点最清晰，像手机 App 的卡片滑动。
-    ```bash
-    python reporters/gen_pro_report.py
-    ```
 *   **【V5 黑金大局观版】**：就是带圆圈刻度的，一眼看出全天主力在集火哪里，在抛弃哪里。
     ```bash
     python reporters/gen_radial_report.py
-    ```
-*   **【自媒体爆款文案】**：直接拿去发朋友圈、小红书、公众号的 Markdown 纯文案。
-    ```bash
-    python reporters/gen_media_report.py
     ```
 
 **这就是它的核心：输入在左，产出在右，引擎在中间算，渲染器各司其职。**
